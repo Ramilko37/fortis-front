@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useRef, useState, type RefObject } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
 import { Grid, Line, OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -16,6 +16,7 @@ import { kindColor, snapToGrid, type ObjectKind, type SceneObject } from "./type
 import styles from "./drone-defense-prototype.module.css";
 
 const levelPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const PLANT_SCALE = 1;
 const scaledAssetByModelKey: Record<
   string,
   {
@@ -699,50 +700,220 @@ function SceneUnit({
   );
 }
 
-function DroneSwarm({ enabled }: { enabled: boolean }) {
-  const gltf = useGLTF("/models/chaklun-v2-drone.glb");
-  const drones = useMemo(
-    () =>
-      [
-        {
-          id: "drone-track-01",
-          from: new THREE.Vector3(-180, 26, -72),
-          to: new THREE.Vector3(180, 26, -72),
-          altitude: 26,
-          phase: 0,
-        },
-        {
-          id: "drone-track-02",
-          from: new THREE.Vector3(-180, 29, -18),
-          to: new THREE.Vector3(180, 29, -18),
-          altitude: 29,
-          phase: 0.33,
-        },
-        {
-          id: "drone-track-03",
-          from: new THREE.Vector3(-180, 24, 44),
-          to: new THREE.Vector3(180, 24, 44),
-          altitude: 24,
-          phase: 0.66,
-        },
-      ].map((track) => ({ ...track, model: gltf.scene.clone(true) })),
-    [gltf.scene],
-  );
-  const refs = useRef<Array<THREE.Group | null>>([]);
+const HIT_EFFECT_DURATION_SEC = 1.45;
+
+function HitPulse({
+  position,
+  startedAt,
+}: {
+  position: [number, number, number];
+  startedAt: number;
+}) {
+  const ringRef = useRef<THREE.Mesh | null>(null);
+  const domeRef = useRef<THREE.Mesh | null>(null);
+  const smokeRefs = useRef<Array<THREE.Mesh | null>>([]);
 
   useFrame(({ clock }) => {
+    const age = Math.max(0, clock.getElapsedTime() - startedAt);
+    const life = Math.min(1, age / HIT_EFFECT_DURATION_SEC);
+    const ringScale = 1 + life * 14;
+    const domeScale = 0.95 + life * 5.4;
+    const opacity = 0.95 - life * 0.95;
+
+    if (ringRef.current) {
+      ringRef.current.scale.set(ringScale, ringScale, ringScale);
+      const ringMat = ringRef.current.material as THREE.MeshBasicMaterial;
+      ringMat.opacity = Math.max(0, opacity);
+    }
+    if (domeRef.current) {
+      domeRef.current.scale.setScalar(domeScale);
+      const domeMat = domeRef.current.material as THREE.MeshBasicMaterial;
+      domeMat.opacity = Math.max(0, opacity * 0.75);
+    }
+    smokeRefs.current.forEach((smoke, index) => {
+      if (!smoke) return;
+      const localLife = Math.min(1, Math.max(0, life * 1.25 - index * 0.11));
+      const smokeScale = 1.2 + localLife * (5.4 + index * 0.6);
+      smoke.scale.setScalar(smokeScale);
+      smoke.position.y = 0.4 + localLife * (2.8 + index * 0.35);
+      const smokeMat = smoke.material as THREE.MeshBasicMaterial;
+      smokeMat.opacity = Math.max(0, (1 - localLife) * 0.42);
+    });
+  });
+
+  return (
+    <group position={position}>
+      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[3.4, 4.6, 58]} />
+        <meshBasicMaterial color="#ff2f2f" transparent opacity={0.98} />
+      </mesh>
+      <mesh ref={domeRef} position={[0, 0.26, 0]}>
+        <sphereGeometry args={[0.82, 22, 22]} />
+        <meshBasicMaterial color="#ff9a3d" transparent opacity={0.8} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
+        <ringGeometry args={[1.8, 2.6, 42]} />
+        <meshBasicMaterial color="#ffd27a" transparent opacity={0.82} />
+      </mesh>
+      {[-0.9, 0.15, 1.1].map((xOffset, index) => (
+        <mesh
+          key={index}
+          ref={(node) => {
+            smokeRefs.current[index] = node;
+          }}
+          position={[xOffset, 0.4, (index - 1) * 0.45]}
+        >
+          <sphereGeometry args={[0.56 + index * 0.08, 16, 16]} />
+          <meshBasicMaterial color="#5f646d" transparent opacity={0.4} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function DroneSwarm({
+  enabled,
+  plantObjects,
+  assets,
+}: {
+  enabled: boolean;
+  plantObjects: PlantMapObject[];
+  assets: SceneObject[];
+}) {
+  const gltf = useGLTF("/models/chaklun-v2-drone.glb");
+  const [hitEffects, setHitEffects] = useState<
+    Array<{ id: string; position: [number, number, number]; startedAt: number }>
+  >([]);
+  const [pathLines, setPathLines] = useState<Array<{ id: string; from: [number, number, number]; to: [number, number, number] }>>([]);
+  const attackTargets = useMemo(() => {
+    const staticTargets = plantObjects
+      .filter((item) => item.layer === "protection")
+      .map((item) => new THREE.Vector3(item.position[0], 0, item.position[2]));
+
+    const placedAssetTargets = assets.map((item) => new THREE.Vector3(item.position[0], 0, item.position[2]));
+    const allTargets = [...placedAssetTargets, ...staticTargets];
+    return allTargets.slice(0, Math.max(6, allTargets.length));
+  }, [assets, plantObjects]);
+
+  const drones = useMemo(
+    () =>
+      Array.from({ length: 6 }).map((_, index) => {
+        const fallbackTarget = new THREE.Vector3(120 + index * 40, 0, -90 + index * 34);
+        const target = attackTargets[index % Math.max(1, attackTargets.length)] ?? fallbackTarget;
+        const entryX = -plantSite.width * 0.62;
+        const entryZ = target.z + (index - 2.5) * 18;
+        const altitude = 24 + (index % 3) * 3;
+
+        return {
+          id: `drone-track-${String(index + 1).padStart(2, "0")}`,
+          from: new THREE.Vector3(entryX, altitude, entryZ),
+          to: new THREE.Vector3(target.x, altitude, target.z),
+          altitude,
+          speed: 0.07 + index * 0.006,
+          targetIndex: index % Math.max(1, attackTargets.length),
+          phase: (index * 0.17) % 1,
+          model: gltf.scene.clone(true),
+        };
+      }),
+    [attackTargets, gltf.scene],
+  );
+  const refs = useRef<Array<THREE.Group | null>>([]);
+  const droneStateRef = useRef(
+    drones.map((drone) => ({
+      from: drone.from.clone(),
+      to: drone.to.clone(),
+      altitude: drone.altitude,
+      speed: drone.speed,
+      targetIndex: drone.targetIndex,
+      progress: drone.phase,
+    })),
+  );
+
+  useEffect(() => {
+    droneStateRef.current = drones.map((drone) => ({
+      from: drone.from.clone(),
+      to: drone.to.clone(),
+      altitude: drone.altitude,
+      speed: drone.speed,
+      targetIndex: drone.targetIndex,
+      progress: drone.phase,
+    }));
+    setPathLines(
+      drones.map((drone) => ({
+        id: drone.id,
+        from: drone.from.toArray() as [number, number, number],
+        to: drone.to.toArray() as [number, number, number],
+      })),
+    );
+    setHitEffects([]);
+  }, [drones]);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const timer = window.setInterval(() => {
+      const now = performance.now() / 1000;
+      setHitEffects((prev) => prev.filter((effect) => now - effect.startedAt < HIT_EFFECT_DURATION_SEC));
+    }, 180);
+    return () => window.clearInterval(timer);
+  }, [enabled]);
+
+  useFrame(({ clock }, delta) => {
     if (!enabled) return;
     const t = clock.getElapsedTime();
     drones.forEach((drone, index) => {
       const node = refs.current[index];
       if (!node) return;
-      const speed = 0.055 + index * 0.008;
-      const progress = (t * speed + drone.phase) % 1;
-      const next = drone.from.clone().lerp(drone.to, progress);
-      next.y = drone.altitude;
+      const droneState = droneStateRef.current[index];
+      if (!droneState) return;
+
+      droneState.progress += delta * droneState.speed;
+      if (droneState.progress >= 1) {
+        const hitTime = t;
+        setHitEffects((prev) =>
+          [
+            ...prev.filter((effect) => hitTime - effect.startedAt < HIT_EFFECT_DURATION_SEC),
+            {
+              id: `${drone.id}-hit-${Math.round(hitTime * 1000)}`,
+              position: [droneState.to.x, 0.18, droneState.to.z] as [number, number, number],
+              startedAt: hitTime,
+            },
+          ].slice(-32),
+        );
+
+        const nextTargetIndex = (droneState.targetIndex + 1) % Math.max(1, attackTargets.length);
+        const nextTarget = attackTargets[nextTargetIndex];
+        const entryX = -plantSite.width * 0.62;
+        const entryZ = (nextTarget?.z ?? droneState.to.z) + (index - 2.5) * 16;
+        const nextFrom = new THREE.Vector3(entryX, droneState.altitude, entryZ);
+        const nextTo = new THREE.Vector3(
+          nextTarget?.x ?? droneState.to.x,
+          droneState.altitude,
+          nextTarget?.z ?? droneState.to.z,
+        );
+
+        droneState.from = nextFrom;
+        droneState.to = nextTo;
+        droneState.targetIndex = nextTargetIndex;
+        droneState.progress = 0;
+
+        setPathLines((prev) =>
+          prev.map((line) =>
+            line.id === drone.id
+              ? {
+                  ...line,
+                  from: nextFrom.toArray() as [number, number, number],
+                  to: nextTo.toArray() as [number, number, number],
+                }
+              : line,
+          ),
+        );
+      }
+
+      const next = droneState.from.clone().lerp(droneState.to, droneState.progress);
+      next.y = droneState.altitude;
       node.position.copy(next);
 
-      const dir = drone.to.clone().sub(drone.from).normalize();
+      const dir = droneState.to.clone().sub(droneState.from).normalize();
       // Meshy model local forward axis correction to keep nose aligned with motion.
       const headingOffset = Math.PI / 2;
       const yaw = Math.atan2(dir.x, dir.z);
@@ -754,24 +925,27 @@ function DroneSwarm({ enabled }: { enabled: boolean }) {
 
   return (
     <group>
-      {drones.map((drone) => (
+      {pathLines.map((path) => (
         <Line
-          key={`${drone.id}-path`}
-          points={[drone.from.toArray(), drone.to.toArray()]}
-          color="#50bfff"
-          lineWidth={1.2}
+          key={`${path.id}-path`}
+          points={[path.from, path.to]}
+          color="#ff3a3a"
+          lineWidth={1.6}
           dashed
           dashScale={3}
-          dashSize={0.5}
-          gapSize={0.35}
+          dashSize={0.7}
+          gapSize={0.28}
           transparent
-          opacity={0.45}
+          opacity={0.9}
         />
       ))}
       {drones.map((drone, index) => (
         <group key={drone.id} ref={(node) => { refs.current[index] = node; }} scale={4.8}>
           <primitive object={drone.model} />
         </group>
+      ))}
+      {hitEffects.map((effect) => (
+        <HitPulse key={effect.id} position={effect.position} startedAt={effect.startedAt} />
       ))}
     </group>
   );
@@ -826,8 +1000,8 @@ export function PrototypeScene({
 }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef = useRef<any>(null);
-  const mapHalfX = plantSite.width / 2 + 40;
-  const mapHalfZ = plantSite.depth / 2 + 40;
+  const mapHalfX = (plantSite.width * PLANT_SCALE) / 2 + 40;
+  const mapHalfZ = (plantSite.depth * PLANT_SCALE) / 2 + 40;
   const mapHalf = Math.max(mapHalfX, mapHalfZ);
   const showZoneOverlay = false;
   const isDark = theme === "dark";
@@ -857,12 +1031,12 @@ export function PrototypeScene({
     <Canvas
       shadows
       gl={{ antialias: true, logarithmicDepthBuffer: true }}
-      camera={{ position: [260, 185, 260], fov: 38, near: 0.1, far: 2600 }}
+      camera={{ position: [mapHalf * 0.92, mapHalf * 0.64, mapHalf * 0.92], fov: 38, near: 0.1, far: mapHalf * 14 }}
       onPointerMissed={() => setSelectedId(null)}
       className={styles.canvas}
     >
       <color attach="background" args={[sceneBackground]} />
-      <fog attach="fog" args={[fogColor, 520, 1700]} />
+      <fog attach="fog" args={[fogColor, mapHalf * 1.4, mapHalf * 5]} />
       <ambientLight intensity={isDark ? 0.62 : demoMode ? 0.9 : 0.82} />
       <directionalLight
         castShadow
@@ -873,10 +1047,12 @@ export function PrototypeScene({
         shadow-mapSize-height={2048}
       />
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.16, 0]} receiveShadow>
-        <planeGeometry args={[plantSite.width, plantSite.depth]} />
-        <meshStandardMaterial color={groundColor} roughness={plantSite.groundRoughness} metalness={0.02} />
-      </mesh>
+      <group scale={[PLANT_SCALE, PLANT_SCALE, PLANT_SCALE]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.16, 0]} receiveShadow>
+          <planeGeometry args={[plantSite.width, plantSite.depth]} />
+          <meshStandardMaterial color={groundColor} roughness={plantSite.groundRoughness} metalness={0.02} />
+        </mesh>
+      </group>
       <Grid
         args={[mapHalf * 2, mapHalf * 2]}
         position={[0, -0.06, 0]}
@@ -908,41 +1084,43 @@ export function PrototypeScene({
         </mesh>
       ) : null}
 
-      {showZoneOverlay
-        ? plantZones.map((zone) => (
-            <mesh key={zone.id} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-              <shapeGeometry args={[zoneShape(zone.polygon)]} />
-              <meshBasicMaterial
-                color={zone.color}
-                transparent
-                opacity={Math.min(0.08, zone.opacity)}
-                depthWrite={false}
-                polygonOffset
-                polygonOffsetFactor={2}
-                polygonOffsetUnits={2}
-              />
-            </mesh>
-          ))
-        : null}
+      <group scale={[PLANT_SCALE, PLANT_SCALE, PLANT_SCALE]}>
+        {showZoneOverlay
+          ? plantZones.map((zone) => (
+              <mesh key={zone.id} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+                <shapeGeometry args={[zoneShape(zone.polygon)]} />
+                <meshBasicMaterial
+                  color={zone.color}
+                  transparent
+                  opacity={Math.min(0.08, zone.opacity)}
+                  depthWrite={false}
+                  polygonOffset
+                  polygonOffsetFactor={2}
+                  polygonOffsetUnits={2}
+                />
+              </mesh>
+            ))
+          : null}
 
-      <FenceFromPerimeter />
+        <FenceFromPerimeter />
 
-      {plantObjects.map((item) => (
-        <PlantObjectUnit
-          key={item.id}
-          item={item}
-          onSelect={() => setSelectedId(item.id)}
-        />
-      ))}
+        {plantObjects.map((item) => (
+          <PlantObjectUnit
+            key={item.id}
+            item={item}
+            onSelect={() => setSelectedId(item.id)}
+          />
+        ))}
 
-      {plantConnections.map((item) => {
-        if (item.type === "pipeline") return <PipelineConnection key={item.id} item={item} />;
-        if (item.type === "route") return <RouteConnection key={item.id} item={item} color="#7d8797" />;
-        return <RouteConnection key={item.id} item={item} color="#8e99aa" />;
-      })}
+        {plantConnections.map((item) => {
+          if (item.type === "pipeline") return <PipelineConnection key={item.id} item={item} />;
+          if (item.type === "route") return <RouteConnection key={item.id} item={item} color="#7d8797" />;
+          return <RouteConnection key={item.id} item={item} color="#8e99aa" />;
+        })}
+      </group>
 
       <Suspense fallback={null}>
-        <DroneSwarm enabled={demoMode} />
+        <DroneSwarm enabled={demoMode} plantObjects={plantObjects} assets={objects} />
       </Suspense>
 
       {objects.map((item) => (
@@ -982,10 +1160,10 @@ export function PrototypeScene({
         target={[0, 0, 0]}
         maxPolarAngle={Math.PI * 0.34}
         minPolarAngle={Math.PI * 0.34}
-        minDistance={190}
-        maxDistance={560}
+        minDistance={Math.max(220, mapHalf * 0.42)}
+        maxDistance={Math.max(1600, mapHalf * 3.9)}
       />
-      <CameraClamp orbitRef={orbitRef} minHeight={36} />
+      <CameraClamp orbitRef={orbitRef} minHeight={Math.max(84, mapHalf * 0.16)} />
     </Canvas>
   );
 }
