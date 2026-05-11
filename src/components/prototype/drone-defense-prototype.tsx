@@ -43,6 +43,12 @@ const cameraPresetLabels: Record<CameraPresetId, string> = {
 };
 
 const threatStatusSequence: ThreatStatus[] = ["detected", "tracking", "neutralized", "breach"];
+type ViewMode = "scene3d" | "hex";
+
+const viewModeLabels: Record<ViewMode, string> = {
+  scene3d: "3D-карта",
+  hex: "Гексокарта",
+};
 
 export function DroneDefensePrototype() {
   const [objects, setObjects] = useState<SceneObject[]>(() => cloneScenario("baseline"));
@@ -54,6 +60,7 @@ export function DroneDefensePrototype() {
   const theme = "dark" as const;
   const [scenario, setScenario] = useState<ScenarioId>("baseline");
   const [demoMode, setDemoMode] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("scene3d");
   const [autoDemoRunning, setAutoDemoRunning] = useState(false);
   const [cameraPresetRequest, setCameraPresetRequest] = useState<CameraPresetRequest>({ id: "overview", nonce: 0 });
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(true);
@@ -231,6 +238,20 @@ export function DroneDefensePrototype() {
     startAutoDemo();
   };
 
+  const onViewModeChange = (mode: ViewMode) => {
+    if (mode === viewMode) return;
+    stopAutoDemo();
+    setDemoMode(false);
+    setPlacingKind(null);
+    setViewMode(mode);
+    if (mode === "hex") {
+      messageApi.info("Гексокарта: размещение и покрытие по ячейкам");
+      return;
+    }
+    requestCameraPreset("overview");
+    messageApi.info("3D-карта: возвращен детальный режим площадки");
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Delete" && event.key !== "Backspace") return;
@@ -287,6 +308,7 @@ export function DroneDefensePrototype() {
             demoMode={demoMode}
             scenario={scenario}
             theme={theme}
+            viewMode={viewMode}
             placingKind={placingKind}
             placementPoint={placementPoint}
             cameraPresetRequest={cameraPresetRequest}
@@ -295,14 +317,28 @@ export function DroneDefensePrototype() {
             onCancelPlacement={() => setPlacingKind(null)}
           />
           <div className={styles.sceneVignette} />
-          <div className={styles.cameraPresetBar} aria-label="Ракурсы камеры">
-            {(Object.keys(cameraPresetLabels) as CameraPresetId[]).map((id) => (
-              <button key={id} type="button" onClick={() => requestCameraPreset(id)}>
-                <EyeOutlined />
-                {cameraPresetLabels[id]}
+          <div className={styles.sceneModeTabs} aria-label="Режим карты">
+            {(Object.keys(viewModeLabels) as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={viewMode === mode ? styles.sceneModeTabActive : styles.sceneModeTab}
+                onClick={() => onViewModeChange(mode)}
+              >
+                {viewModeLabels[mode]}
               </button>
             ))}
           </div>
+          {viewMode === "scene3d" ? (
+            <div className={styles.cameraPresetBar} aria-label="Ракурсы камеры">
+              {(Object.keys(cameraPresetLabels) as CameraPresetId[]).map((id) => (
+                <button key={id} type="button" onClick={() => requestCameraPreset(id)}>
+                  <EyeOutlined />
+                  {cameraPresetLabels[id]}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {demoMode ? (
             <div className={styles.simulationStatusPanel} aria-label="Статусы угроз">
               <span>Статусы угроз</span>
@@ -315,10 +351,10 @@ export function DroneDefensePrototype() {
             </div>
           ) : null}
           <div className={styles.controlLegend}>
-            <span><CompassOutlined /> Орбита ЛКМ</span>
-            <span><DragOutlined /> Панорама ПКМ</span>
-            <span><SearchOutlined /> Масштаб колесом</span>
-            <span><ControlOutlined /> Перемещение объектов</span>
+            <span><CompassOutlined /> {viewMode === "hex" ? "Обзор ЛКМ" : "Орбита ЛКМ"}</span>
+            <span><DragOutlined /> {viewMode === "hex" ? "Смещение ПКМ" : "Панорама ПКМ"}</span>
+            <span><SearchOutlined /> {viewMode === "hex" ? "Масштаб колёсом" : "Масштаб колесом"}</span>
+            <span><ControlOutlined /> {viewMode === "hex" ? "Привязка к гексам" : "Перемещение объектов"}</span>
           </div>
         </section>
 

@@ -413,7 +413,7 @@
   position: absolute;
   top: 1rem;
   left: 1rem;
-  right: 1rem;
+  right: 13.6rem;
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
@@ -432,6 +432,36 @@
   background: rgba(7, 17, 27, 0.72);
   box-shadow: 0 0.65rem 1.6rem rgba(1, 6, 12, 0.22);
   cursor: pointer;
+}
+
+.sceneModeTabs {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  display: inline-flex;
+  border: 1px solid rgba(101, 160, 236, 0.5);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(7, 17, 27, 0.8);
+  box-shadow: 0 0.65rem 1.6rem rgba(1, 6, 12, 0.22);
+}
+
+.sceneModeTab,
+.sceneModeTabActive {
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border: 0;
+  color: #9dc0e7;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sceneModeTabActive {
+  color: #ecf6ff;
+  background: linear-gradient(180deg, rgba(85, 182, 255, 0.4), rgba(85, 182, 255, 0.18));
 }
 
 .simulationStatusPanel {
@@ -917,6 +947,11 @@
   .statusBar {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  .cameraPresetBar {
+    right: 1rem;
+    top: 4rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -948,6 +983,18 @@
 
   .sceneShell {
     order: 1;
+  }
+
+  .sceneModeTabs {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .sceneModeTab,
+  .sceneModeTabActive {
+    min-height: 1.95rem;
+    padding: 0 0.68rem;
+    font-size: 0.75rem;
   }
 
   .propertiesPanel {

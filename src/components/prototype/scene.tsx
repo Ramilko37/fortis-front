@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Grid, Html, Line, OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -31,10 +31,82 @@ import styles from "./drone-defense-prototype.module.css";
 
 const levelPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const PLANT_SCALE = 1;
+const SQRT3 = Math.sqrt(3);
+const HEX_SIZE_M = 18;
 type CameraPresetRequest = {
   id: CameraPresetId;
   nonce: number;
 };
+
+type ViewMode = "scene3d" | "hex";
+
+type SnappedPosition = {
+  x: number;
+  z: number;
+};
+
+function axialToWorld(q: number, r: number, size: number): SnappedPosition {
+  return {
+    x: size * SQRT3 * (q + r / 2),
+    z: size * 1.5 * r,
+  };
+}
+
+function worldToAxial(x: number, z: number, size: number): SnappedPosition {
+  return {
+    x: (SQRT3 / 3 * x - 1 / 3 * z) / size,
+    z: (2 / 3 * z) / size,
+  };
+}
+
+function roundAxial(q: number, r: number): SnappedPosition {
+  const x = q;
+  const z = r;
+  const y = -x - z;
+  let rx = Math.round(x);
+  let ry = Math.round(y);
+  let rz = Math.round(z);
+
+  const xDiff = Math.abs(rx - x);
+  const yDiff = Math.abs(ry - y);
+  const zDiff = Math.abs(rz - z);
+
+  if (xDiff > yDiff && xDiff > zDiff) {
+    rx = -ry - rz;
+  } else if (yDiff > zDiff) {
+    ry = -rx - rz;
+  } else {
+    rz = -rx - ry;
+  }
+
+  return { x: rx, z: rz };
+}
+
+function snapToHexCenter(x: number, z: number, size: number): SnappedPosition {
+  const axial = worldToAxial(x, z, size);
+  const rounded = roundAxial(axial.x, axial.z);
+  return axialToWorld(rounded.x, rounded.z, size);
+}
+
+function distanceToThreatPath(
+  pointX: number,
+  pointZ: number,
+  fromX: number,
+  fromZ: number,
+  toX: number,
+  toZ: number,
+): number {
+  const abX = toX - fromX;
+  const abZ = toZ - fromZ;
+  const apX = pointX - fromX;
+  const apZ = pointZ - fromZ;
+  const abSq = abX * abX + abZ * abZ;
+  if (abSq <= Number.EPSILON) return Math.hypot(apX, apZ);
+  const t = Math.max(0, Math.min(1, (apX * abX + apZ * abZ) / abSq));
+  const closestX = fromX + abX * t;
+  const closestZ = fromZ + abZ * t;
+  return Math.hypot(pointX - closestX, pointZ - closestZ);
+}
 const scaledAssetByModelKey: Record<
   string,
   {
@@ -602,6 +674,96 @@ function RiskHeatmap({ scenario }: { scenario: ScenarioId }) {
   );
 }
 
+type HexCell = {
+  id: string;
+  center: [number, number, number];
+  color: string;
+  opacity: number;
+};
+
+function HexGridOverlay({
+  mapHalfX,
+  mapHalfZ,
+  objects,
+  scenario,
+}: {
+  mapHalfX: number;
+  mapHalfZ: number;
+  objects: SceneObject[];
+  scenario: ScenarioId;
+}) {
+  const cells = useMemo<HexCell[]>(() => {
+    const maxR = Math.ceil(mapHalfZ / (HEX_SIZE_M * 1.5)) + 2;
+    const maxQ = Math.ceil(mapHalfX / (HEX_SIZE_M * SQRT3)) + 2;
+    const rows: HexCell[] = [];
+    const highRiskColor = new THREE.Color("#ff5e4a");
+    const warnColor = new THREE.Color("#f6c65b");
+    const safeColor = new THREE.Color("#55e7bb");
+    const coolColor = new THREE.Color("#55b5ff");
+    const tintColor = new THREE.Color("#ff9d63");
+
+    for (let r = -maxR; r <= maxR; r += 1) {
+      for (let q = -maxQ; q <= maxQ; q += 1) {
+        const world = axialToWorld(q, r, HEX_SIZE_M);
+        if (Math.abs(world.x) > mapHalfX * 0.97 || Math.abs(world.z) > mapHalfZ * 0.97) continue;
+
+        const weightedRisk = criticalTargets.reduce((sum, target) => {
+          const distance = Math.hypot(world.x - target.position[0], world.z - target.position[2]);
+          const localRisk = target.riskWeight * Math.exp(-distance / 170);
+          return sum + localRisk;
+        }, 0);
+
+        const riskLevel = Math.max(0, Math.min(1, weightedRisk / 2.4));
+        const covered = objects.some((object) => {
+          const distance = Math.hypot(world.x - object.position[0], world.z - object.position[2]);
+          return distance <= object.coverageRadiusM;
+        });
+        const onThreatPath = threatTracks.some((track) =>
+          distanceToThreatPath(world.x, world.z, track.from[0], track.from[2], track.to[0], track.to[2]) < HEX_SIZE_M * 0.72,
+        );
+
+        const color = new THREE.Color();
+        if (scenario === "unprotected") {
+          color.copy(warnColor).lerp(highRiskColor, riskLevel);
+        } else if (scenario === "baseline" || scenario === "assets") {
+          color.copy(covered ? safeColor : warnColor).lerp(highRiskColor, covered ? riskLevel * 0.32 : riskLevel);
+        } else {
+          color.copy(covered ? coolColor : safeColor).lerp(highRiskColor, covered ? riskLevel * 0.2 : riskLevel * 0.52);
+        }
+
+        if (onThreatPath) {
+          color.lerp(tintColor, 0.16);
+        }
+
+        rows.push({
+          id: `${q}:${r}`,
+          center: [world.x, 0.03, world.z],
+          color: `#${color.getHexString()}`,
+          opacity: covered ? 0.44 : 0.24 + riskLevel * 0.32,
+        });
+      }
+    }
+    return rows;
+  }, [mapHalfX, mapHalfZ, objects, scenario]);
+
+  return (
+    <group>
+      {cells.map((cell) => (
+        <group key={cell.id} position={cell.center}>
+          <mesh rotation={[0, Math.PI / 6, 0]}>
+            <cylinderGeometry args={[HEX_SIZE_M * 0.94, HEX_SIZE_M * 0.94, 0.04, 6]} />
+            <meshBasicMaterial color={cell.color} transparent opacity={cell.opacity} depthWrite={false} />
+          </mesh>
+          <mesh rotation={[0, Math.PI / 6, 0]} position={[0, 0.03, 0]}>
+            <cylinderGeometry args={[HEX_SIZE_M * 0.97, HEX_SIZE_M * 0.97, 0.01, 6]} />
+            <meshBasicMaterial color="#d9ecff" transparent opacity={0.17} depthWrite={false} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function SceneCallouts({ objects }: { objects: SceneObject[] }) {
   const visibleAssets = objects
     .filter((item) => item.defenseRole === "command" || item.defenseRole === "barrier" || item.defenseRole === "mesh")
@@ -700,16 +862,25 @@ function ProtectiveAssetModel({
 function PlacementPreview({
   kind,
   point,
+  viewMode,
 }: {
   kind: ObjectKind;
   point: [number, number, number];
+  viewMode: ViewMode;
 }) {
   return (
     <group position={point}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[2.05, 2.4, 48]} />
-        <meshBasicMaterial color="#00b6ff" transparent opacity={0.6} />
-      </mesh>
+      {viewMode === "hex" ? (
+        <mesh position={[0, 0.03, 0]} rotation={[0, Math.PI / 6, 0]}>
+          <cylinderGeometry args={[HEX_SIZE_M * 0.9, HEX_SIZE_M * 0.9, 0.04, 6]} />
+          <meshBasicMaterial color="#55d6ff" transparent opacity={0.48} />
+        </mesh>
+      ) : (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+          <ringGeometry args={[2.05, 2.4, 48]} />
+          <meshBasicMaterial color="#00b6ff" transparent opacity={0.6} />
+        </mesh>
+      )}
       <ProtectiveAssetModel kind={kind} selected={false} ghost />
     </group>
   );
@@ -722,6 +893,7 @@ function SceneUnit({
   onMove,
   onDragStart,
   onDragEnd,
+  snapPosition,
   placementActive,
 }: {
   item: SceneObject;
@@ -730,6 +902,7 @@ function SceneUnit({
   onMove: (id: string, x: number, z: number) => void;
   onDragStart: () => void;
   onDragEnd: () => void;
+  snapPosition: (x: number, z: number) => SnappedPosition;
   placementActive: boolean;
 }) {
   const [dragging, setDragging] = useState(false);
@@ -750,7 +923,8 @@ function SceneUnit({
     event.stopPropagation();
     const intersection = new THREE.Vector3();
     if (event.ray.intersectPlane(levelPlane, intersection)) {
-      onMove(item.id, snapToGrid(intersection.x), snapToGrid(intersection.z));
+      const snapped = snapPosition(intersection.x, intersection.z);
+      onMove(item.id, snapped.x, snapped.z);
     }
   };
 
@@ -1086,6 +1260,28 @@ function CameraPresetController({
   return null;
 }
 
+function CameraViewModeController({
+  orbitRef,
+  viewMode,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  orbitRef: RefObject<any>;
+  viewMode: ViewMode;
+}) {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    if (viewMode !== "hex") return;
+    camera.position.set(0, 620, 24);
+    if (orbitRef.current) {
+      orbitRef.current.target.set(0, 0, 0);
+      orbitRef.current.update?.();
+    }
+  }, [camera, orbitRef, viewMode]);
+
+  return null;
+}
+
 export function PrototypeScene({
   objects,
   plantObjects,
@@ -1096,6 +1292,7 @@ export function PrototypeScene({
   demoMode,
   scenario,
   theme,
+  viewMode,
   placingKind,
   placementPoint,
   cameraPresetRequest,
@@ -1112,6 +1309,7 @@ export function PrototypeScene({
   demoMode: boolean;
   scenario: ScenarioId;
   theme: "light" | "dark";
+  viewMode: ViewMode;
   placingKind: ObjectKind | null;
   placementPoint: [number, number, number];
   cameraPresetRequest: CameraPresetRequest;
@@ -1144,9 +1342,17 @@ export function PrototypeScene({
     if (!placingKind) return;
     const intersection = new THREE.Vector3();
     if (event.ray.intersectPlane(levelPlane, intersection)) {
-      onPlacementMove(snapToGrid(intersection.x), snapToGrid(intersection.z));
+      const snapped = viewMode === "hex"
+        ? snapToHexCenter(intersection.x, intersection.z, HEX_SIZE_M)
+        : { x: snapToGrid(intersection.x), z: snapToGrid(intersection.z) };
+      onPlacementMove(snapped.x, snapped.z);
     }
   };
+
+  const snapPosition = useCallback((x: number, z: number): SnappedPosition => {
+    if (viewMode === "hex") return snapToHexCenter(x, z, HEX_SIZE_M);
+    return { x: snapToGrid(x), z: snapToGrid(z) };
+  }, [viewMode]);
 
   return (
     <Canvas
@@ -1174,19 +1380,24 @@ export function PrototypeScene({
           <meshStandardMaterial color={groundColor} roughness={plantSite.groundRoughness} metalness={0.02} />
         </mesh>
       </group>
-      <Grid
-        args={[mapHalf * 2, mapHalf * 2]}
-        position={[0, -0.06, 0]}
-        cellSize={2}
-        cellThickness={0.28}
-        cellColor={gridCellColor}
-        sectionSize={20}
-        sectionThickness={0.7}
-        sectionColor={gridSectionColor}
-        fadeDistance={100000}
-        fadeStrength={0}
-      />
-      <RiskHeatmap scenario={scenario} />
+      {viewMode === "scene3d" ? (
+        <Grid
+          args={[mapHalf * 2, mapHalf * 2]}
+          position={[0, -0.06, 0]}
+          cellSize={2}
+          cellThickness={0.28}
+          cellColor={gridCellColor}
+          sectionSize={20}
+          sectionThickness={0.7}
+          sectionColor={gridSectionColor}
+          fadeDistance={100000}
+          fadeStrength={0}
+        />
+      ) : null}
+      {viewMode === "scene3d" ? <RiskHeatmap scenario={scenario} /> : null}
+      {viewMode === "hex" ? (
+        <HexGridOverlay mapHalfX={mapHalfX} mapHalfZ={mapHalfZ} objects={objects} scenario={scenario} />
+      ) : null}
       {placingKind ? (
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
@@ -1206,40 +1417,42 @@ export function PrototypeScene({
         </mesh>
       ) : null}
 
-      <group scale={[PLANT_SCALE, PLANT_SCALE, PLANT_SCALE]}>
-        {showZoneOverlay
-          ? plantZones.map((zone) => (
-              <mesh key={zone.id} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
-                <shapeGeometry args={[zoneShape(zone.polygon)]} />
-                <meshBasicMaterial
-                  color={zone.color}
-                  transparent
-                  opacity={Math.min(0.08, zone.opacity)}
-                  depthWrite={false}
-                  polygonOffset
-                  polygonOffsetFactor={2}
-                  polygonOffsetUnits={2}
-                />
-              </mesh>
-            ))
-          : null}
+      {viewMode === "scene3d" ? (
+        <group scale={[PLANT_SCALE, PLANT_SCALE, PLANT_SCALE]}>
+          {showZoneOverlay
+            ? plantZones.map((zone) => (
+                <mesh key={zone.id} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+                  <shapeGeometry args={[zoneShape(zone.polygon)]} />
+                  <meshBasicMaterial
+                    color={zone.color}
+                    transparent
+                    opacity={Math.min(0.08, zone.opacity)}
+                    depthWrite={false}
+                    polygonOffset
+                    polygonOffsetFactor={2}
+                    polygonOffsetUnits={2}
+                  />
+                </mesh>
+              ))
+            : null}
 
-        <FenceFromPerimeter />
+          <FenceFromPerimeter />
 
-        {plantObjects.map((item) => (
-          <PlantObjectUnit
-            key={item.id}
-            item={item}
-            onSelect={() => setSelectedId(item.id)}
-          />
-        ))}
+          {plantObjects.map((item) => (
+            <PlantObjectUnit
+              key={item.id}
+              item={item}
+              onSelect={() => setSelectedId(item.id)}
+            />
+          ))}
 
-        {plantConnections.map((item) => {
-          if (item.type === "pipeline") return <PipelineConnection key={item.id} item={item} />;
-          if (item.type === "route") return <RouteConnection key={item.id} item={item} color="#7d8797" />;
-          return <RouteConnection key={item.id} item={item} color="#8e99aa" />;
-        })}
-      </group>
+          {plantConnections.map((item) => {
+            if (item.type === "pipeline") return <PipelineConnection key={item.id} item={item} />;
+            if (item.type === "route") return <RouteConnection key={item.id} item={item} color="#7d8797" />;
+            return <RouteConnection key={item.id} item={item} color="#8e99aa" />;
+          })}
+        </group>
+      ) : null}
 
       <Suspense fallback={<SimulationFallback />}>
         {demoMode ? <DroneSwarm key={scenario} enabled={demoMode} scenario={scenario} /> : null}
@@ -1258,17 +1471,18 @@ export function PrototypeScene({
           onMove={updateObjectPosition}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          snapPosition={snapPosition}
           placementActive={Boolean(placingKind)}
         />
       ))}
-      {placingKind ? <PlacementPreview kind={placingKind} point={placementPoint} /> : null}
+      {placingKind ? <PlacementPreview kind={placingKind} point={placementPoint} viewMode={viewMode} /> : null}
 
       <OrbitControls
         ref={orbitRef}
         makeDefault
         enableDamping
         dampingFactor={0.08}
-        enableRotate
+        enableRotate={viewMode === "scene3d"}
         enablePan
         screenSpacePanning={false}
         mouseButtons={{
@@ -1281,13 +1495,14 @@ export function PrototypeScene({
           TWO: THREE.TOUCH.DOLLY_PAN,
         }}
         target={[0, 0, 0]}
-        maxPolarAngle={Math.PI * 0.42}
-        minPolarAngle={Math.PI * 0.25}
+        maxPolarAngle={viewMode === "hex" ? Math.PI * 0.11 : Math.PI * 0.42}
+        minPolarAngle={viewMode === "hex" ? Math.PI * 0.04 : Math.PI * 0.25}
         minDistance={Math.max(220, mapHalf * 0.42)}
         maxDistance={Math.max(1600, mapHalf * 3.9)}
       />
       <CameraClamp orbitRef={orbitRef} minHeight={Math.max(84, mapHalf * 0.16)} />
       <CameraPresetController orbitRef={orbitRef} request={cameraPresetRequest} mapHalf={mapHalf} />
+      <CameraViewModeController orbitRef={orbitRef} viewMode={viewMode} />
     </Canvas>
   );
 }
