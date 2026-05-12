@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Grid, Html, Line, OrbitControls, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -677,8 +677,7 @@ function RiskHeatmap({ scenario }: { scenario: ScenarioId }) {
 type HexCell = {
   id: string;
   center: [number, number, number];
-  color: string;
-  opacity: number;
+  color: THREE.Color;
 };
 
 function HexGridOverlay({
@@ -692,6 +691,18 @@ function HexGridOverlay({
   objects: SceneObject[];
   scenario: ScenarioId;
 }) {
+  const fillRef = useRef<THREE.InstancedMesh | null>(null);
+  const borderRef = useRef<THREE.InstancedMesh | null>(null);
+  const fillGeometry = useMemo(() => new THREE.CylinderGeometry(HEX_SIZE_M * 0.94, HEX_SIZE_M * 0.94, 0.04, 6), []);
+  const borderGeometry = useMemo(() => new THREE.CylinderGeometry(HEX_SIZE_M * 0.98, HEX_SIZE_M * 0.98, 0.012, 6), []);
+  const fillMaterial = useMemo(
+    () => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.42, depthWrite: false, vertexColors: true }),
+    [],
+  );
+  const borderMaterial = useMemo(
+    () => new THREE.MeshBasicMaterial({ color: "#d9ecff", transparent: true, opacity: 0.18, depthWrite: false }),
+    [],
+  );
   const cells = useMemo<HexCell[]>(() => {
     const maxR = Math.ceil(mapHalfZ / (HEX_SIZE_M * 1.5)) + 2;
     const maxQ = Math.ceil(mapHalfX / (HEX_SIZE_M * SQRT3)) + 2;
@@ -735,31 +746,48 @@ function HexGridOverlay({
           color.lerp(tintColor, 0.16);
         }
 
+        const opacityBoost = covered ? 0.2 : riskLevel * 0.18;
+        color.lerp(new THREE.Color("#ffffff"), opacityBoost);
+
         rows.push({
           id: `${q}:${r}`,
           center: [world.x, 0.03, world.z],
-          color: `#${color.getHexString()}`,
-          opacity: covered ? 0.44 : 0.24 + riskLevel * 0.32,
+          color,
         });
       }
     }
     return rows;
   }, [mapHalfX, mapHalfZ, objects, scenario]);
 
+  useLayoutEffect(() => {
+    if (!fillRef.current || !borderRef.current) return;
+    const matrix = new THREE.Matrix4();
+    const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 6, 0));
+    const scale = new THREE.Vector3(1, 1, 1);
+
+    cells.forEach((cell, index) => {
+      matrix.compose(new THREE.Vector3(...cell.center), rotation, scale);
+      fillRef.current?.setMatrixAt(index, matrix);
+      fillRef.current?.setColorAt(index, cell.color);
+      borderRef.current?.setMatrixAt(index, matrix);
+    });
+
+    fillRef.current.instanceMatrix.needsUpdate = true;
+    if (fillRef.current.instanceColor) fillRef.current.instanceColor.needsUpdate = true;
+    borderRef.current.instanceMatrix.needsUpdate = true;
+  }, [cells]);
+
+  useEffect(() => () => {
+    fillGeometry.dispose();
+    borderGeometry.dispose();
+    fillMaterial.dispose();
+    borderMaterial.dispose();
+  }, [borderGeometry, borderMaterial, fillGeometry, fillMaterial]);
+
   return (
     <group>
-      {cells.map((cell) => (
-        <group key={cell.id} position={cell.center}>
-          <mesh rotation={[0, Math.PI / 6, 0]}>
-            <cylinderGeometry args={[HEX_SIZE_M * 0.94, HEX_SIZE_M * 0.94, 0.04, 6]} />
-            <meshBasicMaterial color={cell.color} transparent opacity={cell.opacity} depthWrite={false} />
-          </mesh>
-          <mesh rotation={[0, Math.PI / 6, 0]} position={[0, 0.03, 0]}>
-            <cylinderGeometry args={[HEX_SIZE_M * 0.97, HEX_SIZE_M * 0.97, 0.01, 6]} />
-            <meshBasicMaterial color="#d9ecff" transparent opacity={0.17} depthWrite={false} />
-          </mesh>
-        </group>
-      ))}
+      <instancedMesh ref={fillRef} args={[fillGeometry, fillMaterial, cells.length]} />
+      <instancedMesh ref={borderRef} args={[borderGeometry, borderMaterial, cells.length]} position={[0, 0.035, 0]} />
     </group>
   );
 }
@@ -894,6 +922,7 @@ function SceneUnit({
   onDragStart,
   onDragEnd,
   snapPosition,
+  viewMode,
   placementActive,
 }: {
   item: SceneObject;
@@ -903,6 +932,7 @@ function SceneUnit({
   onDragStart: () => void;
   onDragEnd: () => void;
   snapPosition: (x: number, z: number) => SnappedPosition;
+  viewMode: ViewMode;
   placementActive: boolean;
 }) {
   const [dragging, setDragging] = useState(false);
@@ -956,11 +986,26 @@ function SceneUnit({
             }
       }
     >
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-        <ringGeometry args={[markerInnerRadius, markerOuterRadius, 56]} />
-        <meshBasicMaterial color={selected ? "#00b6ff" : kindColor[item.kind]} transparent opacity={0.88} />
-      </mesh>
-      <ProtectiveAssetModel kind={item.kind} selected={selected} />
+      {viewMode === "hex" ? (
+        <>
+          <mesh position={[0, 0.42, 0]} rotation={[0, Math.PI / 6, 0]}>
+            <cylinderGeometry args={[selected ? 7.2 : 6.2, selected ? 7.2 : 6.2, 0.76, 6]} />
+            <meshBasicMaterial color={selected ? "#f7fbff" : kindColor[item.kind]} transparent opacity={0.92} />
+          </mesh>
+          <mesh position={[0, 0.86, 0]} rotation={[0, Math.PI / 6, 0]}>
+            <cylinderGeometry args={[selected ? 8.9 : 7.6, selected ? 8.9 : 7.6, 0.08, 6]} />
+            <meshBasicMaterial color={defenseRoleColor[item.defenseRole]} transparent opacity={selected ? 0.72 : 0.44} />
+          </mesh>
+        </>
+      ) : (
+        <>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
+            <ringGeometry args={[markerInnerRadius, markerOuterRadius, 56]} />
+            <meshBasicMaterial color={selected ? "#00b6ff" : kindColor[item.kind]} transparent opacity={0.88} />
+          </mesh>
+          <ProtectiveAssetModel kind={item.kind} selected={selected} />
+        </>
+      )}
     </group>
   );
 }
@@ -1356,8 +1401,9 @@ export function PrototypeScene({
 
   return (
     <Canvas
-      shadows
-      gl={{ antialias: true, logarithmicDepthBuffer: true }}
+      shadows={viewMode === "scene3d"}
+      dpr={viewMode === "hex" ? [1, 1] : [1, 1.5]}
+      gl={{ antialias: true, logarithmicDepthBuffer: viewMode === "scene3d" }}
       camera={{ position: [mapHalf * 0.92, mapHalf * 0.64, mapHalf * 0.92], fov: 38, near: 0.1, far: mapHalf * 14 }}
       onPointerMissed={() => setSelectedId(null)}
       className={styles.canvas}
@@ -1366,16 +1412,16 @@ export function PrototypeScene({
       <fog attach="fog" args={[fogColor, mapHalf * 1.4, mapHalf * 5]} />
       <ambientLight intensity={isDark ? 0.62 : demoMode ? 0.9 : 0.82} />
       <directionalLight
-        castShadow
-        intensity={isDark ? 1.15 : 1.45}
+        castShadow={viewMode === "scene3d"}
+        intensity={viewMode === "hex" ? 0.9 : isDark ? 1.15 : 1.45}
         position={[160, 220, 120]}
         color="#ffffff"
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={viewMode === "hex" ? 512 : 2048}
+        shadow-mapSize-height={viewMode === "hex" ? 512 : 2048}
       />
 
       <group scale={[PLANT_SCALE, PLANT_SCALE, PLANT_SCALE]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.16, 0]} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.16, 0]} receiveShadow={viewMode === "scene3d"}>
           <planeGeometry args={[plantSite.width, plantSite.depth]} />
           <meshStandardMaterial color={groundColor} roughness={plantSite.groundRoughness} metalness={0.02} />
         </mesh>
@@ -1455,13 +1501,15 @@ export function PrototypeScene({
       ) : null}
 
       <Suspense fallback={<SimulationFallback />}>
-        {demoMode ? <DroneSwarm key={scenario} enabled={demoMode} scenario={scenario} /> : null}
+        {demoMode && viewMode === "scene3d" ? <DroneSwarm key={scenario} enabled={demoMode} scenario={scenario} /> : null}
       </Suspense>
 
-      <SceneCallouts objects={objects} />
-      {objects.map((item) => (
-        <Coverage key={`coverage-${item.id}`} item={item} selected={selectedId === item.id} />
-      ))}
+      {viewMode === "scene3d" ? <SceneCallouts objects={objects} /> : null}
+      {viewMode === "scene3d"
+        ? objects.map((item) => (
+            <Coverage key={`coverage-${item.id}`} item={item} selected={selectedId === item.id} />
+          ))
+        : null}
       {objects.map((item) => (
         <SceneUnit
           key={item.id}
@@ -1472,6 +1520,7 @@ export function PrototypeScene({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           snapPosition={snapPosition}
+          viewMode={viewMode}
           placementActive={Boolean(placingKind)}
         />
       ))}

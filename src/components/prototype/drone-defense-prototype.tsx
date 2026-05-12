@@ -28,6 +28,7 @@ import { Topbar } from "./topbar";
 import { AssetsPanel } from "./assets-panel";
 import { PropertiesPanel } from "./properties-panel";
 import { StatusBar } from "./status-bar";
+import { DefenseCatalogTab } from "./defense-catalog/defense-catalog-tab";
 import styles from "./drone-defense-prototype.module.css";
 
 type CameraPresetRequest = {
@@ -44,6 +45,7 @@ const cameraPresetLabels: Record<CameraPresetId, string> = {
 
 const threatStatusSequence: ThreatStatus[] = ["detected", "tracking", "neutralized", "breach"];
 type ViewMode = "scene3d" | "hex";
+type PrototypeTab = "map" | "catalog";
 
 const viewModeLabels: Record<ViewMode, string> = {
   scene3d: "3D-карта",
@@ -51,6 +53,7 @@ const viewModeLabels: Record<ViewMode, string> = {
 };
 
 export function DroneDefensePrototype() {
+  const [activeTab, setActiveTab] = useState<PrototypeTab>("map");
   const [objects, setObjects] = useState<SceneObject[]>(() => cloneScenario("baseline"));
   const [plantObjects] = useState<PlantMapObject[]>(() =>
     defaultPlantMapObjects.map((item) => ({ ...item, selectable: item.layer === "protection" })),
@@ -109,6 +112,7 @@ export function DroneDefensePrototype() {
   const applyScenarioManually = (id: ScenarioId) => {
     stopAutoDemo();
     setDemoMode(false);
+    setActiveTab("map");
     applyScenario(id);
   };
 
@@ -252,6 +256,14 @@ export function DroneDefensePrototype() {
     messageApi.info("3D-карта: возвращен детальный режим площадки");
   };
 
+  const openCatalog = () => {
+    if (activeTab === "catalog") return;
+    stopAutoDemo();
+    setDemoMode(false);
+    setPlacingKind(null);
+    setActiveTab("catalog");
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Delete" && event.key !== "Backspace") return;
@@ -288,100 +300,110 @@ export function DroneDefensePrototype() {
       <Topbar
         scenario={scenario}
         onScenarioChange={applyScenarioManually}
+        activeView={activeTab}
+        onCatalogOpen={openCatalog}
       />
 
-      <section className={`${styles.workspace} ${!isPropertiesOpen ? styles.workspaceNoProperties : ""}`.trim()}>
-        <AssetsPanel
-          onSelectAsset={startPlacing}
-          placingKind={placingKind}
-          onCancelPlacement={() => setPlacingKind(null)}
-        />
+      {activeTab === "map" ? (
+        <>
+          <section className={`${styles.workspace} ${!isPropertiesOpen ? styles.workspaceNoProperties : ""}`.trim()}>
+            <AssetsPanel
+              onSelectAsset={startPlacing}
+              placingKind={placingKind}
+              onCancelPlacement={() => setPlacingKind(null)}
+            />
 
-        <section className={styles.sceneShell} aria-label="Карта промышленной площадки">
-          <PrototypeScene
-            objects={objects}
-            plantObjects={plantObjects}
-            plantConnections={plantConnections}
-            selectedId={selectedId}
-            setSelectedId={setSelectedId}
-            updateObjectPosition={updateObjectPosition}
+            <section className={styles.sceneShell} aria-label="Карта промышленной площадки">
+              <PrototypeScene
+                objects={objects}
+                plantObjects={plantObjects}
+                plantConnections={plantConnections}
+                selectedId={selectedId}
+                setSelectedId={setSelectedId}
+                updateObjectPosition={updateObjectPosition}
+                demoMode={demoMode}
+                scenario={scenario}
+                theme={theme}
+                viewMode={viewMode}
+                placingKind={placingKind}
+                placementPoint={placementPoint}
+                cameraPresetRequest={cameraPresetRequest}
+                onPlacementMove={(x, z) => setPlacementPoint([x, 0, z])}
+                onPlacePending={placePendingObject}
+                onCancelPlacement={() => setPlacingKind(null)}
+              />
+              <div className={styles.sceneVignette} />
+              <div className={styles.sceneModeTabs} aria-label="Режим карты">
+                {(Object.keys(viewModeLabels) as ViewMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={viewMode === mode ? styles.sceneModeTabActive : styles.sceneModeTab}
+                    onClick={() => onViewModeChange(mode)}
+                  >
+                    {viewModeLabels[mode]}
+                  </button>
+                ))}
+              </div>
+              {viewMode === "scene3d" ? (
+                <div className={styles.cameraPresetBar} aria-label="Ракурсы камеры">
+                  {(Object.keys(cameraPresetLabels) as CameraPresetId[]).map((id) => (
+                    <button key={id} type="button" onClick={() => requestCameraPreset(id)}>
+                      <EyeOutlined />
+                      {cameraPresetLabels[id]}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {demoMode ? (
+                <div className={styles.simulationStatusPanel} aria-label="Статусы угроз">
+                  <span>Статусы угроз</span>
+                  {threatStatusSequence.map((status) => (
+                    <strong key={status}>
+                      <i style={{ backgroundColor: threatStatusColor[status] }} />
+                      {threatStatusLabel[status]}
+                    </strong>
+                  ))}
+                </div>
+              ) : null}
+              <div className={styles.controlLegend}>
+                <span><CompassOutlined /> {viewMode === "hex" ? "Обзор ЛКМ" : "Орбита ЛКМ"}</span>
+                <span><DragOutlined /> {viewMode === "hex" ? "Смещение ПКМ" : "Панорама ПКМ"}</span>
+                <span><SearchOutlined /> {viewMode === "hex" ? "Масштаб колёсом" : "Масштаб колесом"}</span>
+                <span><ControlOutlined /> {viewMode === "hex" ? "Привязка к гексам" : "Перемещение объектов"}</span>
+              </div>
+            </section>
+
+            {isPropertiesOpen ? (
+              <PropertiesPanel
+                selectedObject={selectedObject}
+                selectedPlantObject={selectedPlantObject}
+                scenario={scenario}
+                onDuplicate={duplicateSelected}
+                onDelete={deleteSelected}
+                onClose={() => setIsPropertiesOpen(false)}
+              />
+            ) : null}
+          </section>
+
+          <StatusBar
+            stats={stats}
+            scenario={scenario}
             demoMode={demoMode}
-            scenario={scenario}
-            theme={theme}
-            viewMode={viewMode}
-            placingKind={placingKind}
-            placementPoint={placementPoint}
-            cameraPresetRequest={cameraPresetRequest}
-            onPlacementMove={(x, z) => setPlacementPoint([x, 0, z])}
-            onPlacePending={placePendingObject}
-            onCancelPlacement={() => setPlacingKind(null)}
+            autoDemoRunning={autoDemoRunning}
+            onScenarioReset={() => applyScenarioManually(scenario)}
+            onToggleDemo={() => {
+              stopAutoDemo();
+              setDemoMode((prev) => !prev);
+            }}
+            onToggleAutoDemo={toggleAutoDemo}
           />
-          <div className={styles.sceneVignette} />
-          <div className={styles.sceneModeTabs} aria-label="Режим карты">
-            {(Object.keys(viewModeLabels) as ViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={viewMode === mode ? styles.sceneModeTabActive : styles.sceneModeTab}
-                onClick={() => onViewModeChange(mode)}
-              >
-                {viewModeLabels[mode]}
-              </button>
-            ))}
-          </div>
-          {viewMode === "scene3d" ? (
-            <div className={styles.cameraPresetBar} aria-label="Ракурсы камеры">
-              {(Object.keys(cameraPresetLabels) as CameraPresetId[]).map((id) => (
-                <button key={id} type="button" onClick={() => requestCameraPreset(id)}>
-                  <EyeOutlined />
-                  {cameraPresetLabels[id]}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {demoMode ? (
-            <div className={styles.simulationStatusPanel} aria-label="Статусы угроз">
-              <span>Статусы угроз</span>
-              {threatStatusSequence.map((status) => (
-                <strong key={status}>
-                  <i style={{ backgroundColor: threatStatusColor[status] }} />
-                  {threatStatusLabel[status]}
-                </strong>
-              ))}
-            </div>
-          ) : null}
-          <div className={styles.controlLegend}>
-            <span><CompassOutlined /> {viewMode === "hex" ? "Обзор ЛКМ" : "Орбита ЛКМ"}</span>
-            <span><DragOutlined /> {viewMode === "hex" ? "Смещение ПКМ" : "Панорама ПКМ"}</span>
-            <span><SearchOutlined /> {viewMode === "hex" ? "Масштаб колёсом" : "Масштаб колесом"}</span>
-            <span><ControlOutlined /> {viewMode === "hex" ? "Привязка к гексам" : "Перемещение объектов"}</span>
-          </div>
+        </>
+      ) : (
+        <section className={styles.catalogShell}>
+          <DefenseCatalogTab />
         </section>
-
-        {isPropertiesOpen ? (
-          <PropertiesPanel
-            selectedObject={selectedObject}
-            selectedPlantObject={selectedPlantObject}
-            scenario={scenario}
-            onDuplicate={duplicateSelected}
-            onDelete={deleteSelected}
-            onClose={() => setIsPropertiesOpen(false)}
-          />
-        ) : null}
-      </section>
-
-      <StatusBar
-        stats={stats}
-        scenario={scenario}
-        demoMode={demoMode}
-        autoDemoRunning={autoDemoRunning}
-        onScenarioReset={() => applyScenarioManually(scenario)}
-        onToggleDemo={() => {
-          stopAutoDemo();
-          setDemoMode((prev) => !prev);
-        }}
-        onToggleAutoDemo={toggleAutoDemo}
-      />
+      )}
     </main>
   );
 }

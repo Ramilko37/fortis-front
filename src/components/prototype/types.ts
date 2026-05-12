@@ -13,6 +13,17 @@ export type CriticalTargetType = "storage" | "command" | "power" | "process" | "
 export type ThreatStatus = "detected" | "tracking" | "neutralized" | "breach";
 export type ThreatOutcome = "neutralized" | "breach";
 export type CameraPresetId = "overview" | "perimeter" | "tanks" | "operator";
+export type DefenseLayerId =
+  | "layer_01_external_warning"
+  | "layer_02_detection"
+  | "layer_03_identification"
+  | "layer_04_suppression"
+  | "layer_05_mid_range_kinetic"
+  | "layer_06_last_line_kinetic"
+  | "layer_07_accuracy_disruption"
+  | "layer_08_passive_protection"
+  | "layer_09_hardening";
+export type DefenseLayerStatus = "covered" | "partial" | "weak" | "not_covered" | "missing_data";
 
 export type SceneObject = {
   id: string;
@@ -65,6 +76,98 @@ export type AssetCatalogItem = {
   kind: ProtectiveObjectKind | "facility";
   label: string;
   tone: string;
+};
+
+export type DefenseLayer = {
+  id: DefenseLayerId;
+  number: number;
+  sourceLayerIndex: number;
+  sourceLayerCode: string;
+  name: string;
+  shortName: string;
+  category: string;
+  description: string;
+  visualRole: string;
+  coverageType: string;
+  defaultWeight: number;
+  zoneOfAction: string | null;
+  readinessPctFromDashboard: number | null;
+  readinessNote: string | null;
+  statusFromDashboard: DefenseLayerStatus;
+  assetIds: string[];
+  assetCount: number;
+};
+
+export type DefenseAsset = {
+  id: string;
+  name: string;
+  source: {
+    workbook: string;
+    sheet: string;
+    excelRow: number;
+    sourceLayerCode: string;
+    sourceLayerName: string | null;
+  };
+  category: string;
+  defenseLayerIds: DefenseLayerId[];
+  layerNumber: number;
+  sourceLayerIndex: number;
+  typeOriginal: string | null;
+  supplyChannelScore: number | null;
+  localizationScore: number | null;
+  quantityOnSite: number | null;
+  score1to10: number | null;
+  derived: {
+    availabilityScoreDraft: number | null;
+    effectiveness: number | null;
+    costCapexMlnRub: number | null;
+    costOpexMlnRubYear: number | null;
+  };
+  coverage: {
+    type: string;
+    zoneOfAction: string | null;
+    radiusM: number | null;
+    widthM: number | null;
+    heightM: number | null;
+    lengthM: number | null;
+  };
+  threatTypes: string[];
+  status: string;
+  visualization: {
+    modelUrl: string | null;
+    icon: string | null;
+    color: string | null;
+  };
+  description: string | null;
+};
+
+export type DefenseCatalogData = {
+  schemaVersion: string;
+  generatedFrom: {
+    sourceWorkbook: string;
+    sourceSheets: string[];
+    normalizationRule: string;
+  };
+  summary: {
+    totalAssets: number;
+    totalLayers: number;
+    assetsByLayer: Record<DefenseLayerId, number>;
+    layersCoveredOrPartialByDashboard: number;
+    layersWithMissingDashboardReadiness: DefenseLayerId[];
+  };
+  criteriaWeightsFromExcel: {
+    typeWeightPct: number | null;
+    supplyChannelWeightPct: number | null;
+    localizationWeightPct: number | null;
+    quantityOnSiteWeightPct: number | null;
+    score1to10WeightPct: number | null;
+  };
+  defenseLayers: DefenseLayer[];
+  defenseAssets: DefenseAsset[];
+  effectivenessMatrix: {
+    status?: string;
+    note?: string;
+  };
 };
 
 export const scenarioLabels: Record<ScenarioId, string> = {
@@ -131,6 +234,22 @@ export const threatStatusColor: Record<ThreatStatus, string> = {
   tracking: "#f5ce6a",
   neutralized: "#67e8a6",
   breach: "#ff6b5f",
+};
+
+export const defenseLayerStatusLabel: Record<DefenseLayerStatus, string> = {
+  covered: "Закрыт",
+  partial: "Частично",
+  weak: "Слабый",
+  not_covered: "Не закрыт",
+  missing_data: "Нет данных",
+};
+
+export const defenseLayerStatusColor: Record<DefenseLayerStatus, string> = {
+  covered: "#27b16d",
+  partial: "#d8a31c",
+  weak: "#d97a2b",
+  not_covered: "#d14b4b",
+  missing_data: "#8a94a5",
 };
 
 export const assetCatalog: AssetCatalogItem[] = [
@@ -458,4 +577,12 @@ export function cloneScenario(id: ScenarioId) {
 
 export function snapToGrid(value: number, step = 0.5) {
   return Math.round(value / step) * step;
+}
+
+export function getLayerStatus(readinessPct: number | null): DefenseLayerStatus {
+  if (readinessPct === null) return "missing_data";
+  if (readinessPct >= 75) return "covered";
+  if (readinessPct >= 40) return "partial";
+  if (readinessPct > 0) return "weak";
+  return "not_covered";
 }
