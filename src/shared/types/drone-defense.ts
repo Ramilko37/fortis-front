@@ -36,6 +36,11 @@ export type DefenseLayer = {
   name: string;
   shortName: string;
   defaultWeight: number;
+  distanceBandM: {
+    min: number;
+    max: number;
+    label: string;
+  };
 };
 
 export type ThreatType = {
@@ -91,12 +96,19 @@ export type Placement = {
   assetId: string;
   facilityId: string;
   scenarioId: DefenseScenarioId;
+  layerId?: DefenseLayerId;
+  catalogGroupId?: string;
+  catalogGroupName?: string;
   qty: number;
   readiness: number;
   layerGapBoost: number;
   criticalityBoost: number;
   feasibility: number;
   environmentModifier: number;
+  sceneRef?: {
+    x: number;
+    z: number;
+  };
 };
 
 export type Configuration = {
@@ -116,6 +128,16 @@ export type KpiResult = {
   riskReductionPct: number;
   protectedAssetsPct: number;
   perimeterCoveredPct: number;
+  layerReadinessPct: number;
+  layerCoverage: Array<{
+    layerId: DefenseLayerId;
+    coveredPct: number;
+    distanceBandM: {
+      min: number;
+      max: number;
+      label: string;
+    };
+  }>;
   costPerRiskPointRub: number;
   valuePerRuble: number;
 };
@@ -123,8 +145,11 @@ export type KpiResult = {
 export type Recommendation = {
   candidateAssetId: string;
   candidateAssetName: string;
-  deltaRiskReduction: number;
-  deltaTcoRub: number;
+  affectedLayerIds: DefenseLayerId[];
+  reason: string;
+  deltaRisk: number;
+  deltaResidualRiskPct: number;
+  deltaTco: number;
   score: number;
 };
 
@@ -141,6 +166,11 @@ export type DefenseLayersResponse = {
   layerCoverage: Array<{
     layerId: DefenseLayerId;
     coveredPct: number;
+    distanceBandM: {
+      min: number;
+      max: number;
+      label: string;
+    };
   }>;
 };
 

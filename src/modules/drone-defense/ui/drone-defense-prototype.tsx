@@ -1,20 +1,19 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeftOutlined, EnvironmentOutlined, FundProjectionScreenOutlined, RadarChartOutlined } from "@ant-design/icons";
-import { buildScenarioConfiguration } from "@/modules/drone-defense/infra/mock-defense-data";
+import {
+  buildCatalogPlacement,
+  defenseLayers,
+  getCatalogGroupsForLayer,
+  scenarioOptions,
+} from "@/modules/drone-defense/infra/mock-defense-data";
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
 import { ComparisonView } from "@/modules/drone-defense/ui/comparison-view";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
-import type { DefenseScenarioId } from "@/shared/types/drone-defense";
-
-const scenarioOptions: Array<{ id: DefenseScenarioId; label: string }> = [
-  { id: "baseline", label: "Baseline" },
-  { id: "balanced", label: "Balanced" },
-  { id: "reinforced", label: "Reinforced" },
-];
+import type { DefenseLayerId, DefenseScenarioId } from "@/shared/types/drone-defense";
 
 type Stage = "gis" | "comparison" | "drilldown";
 
@@ -25,6 +24,7 @@ const stageLabels: Record<Stage, string> = {
 };
 
 export function DroneDefensePrototype() {
+  const [selectedLayerId, setSelectedLayerId] = useState<DefenseLayerId>("layer_01_external_warning");
   const {
     init,
     loading,
@@ -32,15 +32,21 @@ export function DroneDefensePrototype() {
     view,
     facilityId,
     scenarioId,
+    configuration,
     budgetRub,
+    catalog,
     facilities,
     layers,
+    layersByScenario,
     kpiByScenario,
     recommendations,
     setView,
     setFacilityId,
     setScenarioId,
     setBudgetRub,
+    upsertLocalPlacement,
+    moveLocalPlacement,
+    removeLocalPlacement,
   } = useDefenseStudioStore();
 
   useEffect(() => {
@@ -51,11 +57,26 @@ export function DroneDefensePrototype() {
     () => facilities.find((item) => item.id === facilityId) ?? null,
     [facilities, facilityId],
   );
-
-  const currentConfiguration = useMemo(
-    () => buildScenarioConfiguration(facilityId, scenarioId),
-    [facilityId, scenarioId],
+  const selectedLayer = useMemo(
+    () => defenseLayers.find((layer) => layer.id === selectedLayerId) ?? defenseLayers[0],
+    [selectedLayerId],
   );
+  const selectedLayerGroups = useMemo(() => getCatalogGroupsForLayer(selectedLayerId), [selectedLayerId]);
+  const selectedLayerPlacements = useMemo(
+    () => configuration.placements.filter((placement) => placement.layerId === selectedLayerId),
+    [configuration.placements, selectedLayerId],
+  );
+
+  const addCatalogGroup = (groupId: string) => {
+    const placement = buildCatalogPlacement({ facilityId, scenarioId, groupId });
+    void upsertLocalPlacement(placement);
+  };
+
+  const removeCatalogGroup = (groupId: string) => {
+    const placement = configuration.placements.find((item) => item.catalogGroupId === groupId);
+    if (!placement) return;
+    void removeLocalPlacement(placement.id);
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -134,7 +155,7 @@ export function DroneDefensePrototype() {
 
           <article className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
             <p className="font-semibold text-slate-800">{selectedFacility?.name ?? "—"}</p>
-            <p className="mt-1">Scenario placement count: {currentConfiguration.placements.length}</p>
+            <p className="mt-1">Scenario placement count: {configuration.placements.length}</p>
             <p className="mt-1">Layer records: {layers?.layerCoverage.length ?? 0}</p>
           </article>
         </section>
@@ -146,6 +167,75 @@ export function DroneDefensePrototype() {
           <div className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">Загрузка данных…</div>
         ) : null}
 
+        <section className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-white p-3 lg:grid-cols-[280px_1fr]">
+          <aside className="rounded border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[11px] font-semibold uppercase text-slate-500">Selected echelon</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {selectedLayer.shortName} · {selectedLayer.name}
+            </p>
+            <p className="mt-1 text-xs text-slate-600">{selectedLayer.distanceBandM.label} от объекта</p>
+            <p className="mt-3 text-xs text-slate-600">
+              В конфигурации: <strong className="text-slate-900">{selectedLayerPlacements.length}</strong> средств
+            </p>
+          </aside>
+
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Каталог средств защиты по эшелону</h2>
+                <p className="text-xs text-slate-600">
+                  Выберите L1-L9 на GIS или ниже и добавьте группы СЗ в текущую конфигурацию.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {defenseLayers.map((layer) => (
+                  <button
+                    key={layer.id}
+                    className={`rounded border px-2 py-1 text-xs font-semibold ${
+                      layer.id === selectedLayerId
+                        ? "border-sky-500 bg-sky-50 text-sky-700"
+                        : "border-slate-200 bg-white text-slate-600"
+                    }`}
+                    type="button"
+                    onClick={() => setSelectedLayerId(layer.id)}
+                    title={`${layer.name}: ${layer.distanceBandM.label}`}
+                  >
+                    {layer.shortName}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {selectedLayerGroups.map((group) => {
+                const placement = configuration.placements.find((item) => item.catalogGroupId === group.id);
+                const isSelected = Boolean(placement);
+                return (
+                  <article key={group.id} className="rounded border border-slate-200 bg-white p-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{group.name}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Вес критерия {group.weightPct}% · {selectedLayer.distanceBandM.label}
+                        </p>
+                      </div>
+                      <button
+                        className={`shrink-0 rounded px-2 py-1 text-xs font-semibold ${
+                          isSelected ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"
+                        }`}
+                        type="button"
+                        onClick={() => (isSelected ? removeCatalogGroup(group.id) : addCatalogGroup(group.id))}
+                      >
+                        {isSelected ? "Убрать" : "Добавить"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         <div className={view === "gis" ? "block" : "hidden"}>
           <GisBoard
             facilities={facilities}
@@ -154,21 +244,38 @@ export function DroneDefensePrototype() {
             hexCells={studioPreviewData.hexCells}
             threatRoutes={studioPreviewData.threatRoutes}
             layers={layers}
+            configuration={configuration}
+            catalog={catalog}
+            selectedLayerId={selectedLayerId}
+            selectedLayerGroups={selectedLayerGroups}
+            onSelectLayer={setSelectedLayerId}
+            onAddCatalogGroup={addCatalogGroup}
+            onRemoveCatalogGroup={removeCatalogGroup}
           />
         </div>
 
         <div className={view === "comparison" ? "block" : "hidden"}>
           <ComparisonView
             kpiByScenario={kpiByScenario}
+            layersByScenario={layersByScenario}
             recommendations={recommendations}
             budgetRub={budgetRub}
           />
         </div>
 
         <div className="block">
-          <div className={view === "drilldown" ? "block" : "hidden"}>
-            <FacilityDrilldown />
-          </div>
+          {view === "drilldown" ? (
+            <FacilityDrilldown
+              key={`${facilityId}:${scenarioId}`}
+              facilityName={selectedFacility?.name ?? "Facility"}
+              scenario={scenarioId}
+              configuration={configuration}
+              onScenarioChange={(nextScenarioId) => void setScenarioId(nextScenarioId)}
+              onLocalPlacementUpsert={(placement) => void upsertLocalPlacement(placement)}
+              onLocalPlacementMove={(args) => void moveLocalPlacement(args)}
+              onLocalPlacementRemove={(placementId) => void removeLocalPlacement(placementId)}
+            />
+          ) : null}
         </div>
       </div>
     </div>

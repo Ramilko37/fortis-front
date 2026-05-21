@@ -520,6 +520,45 @@
   box-shadow: 0 0 0.85rem currentColor;
 }
 
+.configurationBadge {
+  pointer-events: none;
+  position: absolute;
+  top: 4.35rem;
+  right: 1rem;
+  z-index: 3;
+  max-width: min(22rem, calc(100% - 2rem));
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(162, 198, 242, 0.28);
+  border-radius: 999px;
+  color: #edf5ff;
+  background: rgba(5, 13, 21, 0.72);
+  box-shadow: 0 0.9rem 2rem rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(0.8rem);
+}
+
+.configurationBadge span,
+.configurationBadge strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.configurationBadge span {
+  color: #9db4cb;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.configurationBadge strong {
+  color: #f7fbff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .controlLegend span {
   display: flex;
   align-items: center;

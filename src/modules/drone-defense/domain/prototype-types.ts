@@ -7,7 +7,7 @@ export type ProtectiveObjectKind =
   | "cable_mesh";
 
 export type ObjectKind = LegacyObjectKind | ProtectiveObjectKind;
-export type ScenarioId = "unprotected" | "baseline" | "perimeter" | "assets" | "night";
+export type ScenarioId = "baseline" | "balanced" | "reinforced";
 export type DefenseRole = "command" | "scaffold" | "enclosure" | "barrier" | "mesh";
 export type CriticalTargetType = "storage" | "command" | "power" | "process" | "reactor";
 export type ThreatStatus = "detected" | "tracking" | "neutralized" | "breach";
@@ -171,11 +171,9 @@ export type DefenseCatalogData = {
 };
 
 export const scenarioLabels: Record<ScenarioId, string> = {
-  unprotected: "Без защиты",
-  baseline: "Базовая защита",
-  perimeter: "Усиленный периметр",
-  assets: "Критические объекты",
-  night: "Ночной режим",
+  baseline: "Baseline",
+  balanced: "Balanced",
+  reinforced: "Reinforced",
 };
 
 export const kindLabel: Record<ObjectKind, string> = {
@@ -425,23 +423,18 @@ const perimeterAdditions: SceneObject[] = [
 ];
 
 export const scenarioPresets: Record<ScenarioId, SceneObject[]> = {
-  unprotected: [],
   baseline: baselineScenario,
-  perimeter: [...baselineScenario, ...perimeterAdditions],
-  assets: baselineScenario,
-  night: [...baselineScenario, ...perimeterAdditions],
+  balanced: [
+    ...baselineScenario,
+    createScenarioObject("balanced-ew-mesh", "cable_mesh", "РЭБ / сеточная зона L4-L7", [35, 0, 254], {
+      costMln: 31,
+      coverageRadiusM: 120,
+    }),
+  ],
+  reinforced: [...baselineScenario, ...perimeterAdditions],
 };
 
 export const scenarioStats: Record<ScenarioId, DefenseStats> = {
-  unprotected: {
-    protectedObjects: 0,
-    protectedObjectsTotal: 7,
-    perimeterCoveredPercent: 0,
-    attacksRepelled: 0,
-    attacksTotal: 6,
-    residualRiskPercent: 86,
-    capexMln: 0,
-  },
   baseline: {
     protectedObjects: 5,
     protectedObjectsTotal: 7,
@@ -451,25 +444,16 @@ export const scenarioStats: Record<ScenarioId, DefenseStats> = {
     residualRiskPercent: 34,
     capexMln: 194,
   },
-  perimeter: {
-    protectedObjects: 7,
+  balanced: {
+    protectedObjects: 6,
     protectedObjectsTotal: 7,
-    perimeterCoveredPercent: 82,
-    attacksRepelled: 6,
+    perimeterCoveredPercent: 68,
+    attacksRepelled: 5,
     attacksTotal: 6,
-    residualRiskPercent: 12,
-    capexMln: 320,
+    residualRiskPercent: 24,
+    capexMln: 225,
   },
-  assets: {
-    protectedObjects: 5,
-    protectedObjectsTotal: 7,
-    perimeterCoveredPercent: 54,
-    attacksRepelled: 4,
-    attacksTotal: 6,
-    residualRiskPercent: 34,
-    capexMln: 194,
-  },
-  night: {
+  reinforced: {
     protectedObjects: 7,
     protectedObjectsTotal: 7,
     perimeterCoveredPercent: 82,
@@ -502,7 +486,7 @@ export const threatTracks: ThreatTrack[] = [
     detectAt: 0.18,
     trackAt: 0.42,
     neutralizeAt: 0.66,
-    outcomeByScenario: { unprotected: "breach", baseline: "neutralized", perimeter: "neutralized", assets: "neutralized", night: "neutralized" },
+    outcomeByScenario: { baseline: "neutralized", balanced: "neutralized", reinforced: "neutralized" },
   },
   {
     id: "threat-02",
@@ -515,7 +499,7 @@ export const threatTracks: ThreatTrack[] = [
     detectAt: 0.2,
     trackAt: 0.45,
     neutralizeAt: 0.7,
-    outcomeByScenario: { unprotected: "breach", baseline: "neutralized", perimeter: "neutralized", assets: "neutralized", night: "neutralized" },
+    outcomeByScenario: { baseline: "neutralized", balanced: "neutralized", reinforced: "neutralized" },
   },
   {
     id: "threat-03",
@@ -528,7 +512,7 @@ export const threatTracks: ThreatTrack[] = [
     detectAt: 0.16,
     trackAt: 0.4,
     neutralizeAt: 0.68,
-    outcomeByScenario: { unprotected: "breach", baseline: "neutralized", perimeter: "neutralized", assets: "neutralized", night: "neutralized" },
+    outcomeByScenario: { baseline: "neutralized", balanced: "neutralized", reinforced: "neutralized" },
   },
   {
     id: "threat-04",
@@ -541,7 +525,7 @@ export const threatTracks: ThreatTrack[] = [
     detectAt: 0.22,
     trackAt: 0.48,
     neutralizeAt: 0.74,
-    outcomeByScenario: { unprotected: "breach", baseline: "breach", perimeter: "neutralized", assets: "breach", night: "neutralized" },
+    outcomeByScenario: { baseline: "breach", balanced: "neutralized", reinforced: "neutralized" },
   },
   {
     id: "threat-05",
@@ -554,7 +538,7 @@ export const threatTracks: ThreatTrack[] = [
     detectAt: 0.18,
     trackAt: 0.44,
     neutralizeAt: 0.69,
-    outcomeByScenario: { unprotected: "breach", baseline: "neutralized", perimeter: "neutralized", assets: "neutralized", night: "neutralized" },
+    outcomeByScenario: { baseline: "neutralized", balanced: "neutralized", reinforced: "neutralized" },
   },
   {
     id: "threat-06",
@@ -567,7 +551,7 @@ export const threatTracks: ThreatTrack[] = [
     detectAt: 0.24,
     trackAt: 0.5,
     neutralizeAt: 0.76,
-    outcomeByScenario: { unprotected: "breach", baseline: "breach", perimeter: "neutralized", assets: "breach", night: "neutralized" },
+    outcomeByScenario: { baseline: "breach", balanced: "breach", reinforced: "neutralized" },
   },
 ];
 

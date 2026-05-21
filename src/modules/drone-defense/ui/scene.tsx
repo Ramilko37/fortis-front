@@ -646,11 +646,9 @@ function RouteConnection({ item, color }: { item: PlantMapConnection; color: str
 
 function RiskHeatmap({ scenario }: { scenario: ScenarioId }) {
   const heatmapStyle = {
-    unprotected: { color: "#ff4f3f", radius: 92, opacity: 0.18 },
     baseline: { color: "#f6c65b", radius: 64, opacity: 0.12 },
-    perimeter: { color: "#55e7bb", radius: 46, opacity: 0.1 },
-    assets: { color: "#f6c65b", radius: 64, opacity: 0.12 },
-    night: { color: "#55e7bb", radius: 46, opacity: 0.1 },
+    balanced: { color: "#67e8a6", radius: 54, opacity: 0.11 },
+    reinforced: { color: "#55e7bb", radius: 46, opacity: 0.1 },
   }[scenario];
 
   return (
@@ -734,10 +732,10 @@ function HexGridOverlay({
         );
 
         const color = new THREE.Color();
-        if (scenario === "unprotected") {
-          color.copy(warnColor).lerp(highRiskColor, riskLevel);
-        } else if (scenario === "baseline" || scenario === "assets") {
+        if (scenario === "baseline") {
           color.copy(covered ? safeColor : warnColor).lerp(highRiskColor, covered ? riskLevel * 0.32 : riskLevel);
+        } else if (scenario === "balanced") {
+          color.copy(covered ? coolColor : safeColor).lerp(highRiskColor, covered ? riskLevel * 0.24 : riskLevel * 0.62);
         } else {
           color.copy(covered ? coolColor : safeColor).lerp(highRiskColor, covered ? riskLevel * 0.2 : riskLevel * 0.52);
         }

@@ -47,21 +47,23 @@ export async function getHexCells() {
 export async function getLayers(
   facilityId: string,
   scenarioId: DefenseScenarioId,
+  configuration = getScenarioConfiguration(facilityId, scenarioId),
 ): Promise<DefenseLayersResponse> {
-  const configuration = getScenarioConfiguration(facilityId, scenarioId);
   const kpi = evaluateConfiguration(configuration, {
     catalog: buildCatalogResponse(),
     assetsById,
     cells: hexCells,
     layers: defenseLayers,
+    facilities,
   });
 
   return {
     facilityId,
     scenarioId,
-    layerCoverage: defenseLayers.map((layer, index) => ({
-      layerId: layer.id,
-      coveredPct: Math.min(1, kpi.perimeterCoveredPct * (0.62 + index * 0.045)),
+    layerCoverage: kpi.layerCoverage.map((item) => ({
+      layerId: item.layerId,
+      coveredPct: item.coveredPct,
+      distanceBandM: item.distanceBandM,
     })),
   };
 }
@@ -72,6 +74,7 @@ export async function evaluateDefense(request: EvaluateRequest): Promise<KpiResu
     assetsById,
     cells: hexCells,
     layers: defenseLayers,
+    facilities,
   });
 }
 
@@ -83,6 +86,7 @@ export async function recommendDefense(request: RecommendRequest): Promise<Recom
       assetsById,
       cells: hexCells,
       layers: defenseLayers,
+      facilities,
     },
     request.budgetRub,
     request.limit ?? 3,

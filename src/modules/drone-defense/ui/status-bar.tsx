@@ -15,18 +15,14 @@ export function StatusBar({
   stats,
   scenario,
   demoMode,
-  autoDemoRunning,
   onScenarioReset,
   onToggleDemo,
-  onToggleAutoDemo,
 }: {
   stats: DefenseStats;
   scenario: ScenarioId;
   demoMode: boolean;
-  autoDemoRunning: boolean;
   onScenarioReset: () => void;
   onToggleDemo: () => void;
-  onToggleAutoDemo: () => void;
 }) {
   return (
     <footer className={styles.statusBar}>
@@ -63,10 +59,6 @@ export function StatusBar({
       <button className={styles.simulationButton} type="button" onClick={onToggleDemo}>
         <PlayCircleOutlined />
         {demoMode ? "Пауза симуляции" : "Запустить симуляцию"}
-      </button>
-      <button className={styles.autoDemoButton} type="button" onClick={onToggleAutoDemo}>
-        <PlayCircleOutlined />
-        {autoDemoRunning ? "Остановить автодемо" : "Автодемо"}
       </button>
     </footer>
   );

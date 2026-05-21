@@ -9,26 +9,28 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { message } from "antd";
+import type { Configuration, DefenseScenarioId, Placement } from "@/shared/types/drone-defense";
 import {
-  cloneScenario,
   kindLabel,
-  objectDefaultsByKind,
   scenarioStats,
   threatStatusColor,
   threatStatusLabel,
   type CameraPresetId,
   type ObjectKind,
-  type ScenarioId,
   type SceneObject,
   type ThreatStatus,
 } from "../domain/prototype-types";
+import {
+  isLocalPlacementId,
+  localPlacementFromSceneObject,
+  sceneObjectsFromConfiguration,
+} from "../domain/configuration-scene-mapper";
 import { defaultPlantConnections, defaultPlantMapObjects, type PlantMapConnection, type PlantMapObject } from "./plant-map";
 import { PrototypeScene } from "./scene";
 import { Topbar } from "./topbar";
 import { AssetsPanel } from "./assets-panel";
 import { PropertiesPanel } from "./properties-panel";
 import { StatusBar } from "./status-bar";
-import { DefenseCatalogTab } from "./defense-catalog/defense-catalog-tab";
 import styles from "./drone-defense-prototype.module.css";
 
 type CameraPresetRequest = {
@@ -45,33 +47,44 @@ const cameraPresetLabels: Record<CameraPresetId, string> = {
 
 const threatStatusSequence: ThreatStatus[] = ["detected", "tracking", "neutralized", "breach"];
 type ViewMode = "scene3d" | "hex";
-type PrototypeTab = "map" | "catalog";
 
 const viewModeLabels: Record<ViewMode, string> = {
   scene3d: "3D-карта",
   hex: "Гексокарта",
 };
 
-export function FacilityDrilldown() {
-  const [activeTab, setActiveTab] = useState<PrototypeTab>("map");
-  const [objects, setObjects] = useState<SceneObject[]>(() => cloneScenario("baseline"));
+export function FacilityDrilldown({
+  facilityName,
+  scenario,
+  configuration,
+  onScenarioChange,
+  onLocalPlacementUpsert,
+  onLocalPlacementMove,
+  onLocalPlacementRemove,
+}: {
+  facilityName: string;
+  scenario: DefenseScenarioId;
+  configuration: Configuration;
+  onScenarioChange: (scenarioId: DefenseScenarioId) => void;
+  onLocalPlacementUpsert: (placement: Placement) => void;
+  onLocalPlacementMove: (args: { placementId: string; x: number; z: number }) => void;
+  onLocalPlacementRemove: (placementId: string) => void;
+}) {
   const [plantObjects] = useState<PlantMapObject[]>(() =>
     defaultPlantMapObjects.map((item) => ({ ...item, selectable: item.layer === "protection" })),
   );
   const [plantConnections, setPlantConnections] = useState<PlantMapConnection[]>(() => defaultPlantConnections);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const theme = "dark" as const;
-  const [scenario, setScenario] = useState<ScenarioId>("baseline");
   const [demoMode, setDemoMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("scene3d");
-  const [autoDemoRunning, setAutoDemoRunning] = useState(false);
   const [cameraPresetRequest, setCameraPresetRequest] = useState<CameraPresetRequest>({ id: "overview", nonce: 0 });
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(true);
-  const [idCounter, setIdCounter] = useState(100);
   const [placingKind, setPlacingKind] = useState<ObjectKind | null>(null);
   const [placementPoint, setPlacementPoint] = useState<[number, number, number]>([0, 0, 0]);
-  const autoDemoTimers = useRef<number[]>([]);
+  const localPlacementSeqRef = useRef(0);
   const [messageApi, contextHolder] = message.useMessage();
+  const objects = useMemo(() => sceneObjectsFromConfiguration(configuration), [configuration]);
 
   const selectedObject = useMemo(() => objects.find((item) => item.id === selectedId) ?? null, [objects, selectedId]);
   const selectedPlantObject = useMemo(
@@ -85,68 +98,37 @@ export function FacilityDrilldown() {
     setCameraPresetRequest((prev) => ({ id, nonce: prev.nonce + 1 }));
   }, []);
 
-  const clearAutoDemoTimers = useCallback(() => {
-    autoDemoTimers.current.forEach((timer) => window.clearTimeout(timer));
-    autoDemoTimers.current = [];
-  }, []);
-
-  const stopAutoDemo = useCallback(() => {
-    clearAutoDemoTimers();
-    setAutoDemoRunning(false);
-  }, [clearAutoDemoTimers]);
-
   const updateObjectPosition = (id: string, x: number, z: number) => {
-    setObjects((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, position: [x, item.position[1], z] } : item)),
-    );
-  };
-
-  const applyScenario = useCallback((id: ScenarioId) => {
-    const next = cloneScenario(id);
-    setScenario(id);
-    setObjects(next);
-    setSelectedId(null);
-    setPlacingKind(null);
-  }, []);
-
-  const applyScenarioManually = (id: ScenarioId) => {
-    stopAutoDemo();
-    setDemoMode(false);
-    setActiveTab("map");
-    applyScenario(id);
-  };
-
-  const buildObject = (kind: ObjectKind, position: [number, number, number], nextCounter: number): SceneObject => {
-    const count = objects.filter((item) => item.kind === kind).length + 1;
-    const defaults = objectDefaultsByKind[kind];
-    return {
-      id: `${kind}-${nextCounter}`,
-      kind,
-      label: `${kindLabel[kind]} ${String(count).padStart(2, "0")}`,
-      position,
-      radius: defaults.coverageRadiusM,
-      coverageRadiusM: defaults.coverageRadiusM,
-      elevation: defaults.elevation,
-      zones: defaults.zones,
-      assignment: "Сетка Альфа",
-      defenseRole: defaults.defenseRole,
-      costMln: defaults.costMln,
-      effectiveness: defaults.effectiveness,
-    };
+    const moved = objects.find((item) => item.id === id);
+    if (!moved || !isLocalPlacementId(moved.id)) return;
+    onLocalPlacementMove({ placementId: moved.id, x, z });
   };
 
   const addObjectAtPosition = (kind: ObjectKind, position: [number, number, number]) => {
-    const nextCounter = idCounter + 1;
-    const next = buildObject(kind, position, nextCounter);
-    setObjects((prev) => [...prev, next]);
-    setIdCounter(nextCounter);
-    setSelectedId(next.id);
+    const nextObject: SceneObject = {
+      id: `local-${scenario}-${kind}-${Date.now()}-${localPlacementSeqRef.current++}`,
+      kind,
+      label: `${kindLabel[kind]} (локально)`,
+      position,
+      radius: 120,
+      coverageRadiusM: 120,
+      elevation: 10,
+      zones: 1,
+      assignment: "Локально добавлено",
+      defenseRole: "mesh",
+      costMln: 16,
+      effectiveness: 0.72,
+    };
+    setSelectedId(nextObject.id);
     setIsPropertiesOpen(true);
+    const placement = localPlacementFromSceneObject(nextObject, configuration.facilityId, scenario);
+    if (placement) {
+      onLocalPlacementUpsert(placement);
+    }
     messageApi.success(`${kindLabel[kind]} добавлен на карту`);
   };
 
   const startPlacing = (kind: ObjectKind) => {
-    stopAutoDemo();
     setDemoMode(false);
     setPlacingKind(kind);
     setSelectedId(null);
@@ -163,88 +145,38 @@ export function FacilityDrilldown() {
     if (!selectedId) return;
     const objectToDelete = objects.find((item) => item.id === selectedId);
     if (!objectToDelete) return;
-    setObjects((prev) => prev.filter((item) => item.id !== selectedId));
+    if (!isLocalPlacementId(objectToDelete.id)) {
+      messageApi.info("Базовые элементы удалять нельзя. Доступно удаление только локально добавленных.");
+      return;
+    }
     setPlantConnections((prev) =>
       prev.filter((item) => item.fromObjectId !== selectedId && item.toObjectId !== selectedId),
     );
+    onLocalPlacementRemove(objectToDelete.id);
     setSelectedId(null);
     const removedLabel = objectToDelete.label;
     messageApi.info(`${removedLabel} удален`);
-  }, [messageApi, objects, selectedId]);
+  }, [messageApi, objects, onLocalPlacementRemove, selectedId]);
 
   const duplicateSelected = () => {
     if (!selectedObject) return;
-    const nextCounter = idCounter + 1;
     const copy: SceneObject = {
       ...selectedObject,
-      id: `${selectedObject.kind}-${nextCounter}`,
+      id: `local-${scenario}-${selectedObject.kind}-${Date.now()}-${localPlacementSeqRef.current++}`,
       label: `${selectedObject.label} (копия)`,
       position: [selectedObject.position[0] + 14, 0, selectedObject.position[2] + 12],
+      assignment: "Локально добавлено",
     };
-    setObjects((prev) => [...prev, copy]);
-    setIdCounter(nextCounter);
     setSelectedId(copy.id);
     setIsPropertiesOpen(true);
-  };
-
-  const scheduleAutoStep = useCallback((delayMs: number, step: () => void) => {
-    const timer = window.setTimeout(step, delayMs);
-    autoDemoTimers.current.push(timer);
-  }, []);
-
-  const startAutoDemo = useCallback(() => {
-    clearAutoDemoTimers();
-    setAutoDemoRunning(true);
-    setSelectedId(null);
-    setPlacingKind(null);
-    applyScenario("baseline");
-    setDemoMode(false);
-    requestCameraPreset("overview");
-    messageApi.info("Автодемо: базовая защита и обзор площадки");
-
-    scheduleAutoStep(5000, () => {
-      applyScenario("unprotected");
-      requestCameraPreset("overview");
-      setDemoMode(true);
-      messageApi.warning("Этап 1: атака без защитного контура");
-    });
-
-    scheduleAutoStep(22000, () => {
-      applyScenario("baseline");
-      requestCameraPreset("tanks");
-      setDemoMode(true);
-      messageApi.info("Этап 2: базовая защита отражает 4 из 6 угроз");
-    });
-
-    scheduleAutoStep(43000, () => {
-      applyScenario("perimeter");
-      requestCameraPreset("perimeter");
-      setDemoMode(true);
-      messageApi.success("Этап 3: усиленный периметр нейтрализует все маршруты");
-    });
-
-    scheduleAutoStep(65000, () => {
-      requestCameraPreset("operator");
-      messageApi.success("Финал: остаточный риск снижен до 12%");
-    });
-
-    scheduleAutoStep(75000, () => {
-      setAutoDemoRunning(false);
-    });
-  }, [applyScenario, clearAutoDemoTimers, messageApi, requestCameraPreset, scheduleAutoStep]);
-
-  const toggleAutoDemo = () => {
-    if (autoDemoRunning) {
-      stopAutoDemo();
-      messageApi.info("Автодемо остановлено");
-      return;
+    const placement = localPlacementFromSceneObject(copy, configuration.facilityId, scenario);
+    if (placement) {
+      onLocalPlacementUpsert(placement);
     }
-    startAutoDemo();
   };
 
   const onViewModeChange = (mode: ViewMode) => {
     if (mode === viewMode) return;
-    stopAutoDemo();
     setDemoMode(false);
     setPlacingKind(null);
     setViewMode(mode);
@@ -256,12 +188,10 @@ export function FacilityDrilldown() {
     messageApi.info("3D-карта: возвращен детальный режим площадки");
   };
 
-  const openCatalog = () => {
-    if (activeTab === "catalog") return;
-    stopAutoDemo();
+  const applyScenarioManually = (id: DefenseScenarioId) => {
     setDemoMode(false);
     setPlacingKind(null);
-    setActiveTab("catalog");
+    onScenarioChange(id);
   };
 
   useEffect(() => {
@@ -283,15 +213,12 @@ export function FacilityDrilldown() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        stopAutoDemo();
         setPlacingKind(null);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [stopAutoDemo]);
-
-  useEffect(() => () => clearAutoDemoTimers(), [clearAutoDemoTimers]);
+  }, []);
 
   return (
     <main className={`${styles.page} ${styles.pageDark}`.trim()}>
@@ -300,110 +227,100 @@ export function FacilityDrilldown() {
       <Topbar
         scenario={scenario}
         onScenarioChange={applyScenarioManually}
-        activeView={activeTab}
-        onCatalogOpen={openCatalog}
       />
+      <section className={`${styles.workspace} ${!isPropertiesOpen ? styles.workspaceNoProperties : ""}`.trim()}>
+        <AssetsPanel
+          onSelectAsset={startPlacing}
+          placingKind={placingKind}
+          onCancelPlacement={() => setPlacingKind(null)}
+        />
 
-      {activeTab === "map" ? (
-        <>
-          <section className={`${styles.workspace} ${!isPropertiesOpen ? styles.workspaceNoProperties : ""}`.trim()}>
-            <AssetsPanel
-              onSelectAsset={startPlacing}
-              placingKind={placingKind}
-              onCancelPlacement={() => setPlacingKind(null)}
-            />
-
-            <section className={styles.sceneShell} aria-label="Карта промышленной площадки">
-              <PrototypeScene
-                objects={objects}
-                plantObjects={plantObjects}
-                plantConnections={plantConnections}
-                selectedId={selectedId}
-                setSelectedId={setSelectedId}
-                updateObjectPosition={updateObjectPosition}
-                demoMode={demoMode}
-                scenario={scenario}
-                theme={theme}
-                viewMode={viewMode}
-                placingKind={placingKind}
-                placementPoint={placementPoint}
-                cameraPresetRequest={cameraPresetRequest}
-                onPlacementMove={(x, z) => setPlacementPoint([x, 0, z])}
-                onPlacePending={placePendingObject}
-                onCancelPlacement={() => setPlacingKind(null)}
-              />
-              <div className={styles.sceneVignette} />
-              <div className={styles.sceneModeTabs} aria-label="Режим карты">
-                {(Object.keys(viewModeLabels) as ViewMode[]).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className={viewMode === mode ? styles.sceneModeTabActive : styles.sceneModeTab}
-                    onClick={() => onViewModeChange(mode)}
-                  >
-                    {viewModeLabels[mode]}
-                  </button>
-                ))}
-              </div>
-              {viewMode === "scene3d" ? (
-                <div className={styles.cameraPresetBar} aria-label="Ракурсы камеры">
-                  {(Object.keys(cameraPresetLabels) as CameraPresetId[]).map((id) => (
-                    <button key={id} type="button" onClick={() => requestCameraPreset(id)}>
-                      <EyeOutlined />
-                      {cameraPresetLabels[id]}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              {demoMode ? (
-                <div className={styles.simulationStatusPanel} aria-label="Статусы угроз">
-                  <span>Статусы угроз</span>
-                  {threatStatusSequence.map((status) => (
-                    <strong key={status}>
-                      <i style={{ backgroundColor: threatStatusColor[status] }} />
-                      {threatStatusLabel[status]}
-                    </strong>
-                  ))}
-                </div>
-              ) : null}
-              <div className={styles.controlLegend}>
-                <span><CompassOutlined /> {viewMode === "hex" ? "Обзор ЛКМ" : "Орбита ЛКМ"}</span>
-                <span><DragOutlined /> {viewMode === "hex" ? "Смещение ПКМ" : "Панорама ПКМ"}</span>
-                <span><SearchOutlined /> {viewMode === "hex" ? "Масштаб колёсом" : "Масштаб колесом"}</span>
-                <span><ControlOutlined /> {viewMode === "hex" ? "Привязка к гексам" : "Перемещение объектов"}</span>
-              </div>
-            </section>
-
-            {isPropertiesOpen ? (
-              <PropertiesPanel
-                selectedObject={selectedObject}
-                selectedPlantObject={selectedPlantObject}
-                scenario={scenario}
-                onDuplicate={duplicateSelected}
-                onDelete={deleteSelected}
-                onClose={() => setIsPropertiesOpen(false)}
-              />
-            ) : null}
-          </section>
-
-          <StatusBar
-            stats={stats}
-            scenario={scenario}
+        <section className={styles.sceneShell} aria-label="Карта промышленной площадки">
+          <PrototypeScene
+            objects={objects}
+            plantObjects={plantObjects}
+            plantConnections={plantConnections}
+            selectedId={selectedId}
+            setSelectedId={setSelectedId}
+            updateObjectPosition={updateObjectPosition}
             demoMode={demoMode}
-            autoDemoRunning={autoDemoRunning}
-            onScenarioReset={() => applyScenarioManually(scenario)}
-            onToggleDemo={() => {
-              stopAutoDemo();
-              setDemoMode((prev) => !prev);
-            }}
-            onToggleAutoDemo={toggleAutoDemo}
+            scenario={scenario}
+            theme={theme}
+            viewMode={viewMode}
+            placingKind={placingKind}
+            placementPoint={placementPoint}
+            cameraPresetRequest={cameraPresetRequest}
+            onPlacementMove={(x, z) => setPlacementPoint([x, 0, z])}
+            onPlacePending={placePendingObject}
+            onCancelPlacement={() => setPlacingKind(null)}
           />
-        </>
-      ) : (
-        <section className={styles.catalogShell}>
-          <DefenseCatalogTab />
+          <div className={styles.sceneVignette} />
+          <div className={styles.sceneModeTabs} aria-label="Режим карты">
+            {(Object.keys(viewModeLabels) as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={viewMode === mode ? styles.sceneModeTabActive : styles.sceneModeTab}
+                onClick={() => onViewModeChange(mode)}
+              >
+                {viewModeLabels[mode]}
+              </button>
+            ))}
+          </div>
+          {viewMode === "scene3d" ? (
+            <div className={styles.cameraPresetBar} aria-label="Ракурсы камеры">
+              {(Object.keys(cameraPresetLabels) as CameraPresetId[]).map((id) => (
+                <button key={id} type="button" onClick={() => requestCameraPreset(id)}>
+                  <EyeOutlined />
+                  {cameraPresetLabels[id]}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {demoMode ? (
+            <div className={styles.simulationStatusPanel} aria-label="Статусы угроз">
+              <span>Статусы угроз</span>
+              {threatStatusSequence.map((status) => (
+                <strong key={status}>
+                  <i style={{ backgroundColor: threatStatusColor[status] }} />
+                  {threatStatusLabel[status]}
+                </strong>
+              ))}
+            </div>
+          ) : null}
+          <div className={styles.configurationBadge} aria-label="Конфигурация">
+            <span>{facilityName}</span>
+            <strong>{configuration.placements.length} placements</strong>
+          </div>
+          <div className={styles.controlLegend}>
+            <span><CompassOutlined /> {viewMode === "hex" ? "Обзор ЛКМ" : "Орбита ЛКМ"}</span>
+            <span><DragOutlined /> {viewMode === "hex" ? "Смещение ПКМ" : "Панорама ПКМ"}</span>
+            <span><SearchOutlined /> {viewMode === "hex" ? "Масштаб колёсом" : "Масштаб колесом"}</span>
+            <span><ControlOutlined /> {viewMode === "hex" ? "Привязка к гексам" : "Перемещение объектов"}</span>
+          </div>
         </section>
-      )}
+
+        {isPropertiesOpen ? (
+          <PropertiesPanel
+            selectedObject={selectedObject}
+            selectedPlantObject={selectedPlantObject}
+            scenario={scenario}
+            onDuplicate={duplicateSelected}
+            onDelete={deleteSelected}
+            onClose={() => setIsPropertiesOpen(false)}
+          />
+        ) : null}
+      </section>
+
+      <StatusBar
+        stats={stats}
+        scenario={scenario}
+        demoMode={demoMode}
+        onScenarioReset={() => applyScenarioManually(scenario)}
+        onToggleDemo={() => {
+          setDemoMode((prev) => !prev);
+        }}
+      />
     </main>
   );
 }

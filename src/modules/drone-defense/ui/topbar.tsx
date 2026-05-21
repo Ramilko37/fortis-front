@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  AppstoreOutlined,
   ArrowLeftOutlined,
   CompassOutlined,
   SafetyCertificateOutlined,
@@ -10,20 +9,14 @@ import {
 import { scenarioLabels, type ScenarioId } from "../domain/prototype-types";
 import styles from "./drone-defense-prototype.module.css";
 
-type PrototypeView = "map" | "catalog";
-
 export function Topbar({
   scenario,
   onScenarioChange,
-  activeView,
-  onCatalogOpen,
 }: {
   scenario: ScenarioId;
   onScenarioChange: (id: ScenarioId) => void;
-  activeView: PrototypeView;
-  onCatalogOpen: () => void;
 }) {
-  const visibleScenarios: ScenarioId[] = ["unprotected", "baseline", "perimeter"];
+  const visibleScenarios: ScenarioId[] = ["baseline", "balanced", "reinforced"];
 
   return (
     <header className={styles.topbar}>
@@ -36,7 +29,7 @@ export function Topbar({
         </div>
         <div>
           <strong>FORTIS</strong>
-          <span>Сценарное 3D-демо защиты объекта</span>
+          <span>3D drill-down выбранной конфигурации</span>
         </div>
       </div>
 
@@ -44,7 +37,7 @@ export function Topbar({
         {visibleScenarios.map((id) => (
           <button
             key={id}
-            className={activeView === "map" && id === scenario ? styles.activeTab : styles.tab}
+            className={id === scenario ? styles.activeTab : styles.tab}
             type="button"
             onClick={() => onScenarioChange(id)}
           >
@@ -52,14 +45,6 @@ export function Topbar({
             <span>{scenarioLabels[id]}</span>
           </button>
         ))}
-        <button
-          className={activeView === "catalog" ? styles.activeTab : styles.tab}
-          type="button"
-          onClick={onCatalogOpen}
-        >
-          <AppstoreOutlined />
-          <span>Каталог защиты</span>
-        </button>
       </nav>
     </header>
   );

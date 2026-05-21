@@ -4,16 +4,19 @@ import type {
   DefenseCatalogResponse,
   DefenseLayer,
   DefenseLayerId,
+  Facility,
   HexCell,
   KpiResult,
   Recommendation,
 } from "@/shared/types/drone-defense";
+import { getLayerDistanceFit, measureGeoDistanceM } from "@/modules/drone-defense/infra/mock-defense-data";
 
 type EvalContext = {
   catalog: DefenseCatalogResponse;
   assetsById: Map<string, DefenseAsset>;
   cells: HexCell[];
   layers: DefenseLayer[];
+  facilities: Facility[];
 };
 
 const SUITABILITY_WEIGHTS = {
@@ -41,11 +44,29 @@ function computePlacementEffect(
   readiness: number,
   environmentModifier: number,
   matrixWeight: number,
+  distanceFit: number,
+  selectedLayerId: DefenseLayerId | undefined,
+  placementBoost: number,
 ): number {
-  if (!asset.layerIds.includes(layerId)) return 0;
+  if (selectedLayerId && selectedLayerId !== layerId) return 0;
+  if (!selectedLayerId && !asset.layerIds.includes(layerId)) return 0;
   const suitability = computeSuitability(asset);
   const threatMatch = asset.threatCoefficients[threatType];
-  return Math.max(0, Math.min(0.98, suitability * threatMatch * readiness * environmentModifier * matrixWeight));
+  return Math.max(0, Math.min(0.98, suitability * threatMatch * readiness * environmentModifier * matrixWeight * distanceFit * placementBoost));
+}
+
+function describeRecommendation(asset: DefenseAsset, layers: DefenseLayer[]): string {
+  const layerList = asset.layerIds.map((layerId) => {
+    const layer = layers.find((item) => item.id === layerId);
+    return layer ? `${layer.shortName} (${layer.distanceBandM.label})` : layerId;
+  });
+  const joined = layerList.join(", ");
+
+  if (asset.scope === "regional") {
+    return `Закрывает территориальный gap по ${joined} для угроз в GIS-коридорах`;
+  }
+
+  return `Усиливает локальный gap по ${joined} возле критических узлов площадки`;
 }
 
 export function evaluateConfiguration(
@@ -54,6 +75,7 @@ export function evaluateConfiguration(
 ): KpiResult {
   const cells = context.cells.filter((cell) => cell.facilityId === configuration.facilityId);
   const { layers, catalog } = context;
+  const facility = context.facilities.find((item) => item.id === configuration.facilityId);
   const layerCoverageAccumulator = new Map<DefenseLayerId, number>();
 
   let baselineRisk = 0;
@@ -74,8 +96,10 @@ export function evaluateConfiguration(
       baselineRisk += base;
 
       let residualFactor = 1;
+      const cellDistanceM = facility ? measureGeoDistanceM(facility.center, cell.center) : 0;
 
       for (const layer of layers) {
+        const distanceFit = getLayerDistanceFit(layer, cellDistanceM);
         const effects = configuration.placements.map((placement) => {
           const asset = context.assetsById.get(placement.assetId);
           if (!asset) return 0;
@@ -87,6 +111,9 @@ export function evaluateConfiguration(
             placement.readiness,
             placement.environmentModifier,
             matrixWeight,
+            distanceFit,
+            placement.layerId,
+            placement.layerGapBoost * placement.criticalityBoost * placement.feasibility,
           );
         });
 
@@ -105,11 +132,18 @@ export function evaluateConfiguration(
   const costPerRiskPointRub = riskReduction > 0 ? tco3yRub / riskReduction : tco3yRub;
   const valuePerRuble = tco3yRub > 0 ? riskReduction / tco3yRub : 0;
 
+  const layerCoverage = layers.map((layer) => {
+    const effectSum = layerCoverageAccumulator.get(layer.id) ?? 0;
+    const denominator = Math.max(1, cells.length * catalog.threatTypes.length);
+    return {
+      layerId: layer.id,
+      coveredPct: Math.max(0, Math.min(1, effectSum / denominator)),
+      distanceBandM: layer.distanceBandM,
+    };
+  });
+
   const layerCoverageAvg =
-    layers.length > 0
-      ? Array.from(layerCoverageAccumulator.values()).reduce((acc, value) => acc + value, 0) /
-        (layers.length * Math.max(cells.length, 1) * catalog.threatTypes.length)
-      : 0;
+    layerCoverage.reduce((acc, item) => acc + item.coveredPct, 0) / Math.max(1, layerCoverage.length);
 
   const protectedAssetsPct = Math.min(1, 0.25 + riskReductionPct * 0.85);
   const perimeterCoveredPct = Math.min(1, layerCoverageAvg);
@@ -125,6 +159,8 @@ export function evaluateConfiguration(
     riskReductionPct,
     protectedAssetsPct,
     perimeterCoveredPct,
+    layerReadinessPct: Math.min(1, layerCoverageAvg),
+    layerCoverage,
     costPerRiskPointRub,
     valuePerRuble,
   };
@@ -141,39 +177,45 @@ export function recommendNextMoves(
   const candidates = context.catalog.assets
     .filter((asset) => !configuration.placements.some((placement) => placement.assetId === asset.id))
     .map((asset) => {
+      const candidatePlacement = {
+        id: `${configuration.facilityId}-${configuration.scenarioId}-${asset.id}-candidate`,
+        assetId: asset.id,
+        facilityId: configuration.facilityId,
+        scenarioId: configuration.scenarioId,
+        qty: 1,
+        readiness: 0.72,
+        layerGapBoost: 1.08,
+        criticalityBoost: 1.05,
+        feasibility: 0.8,
+        environmentModifier: 0.92,
+      } as const;
       const nextConfig: Configuration = {
         ...configuration,
-        placements: [
-          ...configuration.placements,
-          {
-            id: `${configuration.facilityId}-${configuration.scenarioId}-${asset.id}-candidate`,
-            assetId: asset.id,
-            facilityId: configuration.facilityId,
-            scenarioId: configuration.scenarioId,
-            qty: 1,
-            readiness: 0.72,
-            layerGapBoost: 1.08,
-            criticalityBoost: 1.05,
-            feasibility: 0.8,
-            environmentModifier: 0.92,
-          },
-        ],
+        placements: [...configuration.placements, candidatePlacement],
       };
 
       const next = evaluateConfiguration(nextConfig, context);
-      const deltaRiskReduction = Math.max(0, current.residualRisk - next.residualRisk);
-      const deltaTcoRub = Math.max(1, next.tco3yRub - current.tco3yRub);
-      const score = (deltaRiskReduction / deltaTcoRub) * 1.08 * 1.05 * 0.8;
+      const deltaRisk = Math.max(0, current.residualRisk - next.residualRisk);
+      const deltaTco = Math.max(1, next.tco3yRub - current.tco3yRub);
+      const score =
+        (deltaRisk / deltaTco) *
+        candidatePlacement.layerGapBoost *
+        candidatePlacement.criticalityBoost *
+        candidatePlacement.feasibility;
+      const deltaResidualRiskPct = current.baselineRisk > 0 ? deltaRisk / current.baselineRisk : 0;
 
       return {
         candidateAssetId: asset.id,
         candidateAssetName: asset.name,
-        deltaRiskReduction,
-        deltaTcoRub,
+        affectedLayerIds: asset.layerIds,
+        reason: describeRecommendation(asset, context.layers),
+        deltaRisk,
+        deltaResidualRiskPct,
+        deltaTco,
         score,
       } satisfies Recommendation;
     })
-    .filter((recommendation) => recommendation.deltaTcoRub <= budgetRub)
+    .filter((recommendation) => recommendation.deltaTco <= budgetRub)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 

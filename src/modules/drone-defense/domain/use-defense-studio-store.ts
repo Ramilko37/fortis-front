@@ -18,11 +18,13 @@ import {
   getLayers as localGetLayers,
 } from "@/modules/drone-defense/infra/mock-defense-repository";
 import type {
+  Configuration,
   DefenseCatalogResponse,
   DefenseLayersResponse,
   DefenseScenarioId,
   Facility,
   KpiResult,
+  Placement,
   Recommendation,
 } from "@/shared/types/drone-defense";
 
@@ -32,30 +34,38 @@ type StudioState = {
   view: StudioView;
   facilityId: string;
   scenarioId: DefenseScenarioId;
+  configuration: Configuration;
   budgetRub: number;
   loading: boolean;
   error: string | null;
   catalog: DefenseCatalogResponse | null;
   facilities: Facility[];
   layers: DefenseLayersResponse | null;
+  layersByScenario: Partial<Record<DefenseScenarioId, DefenseLayersResponse>>;
   kpiByScenario: Partial<Record<DefenseScenarioId, KpiResult>>;
+  localPlacementsByScenario: Partial<Record<DefenseScenarioId, Placement[]>>;
   recommendations: Recommendation[];
   init: () => Promise<void>;
   setView: (view: StudioView) => void;
+  setContext: (args: { facilityId: string; scenarioId: DefenseScenarioId; budgetRub: number }) => Promise<void>;
   setFacilityId: (facilityId: string) => Promise<void>;
   setScenarioId: (scenarioId: DefenseScenarioId) => Promise<void>;
   setBudgetRub: (budgetRub: number) => Promise<void>;
-  refreshScenarioData: () => Promise<void>;
+  upsertLocalPlacement: (placement: Placement) => Promise<void>;
+  moveLocalPlacement: (args: { placementId: string; x: number; z: number }) => Promise<void>;
+  removeLocalPlacement: (placementId: string) => Promise<void>;
+  recompute: () => Promise<void>;
 };
 
 const allScenarios: DefenseScenarioId[] = ["baseline", "balanced", "reinforced"];
-const useLocalRuntime = process.env.NEXT_PUBLIC_DEFENSE_RUNTIME === "local";
+const useLocalRuntime = process.env.NEXT_PUBLIC_DEFENSE_RUNTIME !== "api";
 
 const runtime = {
   fetchCatalog: useLocalRuntime ? localGetCatalog : fetchCatalog,
   fetchFacilities: useLocalRuntime ? localGetFacilities : fetchFacilities,
   fetchLayers: useLocalRuntime
-    ? (args: { facilityId: string; scenarioId: DefenseScenarioId }) => localGetLayers(args.facilityId, args.scenarioId)
+    ? (args: { facilityId: string; scenarioId: DefenseScenarioId; configuration?: Configuration }) =>
+        localGetLayers(args.facilityId, args.scenarioId, args.configuration)
     : fetchLayers,
   evaluate: useLocalRuntime
     ? (configuration: ReturnType<typeof buildScenarioConfiguration>) =>
@@ -68,34 +78,58 @@ const runtime = {
     : recommendConfigurationRequest,
 };
 
-async function loadScenarioPack(facilityId: string, scenarioId: DefenseScenarioId, budgetRub: number) {
-  const layers = await runtime.fetchLayers({ facilityId, scenarioId });
+function buildConfiguration(
+  facilityId: string,
+  scenarioId: DefenseScenarioId,
+  localPlacementsByScenario: Partial<Record<DefenseScenarioId, Placement[]>>,
+) {
+  return buildScenarioConfiguration(facilityId, scenarioId, localPlacementsByScenario[scenarioId] ?? []);
+}
+
+async function loadScenarioPack(
+  facilityId: string,
+  scenarioId: DefenseScenarioId,
+  budgetRub: number,
+  localPlacementsByScenario: Partial<Record<DefenseScenarioId, Placement[]>>,
+) {
+  const layerEntries = await Promise.all(
+    allScenarios.map(async (item) => {
+      const configuration = buildConfiguration(facilityId, item, localPlacementsByScenario);
+      const layers = await runtime.fetchLayers({ facilityId, scenarioId: item, configuration });
+      return [item, layers] as const;
+    }),
+  );
 
   const kpiEntries = await Promise.all(
     allScenarios.map(async (item) => {
-      const configuration = buildScenarioConfiguration(facilityId, item);
+      const configuration = buildConfiguration(facilityId, item, localPlacementsByScenario);
       const kpi = await runtime.evaluate(configuration);
       return [item, kpi] as const;
     }),
   );
 
+  const layersByScenario = Object.fromEntries(layerEntries) as Partial<Record<DefenseScenarioId, DefenseLayersResponse>>;
+  const configuration = buildConfiguration(facilityId, scenarioId, localPlacementsByScenario);
   const kpiByScenario = Object.fromEntries(kpiEntries) as Partial<Record<DefenseScenarioId, KpiResult>>;
-  const recommendations = await runtime.recommend(buildScenarioConfiguration(facilityId, scenarioId), budgetRub);
+  const recommendations = await runtime.recommend(configuration, budgetRub);
 
-  return { layers, kpiByScenario, recommendations };
+  return { configuration, layers: layersByScenario[scenarioId] ?? null, layersByScenario, kpiByScenario, recommendations };
 }
 
 export const useDefenseStudioStore = create<StudioState>((set, get) => ({
   view: "gis",
   facilityId: "facility-alpha",
   scenarioId: "baseline",
+  configuration: buildScenarioConfiguration("facility-alpha", "baseline"),
   budgetRub: 55_000_000,
   loading: false,
   error: null,
   catalog: null,
   facilities: [],
   layers: null,
+  layersByScenario: {},
   kpiByScenario: {},
+  localPlacementsByScenario: {},
   recommendations: [],
   init: async () => {
     set({ loading: true, error: null });
@@ -104,12 +138,15 @@ export const useDefenseStudioStore = create<StudioState>((set, get) => ({
       const facilityId = facilities[0]?.id ?? "facility-alpha";
       const scenarioId = get().scenarioId;
       const budgetRub = get().budgetRub;
-      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub);
+      const localPlacementsByScenario = get().localPlacementsByScenario;
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
       set({
         catalog,
         facilities,
         facilityId,
+        configuration: pack.configuration,
         layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
         kpiByScenario: pack.kpiByScenario,
         recommendations: pack.recommendations,
         loading: false,
@@ -119,13 +156,38 @@ export const useDefenseStudioStore = create<StudioState>((set, get) => ({
     }
   },
   setView: (view) => set({ view }),
+  setContext: async ({ facilityId, scenarioId, budgetRub }) => {
+    set({ loading: true, facilityId, scenarioId, budgetRub, error: null });
+    try {
+      const localPlacementsByScenario = get().localPlacementsByScenario;
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "failed to set context", loading: false });
+    }
+  },
   setFacilityId: async (facilityId) => {
-    set({ loading: true, facilityId, error: null });
+    const localPlacementsByScenario: Partial<Record<DefenseScenarioId, Placement[]>> = {};
+    set({ loading: true, facilityId, localPlacementsByScenario, error: null });
     try {
       const scenarioId = get().scenarioId;
       const budgetRub = get().budgetRub;
-      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub);
-      set({ layers: pack.layers, kpiByScenario: pack.kpiByScenario, recommendations: pack.recommendations, loading: false });
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "failed to switch facility", loading: false });
     }
@@ -134,8 +196,16 @@ export const useDefenseStudioStore = create<StudioState>((set, get) => ({
     set({ loading: true, scenarioId, error: null });
     try {
       const { facilityId, budgetRub } = get();
-      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub);
-      set({ layers: pack.layers, kpiByScenario: pack.kpiByScenario, recommendations: pack.recommendations, loading: false });
+      const localPlacementsByScenario = get().localPlacementsByScenario;
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "failed to switch scenario", loading: false });
     }
@@ -144,18 +214,111 @@ export const useDefenseStudioStore = create<StudioState>((set, get) => ({
     set({ loading: true, budgetRub, error: null });
     try {
       const { facilityId, scenarioId } = get();
-      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub);
-      set({ layers: pack.layers, recommendations: pack.recommendations, loading: false });
+      const localPlacementsByScenario = get().localPlacementsByScenario;
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "failed to update budget", loading: false });
     }
   },
-  refreshScenarioData: async () => {
+  upsertLocalPlacement: async (placement) => {
+    const { facilityId, scenarioId, budgetRub } = get();
+    const current = get().localPlacementsByScenario[scenarioId] ?? [];
+    const localPlacementsByScenario = {
+      ...get().localPlacementsByScenario,
+      [scenarioId]: [...current.filter((item) => item.id !== placement.id), placement],
+    };
+    set({ loading: true, localPlacementsByScenario, error: null });
+    try {
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "failed to update local placement", loading: false });
+    }
+  },
+  moveLocalPlacement: async ({ placementId, x, z }) => {
+    const { facilityId, scenarioId, budgetRub } = get();
+    const current = get().localPlacementsByScenario[scenarioId] ?? [];
+    const nextPlacements = current.map((item) =>
+      item.id === placementId
+        ? {
+            ...item,
+            sceneRef: {
+              x,
+              z,
+            },
+          }
+        : item,
+    );
+    const localPlacementsByScenario = {
+      ...get().localPlacementsByScenario,
+      [scenarioId]: nextPlacements,
+    };
+    set({ loading: true, localPlacementsByScenario, error: null });
+    try {
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "failed to move local placement", loading: false });
+    }
+  },
+  removeLocalPlacement: async (placementId) => {
+    const { facilityId, scenarioId, budgetRub } = get();
+    const current = get().localPlacementsByScenario[scenarioId] ?? [];
+    const localPlacementsByScenario = {
+      ...get().localPlacementsByScenario,
+      [scenarioId]: current.filter((item) => item.id !== placementId),
+    };
+    set({ loading: true, localPlacementsByScenario, error: null });
+    try {
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : "failed to update budget", loading: false });
+    }
+  },
+  recompute: async () => {
     set({ loading: true, error: null });
     try {
       const { facilityId, scenarioId, budgetRub } = get();
-      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub);
-      set({ layers: pack.layers, kpiByScenario: pack.kpiByScenario, recommendations: pack.recommendations, loading: false });
+      const localPlacementsByScenario = get().localPlacementsByScenario;
+      const pack = await loadScenarioPack(facilityId, scenarioId, budgetRub, localPlacementsByScenario);
+      set({
+        configuration: pack.configuration,
+        layers: pack.layers,
+        layersByScenario: pack.layersByScenario,
+        kpiByScenario: pack.kpiByScenario,
+        recommendations: pack.recommendations,
+        loading: false,
+      });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "failed to refresh", loading: false });
     }

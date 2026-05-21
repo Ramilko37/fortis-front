@@ -1,9 +1,11 @@
 "use client";
 
-import type { DefenseScenarioId, KpiResult, Recommendation } from "@/shared/types/drone-defense";
+import { defenseLayers, scenarioOptions } from "@/modules/drone-defense/infra/mock-defense-data";
+import type { DefenseLayersResponse, DefenseScenarioId, KpiResult, Recommendation } from "@/shared/types/drone-defense";
 
 type ComparisonViewProps = {
   kpiByScenario: Partial<Record<DefenseScenarioId, KpiResult>>;
+  layersByScenario: Partial<Record<DefenseScenarioId, DefenseLayersResponse>>;
   recommendations: Recommendation[];
   budgetRub: number;
 };
@@ -20,13 +22,28 @@ function formatPct(value: number) {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-const scenarios: Array<{ id: DefenseScenarioId; label: string }> = [
-  { id: "baseline", label: "Baseline" },
-  { id: "balanced", label: "Balanced" },
-  { id: "reinforced", label: "Reinforced" },
-];
+function formatDelta(value: number, digits = 3) {
+  const prefix = value > 0 ? "+" : "";
+  return `${prefix}${value.toFixed(digits)}`;
+}
 
-export function ComparisonView({ kpiByScenario, recommendations, budgetRub }: ComparisonViewProps) {
+function formatCostPerRiskPoint(value: number) {
+  return `${formatMoney(value)} / risk`;
+}
+
+function layerSummary(layers?: DefenseLayersResponse) {
+  if (!layers) return "—";
+  const covered = layers.layerCoverage.filter((item) => item.coveredPct >= 0.55).length;
+  const partial = layers.layerCoverage.filter((item) => item.coveredPct > 0.18 && item.coveredPct < 0.55).length;
+  const weak = layers.layerCoverage.filter((item) => item.coveredPct > 0 && item.coveredPct <= 0.18).length;
+  const strongest = layers.layerCoverage.toSorted((a, b) => b.coveredPct - a.coveredPct)[0];
+  const strongestLayer = strongest ? defenseLayers.find((layer) => layer.id === strongest.layerId) : null;
+  const strongestBand = strongest?.distanceBandM.label ?? strongestLayer?.distanceBandM.label ?? "—";
+  const strongestLabel = strongestLayer ? `${strongestLayer.shortName} ${strongestBand}` : "—";
+  return `${covered} covered / ${partial} partial / ${weak} weak · best ${strongestLabel}`;
+}
+
+export function ComparisonView({ kpiByScenario, layersByScenario, recommendations, budgetRub }: ComparisonViewProps) {
   const baseline = kpiByScenario.baseline;
 
   return (
@@ -42,22 +59,36 @@ export function ComparisonView({ kpiByScenario, recommendations, budgetRub }: Co
                 <th className="px-3 py-2">CAPEX</th>
                 <th className="px-3 py-2">TCO (3y)</th>
                 <th className="px-3 py-2">Residual Risk</th>
+                <th className="px-3 py-2">Risk Reduction</th>
                 <th className="px-3 py-2">Value/Ruble</th>
+                <th className="px-3 py-2">Cost/Risk Point</th>
+                <th className="px-3 py-2">Layer Readiness</th>
               </tr>
             </thead>
             <tbody>
-              {scenarios.map(({ id, label }) => {
+              {scenarioOptions.map(({ id, label, summary }) => {
                 const kpi = kpiByScenario[id];
-                const delta = baseline && kpi ? baseline.residualRisk - kpi.residualRisk : 0;
+                const residualDelta = baseline && kpi ? kpi.residualRisk - baseline.residualRisk : 0;
+                const reductionAbsolute = baseline && kpi ? Math.max(0, baseline.residualRisk - kpi.residualRisk) : 0;
                 return (
                   <tr key={id} className="border-t border-slate-100">
-                    <td className="px-3 py-2 font-medium text-slate-900">{label}</td>
+                    <td className="px-3 py-2 font-medium text-slate-900">
+                      <span className="block">{label}</span>
+                      <span className="block text-xs font-normal text-slate-500">{summary}</span>
+                    </td>
                     <td className="px-3 py-2 text-slate-700">{kpi ? formatMoney(kpi.capexRub) : "—"}</td>
                     <td className="px-3 py-2 text-slate-700">{kpi ? formatMoney(kpi.tco3yRub) : "—"}</td>
-                    <td className="px-3 py-2 text-slate-700">{kpi ? kpi.residualRisk.toFixed(3) : "—"}</td>
                     <td className="px-3 py-2 text-slate-700">
-                      {kpi ? `${kpi.valuePerRuble.toExponential(2)} (${delta.toFixed(3)} Δ)` : "—"}
+                      {kpi ? `${kpi.residualRisk.toFixed(3)} (${formatDelta(residualDelta)} Δ vs baseline)` : "—"}
                     </td>
+                    <td className="px-3 py-2 text-slate-700">
+                      {kpi ? `${reductionAbsolute.toFixed(3)} (${formatPct(kpi.riskReductionPct)})` : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-slate-700">
+                      {kpi ? kpi.valuePerRuble.toExponential(2) : "—"}
+                    </td>
+                    <td className="px-3 py-2 text-slate-700">{kpi ? formatCostPerRiskPoint(kpi.costPerRiskPointRub) : "—"}</td>
+                    <td className="px-3 py-2 text-slate-700">{layerSummary(layersByScenario[id])}</td>
                   </tr>
                 );
               })}
@@ -75,8 +106,15 @@ export function ComparisonView({ kpiByScenario, recommendations, budgetRub }: Co
               <article key={item.candidateAssetId} className="rounded border border-slate-200 bg-slate-50 p-2.5">
                 <p className="text-xs text-slate-500">#{index + 1}</p>
                 <p className="text-sm font-medium text-slate-900">{item.candidateAssetName}</p>
-                <p className="mt-1 text-xs text-slate-700">ΔRisk: {item.deltaRiskReduction.toFixed(4)}</p>
-                <p className="text-xs text-slate-700">ΔTCO: {formatMoney(item.deltaTcoRub)}</p>
+                <p className="mt-1 text-xs text-slate-700">{item.reason}</p>
+                <p className="mt-1 text-xs text-slate-700">
+                  Layers: {item.affectedLayerIds.map((layerId) => defenseLayers.find((layer) => layer.id === layerId)?.shortName ?? layerId).join(", ")}
+                </p>
+                <p className="mt-1 text-xs text-slate-700">
+                  Bands: {item.affectedLayerIds.map((layerId) => defenseLayers.find((layer) => layer.id === layerId)?.distanceBandM.label ?? "—").join(", ")}
+                </p>
+                <p className="mt-1 text-xs text-slate-700">ΔRisk: {item.deltaRisk.toFixed(4)} ({formatPct(item.deltaResidualRiskPct)})</p>
+                <p className="text-xs text-slate-700">ΔTCO: {formatMoney(item.deltaTco)}</p>
                 <p className="text-xs text-slate-700">Score: {item.score.toExponential(2)}</p>
               </article>
             ))}
