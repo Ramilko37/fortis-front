@@ -28,7 +28,7 @@
 .topbar {
   min-height: 4rem;
   display: grid;
-  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
   align-items: center;
   gap: 1rem;
   padding: 0.55rem 0.75rem;
@@ -93,7 +93,7 @@
 .scenarioTabs {
   min-width: 0;
   justify-self: center;
-  width: min(58rem, 100%);
+  width: min(72rem, 100%);
   height: 3.05rem;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -152,6 +152,7 @@
 .profileButton,
 .panelHeader button,
 .simulationButton,
+.autoDemoButton,
 .scenarioCrumb,
 .performanceButton,
 .assetItem {
@@ -192,6 +193,12 @@
   display: grid;
   grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr) minmax(16rem, 22rem);
   gap: 0.75rem;
+}
+
+.catalogShell {
+  min-height: 0;
+  display: block;
+  overflow: hidden;
 }
 
 .workspaceNoProperties {
@@ -407,6 +414,151 @@
   border-radius: 8px;
 }
 
+.cameraPresetBar {
+  pointer-events: auto;
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 13.6rem;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cameraPresetBar button {
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(101, 160, 236, 0.48);
+  border-radius: 999px;
+  color: #d9e9ff;
+  background: rgba(7, 17, 27, 0.72);
+  box-shadow: 0 0.65rem 1.6rem rgba(1, 6, 12, 0.22);
+  cursor: pointer;
+}
+
+.sceneModeTabs {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  display: inline-flex;
+  border: 1px solid rgba(101, 160, 236, 0.5);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(7, 17, 27, 0.8);
+  box-shadow: 0 0.65rem 1.6rem rgba(1, 6, 12, 0.22);
+}
+
+.sceneModeTab,
+.sceneModeTabActive {
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border: 0;
+  color: #9dc0e7;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sceneModeTabActive {
+  color: #ecf6ff;
+  background: linear-gradient(180deg, rgba(85, 182, 255, 0.4), rgba(85, 182, 255, 0.18));
+}
+
+.simulationStatusPanel {
+  pointer-events: none;
+  position: absolute;
+  top: 4.35rem;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  max-width: calc(100% - 2rem);
+  padding: 0.44rem 0.52rem;
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  border: 1px solid rgba(162, 198, 242, 0.34);
+  border-radius: 999px;
+  color: #edf5ff;
+  background: rgba(5, 13, 21, 0.78);
+  box-shadow: 0 0.9rem 2rem rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(0.8rem);
+}
+
+.simulationStatusPanel > span {
+  padding: 0 0.32rem;
+  color: #9db4cb;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.simulationStatusPanel strong {
+  min-height: 1.7rem;
+  padding: 0 0.62rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #f7fbff;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.simulationStatusPanel i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0.85rem currentColor;
+}
+
+.configurationBadge {
+  pointer-events: none;
+  position: absolute;
+  top: 4.35rem;
+  right: 1rem;
+  z-index: 3;
+  max-width: min(22rem, calc(100% - 2rem));
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(162, 198, 242, 0.28);
+  border-radius: 999px;
+  color: #edf5ff;
+  background: rgba(5, 13, 21, 0.72);
+  box-shadow: 0 0.9rem 2rem rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(0.8rem);
+}
+
+.configurationBadge span,
+.configurationBadge strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.configurationBadge span {
+  color: #9db4cb;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.configurationBadge strong {
+  color: #f7fbff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .controlLegend span {
   display: flex;
   align-items: center;
@@ -500,6 +652,7 @@
 
 .performanceButton,
 .simulationButton,
+.autoDemoButton,
 .scenarioCrumb {
   border: 1px solid rgba(47, 125, 211, 0.56);
   border-radius: 6px;
@@ -517,6 +670,25 @@
   gap: 0.55rem;
 }
 
+.performanceSummary {
+  width: calc(100% - 2.1rem);
+  margin: 0.85rem 1.05rem 0;
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border: 1px solid rgba(101, 160, 236, 0.38);
+  border-radius: 6px;
+  color: #b9c9dc;
+  background: rgba(22, 52, 86, 0.28);
+  font-size: 0.84rem;
+}
+
+.performanceSummary svg {
+  color: #77b6ff;
+  margin-top: 0.12rem;
+}
+
 .emptyState {
   padding: 1rem;
   color: #aebbc2;
@@ -525,7 +697,7 @@
 .statusBar {
   min-height: 4.4rem;
   display: grid;
-  grid-template-columns: minmax(10rem, 1.3fr) repeat(5, minmax(5.5rem, 0.72fr)) minmax(11rem, 1.1fr);
+  grid-template-columns: minmax(10rem, 1.2fr) repeat(5, minmax(5.5rem, 0.72fr)) minmax(10rem, 1fr) minmax(8rem, 0.78fr);
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0.75rem;
@@ -587,6 +759,108 @@
   font-weight: 800;
 }
 
+.autoDemoButton {
+  padding: 0 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  color: #101820;
+  font-weight: 900;
+  background: linear-gradient(135deg, #78e7bd, #79b9ff);
+  border-color: rgba(120, 231, 189, 0.72);
+}
+
+.targetCallout,
+.assetCallout,
+.threatBadge {
+  pointer-events: none;
+  white-space: nowrap;
+  user-select: none;
+  font-family: var(--font-manrope), sans-serif;
+}
+
+.targetCallout,
+.assetCallout {
+  min-width: 7.6rem;
+  padding: 0.42rem 0.55rem;
+  display: grid;
+  gap: 0.1rem;
+  border: 1px solid rgba(162, 198, 242, 0.38);
+  border-radius: 8px;
+  color: #edf5ff;
+  background: rgba(6, 16, 26, 0.78);
+  box-shadow: 0 0.8rem 1.8rem rgba(0, 0, 0, 0.22);
+  text-align: left;
+}
+
+.targetCallout strong,
+.assetCallout strong {
+  font-size: 0.72rem;
+  line-height: 1.1;
+}
+
+.targetCallout span,
+.assetCallout span {
+  color: #a9bed6;
+  font-size: 0.62rem;
+}
+
+.assetCallout {
+  border-color: rgba(120, 231, 189, 0.36);
+  background: rgba(7, 29, 28, 0.76);
+}
+
+.threatBadge {
+  padding: 0.26rem 0.44rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  color: #f7fbff;
+  background: rgba(8, 14, 20, 0.82);
+  box-shadow: 0 0.75rem 1.6rem rgba(0, 0, 0, 0.24);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.threatBadge span {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0.8rem currentColor;
+}
+
+.detected {
+  border-color: rgba(112, 201, 255, 0.48);
+}
+
+.tracking {
+  border-color: rgba(245, 206, 106, 0.52);
+}
+
+.neutralized {
+  border-color: rgba(103, 232, 166, 0.58);
+}
+
+.breach {
+  border-color: rgba(255, 107, 95, 0.62);
+}
+
+.simulationLoading {
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(119, 182, 255, 0.45);
+  border-radius: 999px;
+  color: #edf5ff;
+  background: rgba(6, 16, 26, 0.82);
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.25);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 .pageDark {
   color: #d7e4f3;
   background:
@@ -623,6 +897,7 @@
 .pageDark .metric strong,
 .pageDark .metric svg,
 .pageDark .simulationButton,
+.pageDark .autoDemoButton,
 .pageDark .performanceButton {
   color: #77b6ff;
 }
@@ -671,14 +946,21 @@
 
 .pageDark .scenarioCrumb,
 .pageDark .simulationButton,
+.pageDark .autoDemoButton,
 .pageDark .performanceButton {
   border-color: rgba(101, 160, 236, 0.62);
   background: rgba(22, 52, 86, 0.44);
 }
 
+.pageDark .autoDemoButton {
+  color: #071019;
+  border-color: rgba(120, 231, 189, 0.72);
+  background: linear-gradient(135deg, #78e7bd, #79b9ff);
+}
+
 @media (max-width: 1280px) {
   .topbar {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
   }
 
   .scenarioTabs {
@@ -701,13 +983,19 @@
   .propertiesPanel .panelHeader,
   .selectedSummary,
   .actionStrip,
+  .performanceSummary,
   .performanceButton,
   .emptyState {
     grid-column: 1 / -1;
   }
 
   .statusBar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .cameraPresetBar {
+    right: 1rem;
+    top: 4rem;
   }
 }
 
@@ -742,6 +1030,18 @@
     order: 1;
   }
 
+  .sceneModeTabs {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .sceneModeTab,
+  .sceneModeTabActive {
+    min-height: 1.95rem;
+    padding: 0 0.68rem;
+    font-size: 0.75rem;
+  }
+
   .propertiesPanel {
     order: 3;
     grid-template-columns: 1fr;
@@ -772,7 +1072,8 @@
   }
 
   .scenarioCrumb,
-  .simulationButton {
+  .simulationButton,
+  .autoDemoButton {
     grid-column: 1 / -1;
   }
 }

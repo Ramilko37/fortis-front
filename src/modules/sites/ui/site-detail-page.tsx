@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { mockSites, mockConfigurations, mockDeviceStatuses, mockThreatEvents } from "@/shared/lib/mock-data";
-import { kindLabel, kindColor } from "@/components/prototype/types";
+import { kindLabel, kindColor } from "@/shared/config/defense-visuals";
 import type { ObjectKind, SiteStatus } from "@/shared/types/defense";
 
 type Tab = "overview" | "config" | "incidents" | "devices";

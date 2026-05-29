@@ -1,0 +1,1712 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedFrom": {
+    "sourceWorkbook": "Модель защиты БПЛА.xlsx",
+    "sourceSheets": [
+      "Каталог СЗ и оценка",
+      "Дэшборд"
+    ],
+    "normalizationRule": "Excel labels Слой 0–8 are mapped to product-facing layers 1–9."
+  },
+  "summary": {
+    "totalAssets": 33,
+    "totalLayers": 9,
+    "assetsByLayer": {
+      "layer_01_external_warning": 5,
+      "layer_02_detection": 5,
+      "layer_03_identification": 1,
+      "layer_04_suppression": 5,
+      "layer_05_mid_range_kinetic": 4,
+      "layer_06_last_line_kinetic": 3,
+      "layer_07_accuracy_disruption": 5,
+      "layer_08_passive_protection": 3,
+      "layer_09_hardening": 2
+    },
+    "layersCoveredOrPartialByDashboard": 5,
+    "layersWithMissingDashboardReadiness": [
+      "layer_09_hardening"
+    ]
+  },
+  "criteriaWeightsFromExcel": {
+    "typeWeightPct": 0,
+    "supplyChannelWeightPct": 5,
+    "localizationWeightPct": 20,
+    "quantityOnSiteWeightPct": null,
+    "score1to10WeightPct": null
+  },
+  "defenseLayers": [
+    {
+      "id": "layer_01_external_warning",
+      "number": 1,
+      "sourceLayerIndex": 0,
+      "name": "Внешнее предупреждение",
+      "shortName": "Предупреждение",
+      "category": "external_warning",
+      "description": "Раннее получение информации о потенциальной угрозе до входа в зону промышленного объекта.",
+      "visualRole": "outer_context",
+      "coverageType": "external_context",
+      "defaultWeight": 0.08,
+      "sourceLayerCode": "Слой 0",
+      "zoneOfAction": "> 100 км",
+      "readinessPctFromDashboard": 25,
+      "readinessNote": null,
+      "statusFromDashboard": "weak",
+      "assetIds": [
+        "asset_01_01_regionalnye_tsentry_mchs",
+        "asset_01_02_voennaya_komendatura",
+        "asset_01_03_operativnyy_shtab_regiona_fsb_kurator",
+        "asset_01_04_setka_sosednih_predpriyatiy",
+        "asset_01_05_osint_monitoring"
+      ],
+      "assetCount": 5
+    },
+    {
+      "id": "layer_02_detection",
+      "number": 2,
+      "sourceLayerIndex": 1,
+      "name": "Обнаружение",
+      "shortName": "Обнаружение",
+      "category": "detection",
+      "description": "Первичное обнаружение угрозы средствами наблюдения на дальнем и среднем рубеже.",
+      "visualRole": "sensor_coverage",
+      "coverageType": "radius",
+      "defaultWeight": 0.12,
+      "sourceLayerCode": "Слой 1",
+      "zoneOfAction": "5-45 км",
+      "readinessPctFromDashboard": 50,
+      "readinessNote": null,
+      "statusFromDashboard": "partial",
+      "assetIds": [
+        "asset_02_01_rls",
+        "asset_02_02_optiko_elektronnye_sistemy",
+        "asset_02_03_teplovizionnye_sistemy",
+        "asset_02_04_akusticheskie_massivy",
+        "asset_02_05_passivnye_radiochastotnye_detektory"
+      ],
+      "assetCount": 5
+    },
+    {
+      "id": "layer_03_identification",
+      "number": 3,
+      "sourceLayerIndex": 2,
+      "name": "Идентификация и классификация",
+      "shortName": "Идентификация",
+      "category": "identification",
+      "description": "Классификация и подтверждение типа угрозы для принятия решения по дальнейшему воздействию.",
+      "visualRole": "classification",
+      "coverageType": "logic_layer",
+      "defaultWeight": 0.08,
+      "sourceLayerCode": "Слой 2",
+      "zoneOfAction": null,
+      "readinessPctFromDashboard": 50,
+      "readinessNote": null,
+      "statusFromDashboard": "partial",
+      "assetIds": [
+        "asset_03_01_po_klassifikatsii_tseley"
+      ],
+      "assetCount": 1
+    },
+    {
+      "id": "layer_04_suppression",
+      "number": 4,
+      "sourceLayerIndex": 3,
+      "name": "Подавление",
+      "shortName": "Подавление",
+      "category": "suppression",
+      "description": "Нарушение каналов управления, навигации или функционирования угрозы некинетическими средствами.",
+      "visualRole": "effect_zone",
+      "coverageType": "radius",
+      "defaultWeight": 0.14,
+      "sourceLayerCode": "Слой 3",
+      "zoneOfAction": "3-10 км",
+      "readinessPctFromDashboard": 25,
+      "readinessNote": null,
+      "statusFromDashboard": "weak",
+      "assetIds": [
+        "asset_04_01_reb_uzkopolosnyy_protiv_gnss",
+        "asset_04_02_reb_shirokopolosnyy_protiv_radiokanalov",
+        "asset_04_03_gps_spufery",
+        "asset_04_04_svch_oruzhie",
+        "asset_04_05_lazernye_sistemy"
+      ],
+      "assetCount": 5
+    },
+    {
+      "id": "layer_05_mid_range_kinetic",
+      "number": 5,
+      "sourceLayerIndex": 4,
+      "name": "Кинетика среднего рубежа",
+      "shortName": "Средний рубеж",
+      "category": "kinetic_mid_range",
+      "description": "Активные средства воздействия на среднем рубеже до входа угрозы в непосредственную зону объекта.",
+      "visualRole": "intercept_zone",
+      "coverageType": "radius",
+      "defaultWeight": 0.1,
+      "sourceLayerCode": "Слой 4",
+      "zoneOfAction": "1-8 км",
+      "readinessPctFromDashboard": 50,
+      "readinessNote": null,
+      "statusFromDashboard": "partial",
+      "assetIds": [
+        "asset_05_01_mog",
+        "asset_05_02_bars",
+        "asset_05_03_drony_perehvatchiki",
+        "asset_05_04_turelnye_strelkovye_kompleksy"
+      ],
+      "assetCount": 4
+    },
+    {
+      "id": "layer_06_last_line_kinetic",
+      "number": 6,
+      "sourceLayerIndex": 5,
+      "name": "Кинетика последнего рубежа",
+      "shortName": "Последний рубеж",
+      "category": "kinetic_last_line",
+      "description": "Последний активный рубеж перед защищаемым объектом.",
+      "visualRole": "last_line",
+      "coverageType": "local_radius",
+      "defaultWeight": 0.1,
+      "sourceLayerCode": "Слой 5",
+      "zoneOfAction": "1-10 км",
+      "readinessPctFromDashboard": 25,
+      "readinessNote": null,
+      "statusFromDashboard": "weak",
+      "assetIds": [
+        "asset_06_01_zrpk",
+        "asset_06_02_pzrk",
+        "asset_06_03_stvolnaya_pvo"
+      ],
+      "assetCount": 3
+    },
+    {
+      "id": "layer_07_accuracy_disruption",
+      "number": 7,
+      "sourceLayerIndex": 6,
+      "name": "Срыв точности целеуказания",
+      "shortName": "Срыв точности",
+      "category": "accuracy_disruption",
+      "description": "Снижение точности наведения или попадания на финальном участке.",
+      "visualRole": "risk_reduction",
+      "coverageType": "local_zone",
+      "defaultWeight": 0.1,
+      "sourceLayerCode": "Слой 6",
+      "zoneOfAction": "0,5-1 км",
+      "readinessPctFromDashboard": 75,
+      "readinessNote": null,
+      "statusFromDashboard": "covered",
+      "assetIds": [
+        "asset_07_01_maskirovochnye_seti_i_ekrany",
+        "asset_07_02_dymogeneratsiya",
+        "asset_07_03_lozhnye_teplovye_signatury",
+        "asset_07_04_makety_obmanki",
+        "asset_07_05_snizhenie_opticheskogo_i_ik_kontrasta"
+      ],
+      "assetCount": 5
+    },
+    {
+      "id": "layer_08_passive_protection",
+      "number": 8,
+      "sourceLayerIndex": 7,
+      "name": "Пассивная защита / ИТЗ",
+      "shortName": "Пассивная защита",
+      "category": "passive_protection",
+      "description": "Физические барьеры, инженерно-техническая защита, сетки, тросовые системы и защитные конструкции.",
+      "visualRole": "physical_barrier",
+      "coverageType": "object_or_perimeter",
+      "defaultWeight": 0.16,
+      "sourceLayerCode": "Слой 7",
+      "zoneOfAction": "на объекте",
+      "readinessPctFromDashboard": 75,
+      "readinessNote": null,
+      "statusFromDashboard": "covered",
+      "assetIds": [
+        "asset_08_01_antidronovye_setki",
+        "asset_08_02_trosovye_sistemy",
+        "asset_08_03_kupola_i_aerostaty"
+      ],
+      "assetCount": 3
+    },
+    {
+      "id": "layer_09_hardening",
+      "number": 9,
+      "sourceLayerIndex": 8,
+      "name": "Hardening критических узлов",
+      "shortName": "Hardening",
+      "category": "hardening",
+      "description": "Повышение устойчивости самих критических объектов за счёт усиления, дублирования и разнесения.",
+      "visualRole": "asset_resilience",
+      "coverageType": "asset",
+      "defaultWeight": 0.12,
+      "sourceLayerCode": "Слой 8",
+      "zoneOfAction": null,
+      "readinessPctFromDashboard": null,
+      "readinessNote": "<<< будет тянуться из каталога и автоматически считаться формулой ",
+      "statusFromDashboard": "missing_data",
+      "assetIds": [
+        "asset_09_01_inzhenernoe_raznesenie_dublirovanie",
+        "asset_09_02_usilennye_konstruktsii_bronirovanie_kriticheskih_uzlov"
+      ],
+      "assetCount": 2
+    }
+  ],
+  "defenseAssets": [
+    {
+      "id": "asset_01_01_regionalnye_tsentry_mchs",
+      "name": "Региональные центры МЧС",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 4,
+        "sourceLayerCode": "Слой 0",
+        "sourceLayerName": "Внешнее предупреждение"
+      },
+      "category": "external_warning",
+      "defenseLayerIds": [
+        "layer_01_external_warning"
+      ],
+      "layerNumber": 1,
+      "sourceLayerIndex": 0,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "external_context",
+        "zoneOfAction": "> 100 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "regionalnye_tsentry_mchs",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_01_02_voennaya_komendatura",
+      "name": "Военная комендатура",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 5,
+        "sourceLayerCode": "Слой 0",
+        "sourceLayerName": "Внешнее предупреждение"
+      },
+      "category": "external_warning",
+      "defenseLayerIds": [
+        "layer_01_external_warning"
+      ],
+      "layerNumber": 1,
+      "sourceLayerIndex": 0,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "external_context",
+        "zoneOfAction": "> 100 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "voennaya_komendatura",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_01_03_operativnyy_shtab_regiona_fsb_kurator",
+      "name": "Оперативный штаб региона / ФСБ-куратор",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 6,
+        "sourceLayerCode": "Слой 0",
+        "sourceLayerName": "Внешнее предупреждение"
+      },
+      "category": "external_warning",
+      "defenseLayerIds": [
+        "layer_01_external_warning"
+      ],
+      "layerNumber": 1,
+      "sourceLayerIndex": 0,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "external_context",
+        "zoneOfAction": "> 100 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "operativnyy_shtab_regiona_fsb_kurator",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_01_04_setka_sosednih_predpriyatiy",
+      "name": "Сетка соседних предприятий",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 7,
+        "sourceLayerCode": "Слой 0",
+        "sourceLayerName": "Внешнее предупреждение"
+      },
+      "category": "external_warning",
+      "defenseLayerIds": [
+        "layer_01_external_warning"
+      ],
+      "layerNumber": 1,
+      "sourceLayerIndex": 0,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "external_context",
+        "zoneOfAction": "> 100 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "setka_sosednih_predpriyatiy",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_01_05_osint_monitoring",
+      "name": "OSINT-мониторинг",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 8,
+        "sourceLayerCode": "Слой 0",
+        "sourceLayerName": "Внешнее предупреждение"
+      },
+      "category": "external_warning",
+      "defenseLayerIds": [
+        "layer_01_external_warning"
+      ],
+      "layerNumber": 1,
+      "sourceLayerIndex": 0,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "external_context",
+        "zoneOfAction": "> 100 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "osint_monitoring",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_02_01_rls",
+      "name": "РЛС",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 9,
+        "sourceLayerCode": "Слой 1",
+        "sourceLayerName": "Обнаружение (5-45 км)"
+      },
+      "category": "detection",
+      "defenseLayerIds": [
+        "layer_02_detection"
+      ],
+      "layerNumber": 2,
+      "sourceLayerIndex": 1,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "5-45 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "rls",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_02_02_optiko_elektronnye_sistemy",
+      "name": "Оптико-электронные системы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 10,
+        "sourceLayerCode": "Слой 1",
+        "sourceLayerName": "Обнаружение (5-45 км)"
+      },
+      "category": "detection",
+      "defenseLayerIds": [
+        "layer_02_detection"
+      ],
+      "layerNumber": 2,
+      "sourceLayerIndex": 1,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "5-45 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "optiko_elektronnye_sistemy",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_02_03_teplovizionnye_sistemy",
+      "name": "Тепловизионные системы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 11,
+        "sourceLayerCode": "Слой 1",
+        "sourceLayerName": "Обнаружение (5-45 км)"
+      },
+      "category": "detection",
+      "defenseLayerIds": [
+        "layer_02_detection"
+      ],
+      "layerNumber": 2,
+      "sourceLayerIndex": 1,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "5-45 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "teplovizionnye_sistemy",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_02_04_akusticheskie_massivy",
+      "name": "Акустические массивы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 12,
+        "sourceLayerCode": "Слой 1",
+        "sourceLayerName": "Обнаружение (5-45 км)"
+      },
+      "category": "detection",
+      "defenseLayerIds": [
+        "layer_02_detection"
+      ],
+      "layerNumber": 2,
+      "sourceLayerIndex": 1,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "5-45 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "akusticheskie_massivy",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_02_05_passivnye_radiochastotnye_detektory",
+      "name": "Пассивные радиочастотные детекторы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 13,
+        "sourceLayerCode": "Слой 1",
+        "sourceLayerName": "Обнаружение (5-45 км)"
+      },
+      "category": "detection",
+      "defenseLayerIds": [
+        "layer_02_detection"
+      ],
+      "layerNumber": 2,
+      "sourceLayerIndex": 1,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "5-45 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "passivnye_radiochastotnye_detektory",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_03_01_po_klassifikatsii_tseley",
+      "name": "ПО классификации целей",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 14,
+        "sourceLayerCode": "Слой 2",
+        "sourceLayerName": "Идентификация и классификация"
+      },
+      "category": "identification",
+      "defenseLayerIds": [
+        "layer_03_identification"
+      ],
+      "layerNumber": 3,
+      "sourceLayerIndex": 2,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "logic_layer",
+        "zoneOfAction": null,
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "po_klassifikatsii_tseley",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_04_01_reb_uzkopolosnyy_protiv_gnss",
+      "name": "РЭБ узкополосный против GNSS",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 15,
+        "sourceLayerCode": "Слой 3",
+        "sourceLayerName": "Подавление (3-10 км)"
+      },
+      "category": "suppression",
+      "defenseLayerIds": [
+        "layer_04_suppression"
+      ],
+      "layerNumber": 4,
+      "sourceLayerIndex": 3,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "3-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "reb_uzkopolosnyy_protiv_gnss",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_04_02_reb_shirokopolosnyy_protiv_radiokanalov",
+      "name": "РЭБ широкополосный против радиоканалов",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 16,
+        "sourceLayerCode": "Слой 3",
+        "sourceLayerName": "Подавление (3-10 км)"
+      },
+      "category": "suppression",
+      "defenseLayerIds": [
+        "layer_04_suppression"
+      ],
+      "layerNumber": 4,
+      "sourceLayerIndex": 3,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "3-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "reb_shirokopolosnyy_protiv_radiokanalov",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_04_03_gps_spufery",
+      "name": "GPS-спуферы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 17,
+        "sourceLayerCode": "Слой 3",
+        "sourceLayerName": "Подавление (3-10 км)"
+      },
+      "category": "suppression",
+      "defenseLayerIds": [
+        "layer_04_suppression"
+      ],
+      "layerNumber": 4,
+      "sourceLayerIndex": 3,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "3-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "gps_spufery",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_04_04_svch_oruzhie",
+      "name": "СВЧ-оружие",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 18,
+        "sourceLayerCode": "Слой 3",
+        "sourceLayerName": "Подавление (3-10 км)"
+      },
+      "category": "suppression",
+      "defenseLayerIds": [
+        "layer_04_suppression"
+      ],
+      "layerNumber": 4,
+      "sourceLayerIndex": 3,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "3-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "svch_oruzhie",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_04_05_lazernye_sistemy",
+      "name": "Лазерные системы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 19,
+        "sourceLayerCode": "Слой 3",
+        "sourceLayerName": "Подавление (3-10 км)"
+      },
+      "category": "suppression",
+      "defenseLayerIds": [
+        "layer_04_suppression"
+      ],
+      "layerNumber": 4,
+      "sourceLayerIndex": 3,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "3-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "lazernye_sistemy",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_05_01_mog",
+      "name": "МОГ",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 20,
+        "sourceLayerCode": "Слой 4",
+        "sourceLayerName": "Кинетика среднего рубежа (1-8 км)"
+      },
+      "category": "kinetic_mid_range",
+      "defenseLayerIds": [
+        "layer_05_mid_range_kinetic"
+      ],
+      "layerNumber": 5,
+      "sourceLayerIndex": 4,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "1-8 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "mog",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_05_02_bars",
+      "name": "БАРС",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 21,
+        "sourceLayerCode": "Слой 4",
+        "sourceLayerName": "Кинетика среднего рубежа (1-8 км)"
+      },
+      "category": "kinetic_mid_range",
+      "defenseLayerIds": [
+        "layer_05_mid_range_kinetic"
+      ],
+      "layerNumber": 5,
+      "sourceLayerIndex": 4,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "1-8 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "bars",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_05_03_drony_perehvatchiki",
+      "name": "Дроны-перехватчики",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 22,
+        "sourceLayerCode": "Слой 4",
+        "sourceLayerName": "Кинетика среднего рубежа (1-8 км)"
+      },
+      "category": "kinetic_mid_range",
+      "defenseLayerIds": [
+        "layer_05_mid_range_kinetic"
+      ],
+      "layerNumber": 5,
+      "sourceLayerIndex": 4,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "1-8 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "drony_perehvatchiki",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_05_04_turelnye_strelkovye_kompleksy",
+      "name": "Турельные стрелковые комплексы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 23,
+        "sourceLayerCode": "Слой 4",
+        "sourceLayerName": "Кинетика среднего рубежа (1-8 км)"
+      },
+      "category": "kinetic_mid_range",
+      "defenseLayerIds": [
+        "layer_05_mid_range_kinetic"
+      ],
+      "layerNumber": 5,
+      "sourceLayerIndex": 4,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "radius",
+        "zoneOfAction": "1-8 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "turelnye_strelkovye_kompleksy",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_06_01_zrpk",
+      "name": "ЗРПК",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 24,
+        "sourceLayerCode": "Слой 5",
+        "sourceLayerName": "Кинетика последнего рубежа (1-10 км)"
+      },
+      "category": "kinetic_last_line",
+      "defenseLayerIds": [
+        "layer_06_last_line_kinetic"
+      ],
+      "layerNumber": 6,
+      "sourceLayerIndex": 5,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_radius",
+        "zoneOfAction": "1-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "zrpk",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_06_02_pzrk",
+      "name": "ПЗРК",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 25,
+        "sourceLayerCode": "Слой 5",
+        "sourceLayerName": "Кинетика последнего рубежа (1-10 км)"
+      },
+      "category": "kinetic_last_line",
+      "defenseLayerIds": [
+        "layer_06_last_line_kinetic"
+      ],
+      "layerNumber": 6,
+      "sourceLayerIndex": 5,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_radius",
+        "zoneOfAction": "1-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "pzrk",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_06_03_stvolnaya_pvo",
+      "name": "Ствольная ПВО",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 26,
+        "sourceLayerCode": "Слой 5",
+        "sourceLayerName": "Кинетика последнего рубежа (1-10 км)"
+      },
+      "category": "kinetic_last_line",
+      "defenseLayerIds": [
+        "layer_06_last_line_kinetic"
+      ],
+      "layerNumber": 6,
+      "sourceLayerIndex": 5,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_radius",
+        "zoneOfAction": "1-10 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "stvolnaya_pvo",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_07_01_maskirovochnye_seti_i_ekrany",
+      "name": "Маскировочные сети и экраны",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 27,
+        "sourceLayerCode": "Слой 6",
+        "sourceLayerName": "Срыв точности целеуказания на финальном участке (0,5-2 км)"
+      },
+      "category": "accuracy_disruption",
+      "defenseLayerIds": [
+        "layer_07_accuracy_disruption"
+      ],
+      "layerNumber": 7,
+      "sourceLayerIndex": 6,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_zone",
+        "zoneOfAction": "0,5-1 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "maskirovochnye_seti_i_ekrany",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_07_02_dymogeneratsiya",
+      "name": "Дымогенерация",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 28,
+        "sourceLayerCode": "Слой 6",
+        "sourceLayerName": "Срыв точности целеуказания на финальном участке (0,5-2 км)"
+      },
+      "category": "accuracy_disruption",
+      "defenseLayerIds": [
+        "layer_07_accuracy_disruption"
+      ],
+      "layerNumber": 7,
+      "sourceLayerIndex": 6,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_zone",
+        "zoneOfAction": "0,5-1 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "dymogeneratsiya",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_07_03_lozhnye_teplovye_signatury",
+      "name": "Ложные тепловые сигнатуры",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 29,
+        "sourceLayerCode": "Слой 6",
+        "sourceLayerName": "Срыв точности целеуказания на финальном участке (0,5-2 км)"
+      },
+      "category": "accuracy_disruption",
+      "defenseLayerIds": [
+        "layer_07_accuracy_disruption"
+      ],
+      "layerNumber": 7,
+      "sourceLayerIndex": 6,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_zone",
+        "zoneOfAction": "0,5-1 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "lozhnye_teplovye_signatury",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_07_04_makety_obmanki",
+      "name": "Макеты-обманки",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 30,
+        "sourceLayerCode": "Слой 6",
+        "sourceLayerName": "Срыв точности целеуказания на финальном участке (0,5-2 км)"
+      },
+      "category": "accuracy_disruption",
+      "defenseLayerIds": [
+        "layer_07_accuracy_disruption"
+      ],
+      "layerNumber": 7,
+      "sourceLayerIndex": 6,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_zone",
+        "zoneOfAction": "0,5-1 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "makety_obmanki",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_07_05_snizhenie_opticheskogo_i_ik_kontrasta",
+      "name": "Снижение оптического и ИК-контраста",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 31,
+        "sourceLayerCode": "Слой 6",
+        "sourceLayerName": "Срыв точности целеуказания на финальном участке (0,5-2 км)"
+      },
+      "category": "accuracy_disruption",
+      "defenseLayerIds": [
+        "layer_07_accuracy_disruption"
+      ],
+      "layerNumber": 7,
+      "sourceLayerIndex": 6,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "local_zone",
+        "zoneOfAction": "0,5-1 км",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "snizhenie_opticheskogo_i_ik_kontrasta",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_08_01_antidronovye_setki",
+      "name": "Антидроновые сетки",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 32,
+        "sourceLayerCode": "Слой 7",
+        "sourceLayerName": "Пассивная защита / ИТЗ (на узлах)"
+      },
+      "category": "passive_protection",
+      "defenseLayerIds": [
+        "layer_08_passive_protection"
+      ],
+      "layerNumber": 8,
+      "sourceLayerIndex": 7,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "object_or_perimeter",
+        "zoneOfAction": "на объекте",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": "/models/cable_mesh_curtain_textured.glb",
+        "icon": "mesh",
+        "color": "#22c55e"
+      },
+      "description": null
+    },
+    {
+      "id": "asset_08_02_trosovye_sistemy",
+      "name": "Тросовые системы",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 33,
+        "sourceLayerCode": "Слой 7",
+        "sourceLayerName": "Пассивная защита / ИТЗ (на узлах)"
+      },
+      "category": "passive_protection",
+      "defenseLayerIds": [
+        "layer_08_passive_protection"
+      ],
+      "layerNumber": 8,
+      "sourceLayerIndex": 7,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "object_or_perimeter",
+        "zoneOfAction": "на объекте",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": "/models/perimeter_fbs_cable_barrier_textured.glb",
+        "icon": "cable",
+        "color": "#22c55e"
+      },
+      "description": null
+    },
+    {
+      "id": "asset_08_03_kupola_i_aerostaty",
+      "name": "Купола и аэростаты",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 34,
+        "sourceLayerCode": "Слой 7",
+        "sourceLayerName": "Пассивная защита / ИТЗ (на узлах)"
+      },
+      "category": "passive_protection",
+      "defenseLayerIds": [
+        "layer_08_passive_protection"
+      ],
+      "layerNumber": 8,
+      "sourceLayerIndex": 7,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "object_or_perimeter",
+        "zoneOfAction": "на объекте",
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "kupola_i_aerostaty",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_09_01_inzhenernoe_raznesenie_dublirovanie",
+      "name": "Инженерное разнесение / дублирование",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 35,
+        "sourceLayerCode": "Слой 8",
+        "sourceLayerName": "Hardening критических узлов"
+      },
+      "category": "hardening",
+      "defenseLayerIds": [
+        "layer_09_hardening"
+      ],
+      "layerNumber": 9,
+      "sourceLayerIndex": 8,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "asset",
+        "zoneOfAction": null,
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": null,
+        "icon": "inzhenernoe_raznesenie_dublirovanie",
+        "color": null
+      },
+      "description": null
+    },
+    {
+      "id": "asset_09_02_usilennye_konstruktsii_bronirovanie_kriticheskih_uzlov",
+      "name": "Усиленные конструкции / бронирование критических узлов",
+      "source": {
+        "workbook": "Модель защиты БПЛА.xlsx",
+        "sheet": "Каталог СЗ и оценка",
+        "excelRow": 36,
+        "sourceLayerCode": "Слой 8",
+        "sourceLayerName": "Hardening критических узлов"
+      },
+      "category": "hardening",
+      "defenseLayerIds": [
+        "layer_09_hardening"
+      ],
+      "layerNumber": 9,
+      "sourceLayerIndex": 8,
+      "typeOriginal": null,
+      "supplyChannelScore": 0,
+      "localizationScore": 4,
+      "quantityOnSite": null,
+      "score1to10": null,
+      "derived": {
+        "availabilityScoreDraft": 0.6,
+        "effectiveness": null,
+        "costCapexMlnRub": null,
+        "costOpexMlnRubYear": null
+      },
+      "coverage": {
+        "type": "asset",
+        "zoneOfAction": null,
+        "radiusM": null,
+        "widthM": null,
+        "heightM": null,
+        "lengthM": null
+      },
+      "threatTypes": [],
+      "status": "imported_from_excel",
+      "visualization": {
+        "modelUrl": "/models/fbs_protection_enclosure_textured.glb",
+        "icon": "hardening",
+        "color": "#64748b"
+      },
+      "description": null
+    }
+  ],
+  "effectivenessMatrix": {
+    "status": "not_provided_in_excel",
+    "note": "На листе «Дэшборд» блок матрицы эффективности содержит заголовки и #REF!, но не содержит заполненных значений. Для MVP нужно отрисовать структуру матрицы и заполнить значения отдельно или из следующей версии Excel.",
+    "threatTypes": [],
+    "values": []
+  }
+}

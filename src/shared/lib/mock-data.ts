@@ -4,8 +4,57 @@ import type {
   TeamMember,
   SiteConfiguration,
   DeviceStatus,
+  SceneObject,
 } from "@/shared/types/defense";
-import { scenarioPresets } from "@/components/prototype/types";
+
+const baselineObjects: SceneObject[] = [
+  {
+    id: "cfg-baseline-operator",
+    kind: "operator_substation",
+    label: "Операторная / подстанция",
+    position: [-18, 0, 220],
+    radius: 140,
+    coverageRadiusM: 140,
+    elevation: 12,
+    zones: 2,
+    assignment: "Сетка Альфа",
+    defenseRole: "command",
+    costMln: 38,
+    effectiveness: 0.78,
+  },
+  {
+    id: "cfg-baseline-fbs",
+    kind: "fbs_enclosure",
+    label: "ФБС-защита резервуарного парка",
+    position: [174, 0, 174],
+    radius: 115,
+    coverageRadiusM: 115,
+    elevation: 9,
+    zones: 1,
+    assignment: "Сетка Альфа",
+    defenseRole: "enclosure",
+    costMln: 28,
+    effectiveness: 0.66,
+  },
+];
+
+const perimeterObjects: SceneObject[] = [
+  ...baselineObjects,
+  {
+    id: "cfg-perimeter-line",
+    kind: "perimeter_barrier",
+    label: "ФБС-линия восточного въезда",
+    position: [297, 0, -300],
+    radius: 120,
+    coverageRadiusM: 120,
+    elevation: 8,
+    zones: 2,
+    assignment: "Сетка Бета",
+    defenseRole: "barrier",
+    costMln: 22,
+    effectiveness: 0.7,
+  },
+];
 
 // ─── Объекты ─────────────────────────────────────────────────────────────────
 
@@ -52,21 +101,21 @@ export const mockConfigurations: SiteConfiguration[] = [
   {
     siteId: "site-alpha",
     scenarioId: "baseline",
-    objects: scenarioPresets.baseline,
+    objects: baselineObjects,
     lastSyncedAt: new Date("2026-05-07T10:00:00"),
     version: 3,
   },
   {
     siteId: "site-beta",
     scenarioId: "perimeter",
-    objects: scenarioPresets.perimeter,
+    objects: perimeterObjects,
     lastSyncedAt: new Date("2026-05-06T16:30:00"),
     version: 2,
   },
   {
     siteId: "site-gamma",
-    scenarioId: "assets",
-    objects: scenarioPresets.assets,
+    scenarioId: "balanced",
+    objects: baselineObjects,
     lastSyncedAt: new Date("2026-05-01T09:00:00"),
     version: 1,
   },

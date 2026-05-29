@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <rect width="160" height="160" rx="28" fill="#f8fafc"/>
+  <rect x="18" y="18" width="124" height="124" rx="22" fill="#0f172a" opacity=".08"/>
+  <circle cx="80" cy="72" r="34" fill="#14b8a6" opacity=".18"/>
+  <path d="M50 88c10-30 50-30 60 0M61 88c6-17 32-17 38 0" fill="none" stroke="#0f766e" stroke-width="8" stroke-linecap="round"/>
+  <text x="80" y="123" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#0f766e">L3</text>
+</svg>

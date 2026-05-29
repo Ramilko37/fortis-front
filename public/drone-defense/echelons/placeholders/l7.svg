@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <rect width="160" height="160" rx="28" fill="#f8fafc"/>
+  <rect x="18" y="18" width="124" height="124" rx="22" fill="#0f172a" opacity=".08"/>
+  <path d="M46 86c18-24 50-24 68 0M52 104c16-16 40-16 56 0M58 68c14-12 30-12 44 0" fill="none" stroke="#ea580c" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="80" cy="86" r="8" fill="#9a3412"/>
+  <text x="80" y="133" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#9a3412">L7</text>
+</svg>

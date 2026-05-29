@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <rect width="160" height="160" rx="28" fill="#f8fafc"/>
+  <rect x="18" y="18" width="124" height="124" rx="22" fill="#0f172a" opacity=".08"/>
+  <path d="M80 38l40 18v28c0 25-16 42-40 52-24-10-40-27-40-52V56z" fill="#a855f7" opacity=".22" stroke="#7e22ce" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M63 82l12 12 25-29" fill="none" stroke="#581c87" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="80" y="133" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="800" fill="#581c87">L9</text>
+</svg>

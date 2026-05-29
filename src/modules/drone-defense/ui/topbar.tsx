@@ -3,30 +3,11 @@
 import Link from "next/link";
 import {
   ArrowLeftOutlined,
-  BellOutlined,
-  CloudOutlined,
   CompassOutlined,
   SafetyCertificateOutlined,
-  SettingOutlined,
 } from "@ant-design/icons";
-import { scenarioLabels, type ScenarioId } from "./types";
+import { scenarioLabels, type ScenarioId } from "../domain/prototype-types";
 import styles from "./drone-defense-prototype.module.css";
-
-function IconButton({
-  label,
-  children,
-  onClick,
-}: {
-  label: string;
-  children: React.ReactNode;
-  onClick?: () => void;
-}) {
-  return (
-    <button className={styles.iconButton} type="button" aria-label={label} title={label} onClick={onClick}>
-      {children}
-    </button>
-  );
-}
 
 export function Topbar({
   scenario,
@@ -35,7 +16,7 @@ export function Topbar({
   scenario: ScenarioId;
   onScenarioChange: (id: ScenarioId) => void;
 }) {
-  const visibleScenarios: ScenarioId[] = ["baseline"];
+  const visibleScenarios: ScenarioId[] = ["baseline", "balanced", "reinforced"];
 
   return (
     <header className={styles.topbar}>
@@ -48,11 +29,11 @@ export function Topbar({
         </div>
         <div>
           <strong>FORTIS</strong>
-          <span>Конфигуратор защиты объекта</span>
+          <span>3D drill-down выбранной конфигурации</span>
         </div>
       </div>
 
-      <nav className={styles.scenarioTabs} aria-label="Сценарий">
+      <nav className={styles.scenarioTabs} aria-label="Сценарий и разделы">
         {visibleScenarios.map((id) => (
           <button
             key={id}
@@ -65,21 +46,6 @@ export function Topbar({
           </button>
         ))}
       </nav>
-
-      <div className={styles.topActions}>
-        <IconButton label="Синхронизация с облаком">
-          <CloudOutlined />
-        </IconButton>
-        <IconButton label="Настройки">
-          <SettingOutlined />
-        </IconButton>
-        <IconButton label="Уведомления">
-          <BellOutlined />
-        </IconButton>
-        <button className={styles.profileButton} type="button" aria-label="Профиль">
-          AD
-        </button>
-      </div>
     </header>
   );
 }

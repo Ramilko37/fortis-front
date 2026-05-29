@@ -1,8 +1,30 @@
-import type { SceneObject, ScenarioId, ObjectKind } from "@/components/prototype/types";
+import type { DefenseAssetKind } from "@/shared/types/drone-defense";
 
-export type { ObjectKind, ScenarioId, SceneObject };
+export type LegacyObjectKind = "sensor" | "camera" | "shield" | "post" | "barrier";
+export type ObjectKind = LegacyObjectKind | DefenseAssetKind;
+export type ScenarioId =
+  | "unprotected"
+  | "baseline"
+  | "perimeter"
+  | "assets"
+  | "night"
+  | "balanced"
+  | "reinforced";
 
-// ─── Объект / Предприятие ────────────────────────────────────────────────────
+export type SceneObject = {
+  id: string;
+  kind: ObjectKind;
+  label: string;
+  position: [number, number, number];
+  radius: number;
+  coverageRadiusM: number;
+  elevation: number;
+  zones: number;
+  assignment: string;
+  defenseRole: "command" | "scaffold" | "enclosure" | "barrier" | "mesh";
+  costMln: number;
+  effectiveness: number;
+};
 
 export type SiteStatus = "active" | "configuring" | "offline";
 
@@ -16,8 +38,6 @@ export type Site = {
   lastIncident?: Date;
   configurationId?: string;
 };
-
-// ─── Конфигурация защиты объекта ─────────────────────────────────────────────
 
 export type SiteConfiguration = {
   siteId: string;
@@ -35,15 +55,8 @@ export type DeviceStatus = {
   signalStrength?: number;
 };
 
-// ─── Угрозы и тревоги ────────────────────────────────────────────────────────
-
 export type ThreatLevel = "low" | "medium" | "high" | "critical";
-
-export type ThreatEventStatus =
-  | "detected"
-  | "acknowledged"
-  | "false_alarm"
-  | "alarm_raised";
+export type ThreatEventStatus = "detected" | "acknowledged" | "false_alarm" | "alarm_raised";
 
 export type ThreatEvent = {
   id: string;
@@ -69,8 +82,6 @@ export type AlertState = {
   activeAlertId?: string;
   updatedAt: Date;
 };
-
-// ─── Команда ─────────────────────────────────────────────────────────────────
 
 export type TeamRole = "admin" | "operator" | "viewer";
 

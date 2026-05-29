@@ -7,7 +7,6 @@ import {
   ColumnHeightOutlined,
   CopyOutlined,
   DeleteOutlined,
-  EditOutlined,
   GatewayOutlined,
   RadarChartOutlined,
   SafetyCertificateOutlined,
@@ -18,7 +17,15 @@ import {
   type AssetType,
 } from "@/config/assetDimensions";
 import type { PlantMapObject } from "./plant-map";
-import { kindLabel, scenarioLabels, type AssetCatalogItem, type ObjectKind, type ScenarioId, type SceneObject } from "./types";
+import {
+  defenseRoleLabel,
+  kindLabel,
+  scenarioLabels,
+  type AssetCatalogItem,
+  type ObjectKind,
+  type ScenarioId,
+  type SceneObject,
+} from "../domain/prototype-types";
 import styles from "./drone-defense-prototype.module.css";
 
 function assetTypeFromObjectKind(kind: ObjectKind): AssetType | null {
@@ -123,9 +130,6 @@ export function PropertiesPanel({
           </div>
 
           <div className={styles.actionStrip}>
-            <IconButton label="Редактировать ассет">
-              <EditOutlined />
-            </IconButton>
             <IconButton label="Дублировать ассет" onClick={onDuplicate}>
               <CopyOutlined />
             </IconButton>
@@ -150,8 +154,9 @@ export function PropertiesPanel({
 
           <div className={styles.propertyGroup}>
             <h3>Покрытие</h3>
-            <PropertyRow label="Радиус покрытия" value={`${Math.round(selectedObject.radius * 22)} м`} />
+            <PropertyRow label="Радиус покрытия" value={`${selectedObject.coverageRadiusM} м`} />
             <PropertyRow label="Зоны обнаружения" value={selectedObject.zones} />
+            <PropertyRow label="Эффективность" value={`${Math.round(selectedObject.effectiveness * 100)}%`} />
           </div>
 
           <div className={styles.propertyGroup}>
@@ -172,8 +177,9 @@ export function PropertiesPanel({
 
           <div className={styles.propertyGroup}>
             <h3>Назначение</h3>
+            <PropertyRow label="Роль защиты" value={defenseRoleLabel[selectedObject.defenseRole]} />
             <PropertyRow label="Пост управления" value={selectedObject.assignment} />
-            <PropertyRow label="Сеть" value="Сетка Альфа" />
+            <PropertyRow label="Стоимость" value={`${selectedObject.costMln} млн ₽`} />
           </div>
 
           <div className={styles.propertyGroup}>
@@ -196,9 +202,10 @@ export function PropertiesPanel({
             />
           </div>
 
-          <button className={styles.performanceButton} type="button">
-            <RadarChartOutlined /> Показать производительность
-          </button>
+          <div className={styles.performanceSummary}>
+            <RadarChartOutlined />
+            <span>Зона влияет на сценарную симуляцию и подсветку риска.</span>
+          </div>
         </>
       ) : selectedPlantObject ? (
         <>
