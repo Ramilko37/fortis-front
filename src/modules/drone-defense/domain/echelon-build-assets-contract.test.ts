@@ -1,7 +1,9 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
+  canPlaceCatalogGroupInSlot,
   getBuildAssetForCatalogGroup,
+  getBuildOptionForCatalogGroup,
   getBuildOptionForSlot,
 } from "@/modules/drone-defense/domain/echelon-build-assets";
 import { buildScenarioConfiguration, echelonCatalogGroups } from "@/modules/drone-defense/infra/mock-defense-data";
@@ -34,6 +36,12 @@ const l1Slot: EchelonMapSlot = {
   position: [60.1, 56.1],
   status: "empty",
   color: [255, 255, 255, 235],
+};
+const l1FreeSlot: EchelonMapSlot = {
+  ...l1Slot,
+  id: "layer_01_external_warning-slot-03",
+  slotIndex: 3,
+  label: "S3",
 };
 const option = getBuildOptionForSlot({
   slot: l1Slot,
@@ -92,4 +100,52 @@ const placeholderOption = getBuildOptionForSlot({
 
 if (placeholderOption?.groupId !== "l4-ew-gnss" || !placeholderOption.imageUrl.includes("placeholders/l4.svg")) {
   throw new Error("Layers without final art must still expose placeholder build icons");
+}
+
+const directOption = getBuildOptionForCatalogGroup({
+  groupId: "l1-military-command",
+  placements: [],
+});
+
+if (directOption?.groupId !== "l1-military-command" || directOption.layerId !== "layer_01_external_warning") {
+  throw new Error("Selected catalog group must resolve to its direct build option");
+}
+
+const repeatOption = getBuildOptionForCatalogGroup({
+  groupId: "l1-military-command",
+  placements: placedConfiguration.placements,
+});
+
+if (repeatOption?.groupId !== "l1-military-command") {
+  throw new Error("Already placed catalog group must still resolve to its direct build asset");
+}
+
+const validPlacementCheck = canPlaceCatalogGroupInSlot({
+  groupId: "l1-military-command",
+  slot: l1Slot,
+  placements: [],
+});
+
+if (!validPlacementCheck.canPlace) {
+  throw new Error("Selected catalog group must be placeable in a free slot of its own echelon");
+}
+
+const wrongLayerCheck = canPlaceCatalogGroupInSlot({
+  groupId: "l1-military-command",
+  slot: l4Slot,
+  placements: [],
+});
+
+if (wrongLayerCheck.canPlace || wrongLayerCheck.reason !== "wrong-layer") {
+  throw new Error("Selected catalog group must not be placeable in a slot of another echelon");
+}
+
+const repeatPlacementCheck = canPlaceCatalogGroupInSlot({
+  groupId: "l1-military-command",
+  slot: l1FreeSlot,
+  placements: placedConfiguration.placements,
+});
+
+if (repeatPlacementCheck.canPlace || repeatPlacementCheck.reason !== "already-placed") {
+  throw new Error("Selected catalog group must not be placeable twice");
 }

@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   AppstoreOutlined,
   ArrowLeftOutlined,
-  DatabaseOutlined,
   EnvironmentOutlined,
   ExportOutlined,
   FundProjectionScreenOutlined,
@@ -17,14 +16,15 @@ import {
   buildCatalogPlacement,
   defenseLayers,
   getCatalogGroupsForLayer,
-  scenarioOptions,
+  type EchelonCatalogGroup,
 } from "@/modules/drone-defense/infra/mock-defense-data";
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
 import { buildEchelonMapModel, type EchelonMapSlot } from "@/modules/drone-defense/domain/echelon-map-model";
 import { ComparisonView } from "@/modules/drone-defense/ui/comparison-view";
+import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
-import type { DefenseLayerId, DefenseScenarioId } from "@/shared/types/drone-defense";
+import type { DefenseLayerId } from "@/shared/types/drone-defense";
 
 type Stage = "gis" | "comparison" | "drilldown";
 
@@ -32,6 +32,8 @@ export function DroneDefensePrototype() {
   const [selectedLayerId, setSelectedLayerId] = useState<DefenseLayerId>("layer_01_external_warning");
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [catalogQuery, setCatalogQuery] = useState("");
+  const [activeToolId, setActiveToolId] = useState<string | null>(null);
+  const [lastPlacementMessage, setLastPlacementMessage] = useState<string | null>(null);
   const {
     init,
     loading,
@@ -50,7 +52,6 @@ export function DroneDefensePrototype() {
     setView,
     setFacilityId,
     setScenarioId,
-    setBudgetRub,
     upsertLocalPlacement,
     moveLocalPlacement,
     removeLocalPlacement,
@@ -74,7 +75,7 @@ export function DroneDefensePrototype() {
     if (!query) return selectedLayerGroups;
     return selectedLayerGroups.filter((group) => group.name.toLowerCase().includes(query));
   }, [catalogQuery, selectedLayerGroups]);
-  const selectedLayerCoverage = layers?.layerCoverage.find((item) => item.layerId === selectedLayerId)?.coveredPct ?? 0;
+  const placementHint = lastPlacementMessage ?? `Эшелон ${selectedLayer.shortName} · Добавьте или удалите средства защиты в сетке`;
   const echelonModel = useMemo(
     () =>
       buildEchelonMapModel({
@@ -108,20 +109,56 @@ export function DroneDefensePrototype() {
     void upsertLocalPlacement(placement);
   };
 
+  const handleSelectTool = (group: EchelonCatalogGroup) => {
+    setActiveToolId((current) => (current === group.id ? null : group.id));
+    setLastPlacementMessage(`${selectedLayer.shortName} · ${group.name}: используйте + или −`);
+  };
+
+  const addToolToSlot = (group: EchelonCatalogGroup, slot: EchelonMapSlot) => {
+    setSelectedLayerId(slot.layerId);
+    setSelectedSlotId(slot.id);
+    setActiveToolId(group.id);
+    if (configuration.placements.some((placement) => placement.catalogGroupId === group.id)) {
+      setLastPlacementMessage(`${group.name} уже установлено на эшелон ${selectedLayer.shortName}`);
+      return;
+    }
+    if (configuration.placements.some((placement) => placement.slotId === slot.id)) {
+      setLastPlacementMessage(`${slot.label} уже занят`);
+      return;
+    }
+
+    addCatalogGroup(group.id, slot);
+    setLastPlacementMessage(`${group.name} построено на ${selectedLayer.shortName} · ${slot.label}`);
+  };
+
   const removeCatalogGroup = (groupId: string) => {
     const placement = configuration.placements.find((item) => item.catalogGroupId === groupId);
     if (!placement) return;
     void removeLocalPlacement(placement.id);
+    setLastPlacementMessage(`${placement.catalogGroupName ?? "Средство защиты"} удалено`);
   };
 
   const selectLayerWithDefaultSlot = (layerId: DefenseLayerId) => {
     setSelectedLayerId(layerId);
+    setActiveToolId(null);
+    setLastPlacementMessage(null);
     const nextSlot =
       echelonModel.slots.find((slot) => slot.layerId === layerId && slot.status === "empty") ??
       echelonModel.slots.find((slot) => slot.layerId === layerId) ??
       null;
     setSelectedSlotId(nextSlot?.id ?? null);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setActiveToolId(null);
+      setLastPlacementMessage(null);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
 
   const railItems: Array<{ id: Stage; label: string; icon: ReactNode }> = [
     { id: "gis", label: "Карта", icon: <EnvironmentOutlined /> },
@@ -198,99 +235,8 @@ export function DroneDefensePrototype() {
             <div className="sticky top-0 z-10 border-b border-blue-100 bg-blue-50/95 px-4 py-3 backdrop-blur">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-500">Активный эшелон</p>
               <p className="mt-0.5 text-sm font-semibold text-blue-950">
-                Вы на {selectedLayer.shortName} · {selectedLayer.name} · {selectedSlot?.label ?? "слот не выбран"}
+                {placementHint}
               </p>
-            </div>
-
-            <div className="border-b border-slate-100 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Контекст расчёта</p>
-              <label className="mt-3 block text-xs font-medium text-slate-500">
-                Объект
-                <select
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900"
-                  value={facilityId}
-                  onChange={(event) => void setFacilityId(event.target.value)}
-                >
-                  {facilities.map((facility) => (
-                    <option key={facility.id} value={facility.id}>
-                      {facility.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="block text-xs font-medium text-slate-500">
-                  Сценарий
-                  <select
-                    className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900"
-                    value={scenarioId}
-                    onChange={(event) => void setScenarioId(event.target.value as DefenseScenarioId)}
-                  >
-                    {scenarioOptions.map((scenario) => (
-                      <option key={scenario.id} value={scenario.id}>
-                        {scenario.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block text-xs font-medium text-slate-500">
-                  Бюджет
-                  <input
-                    className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900"
-                    type="number"
-                    min={1_000_000}
-                    step={1_000_000}
-                    value={budgetRub}
-                    onChange={(event) => void setBudgetRub(Number(event.target.value))}
-                  />
-                </label>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg bg-slate-50 px-3 py-2">
-                  <p className="text-slate-400">Размещено</p>
-                  <p className="text-base font-semibold text-slate-900">{configuration.placements.length}</p>
-                </div>
-                <div className="rounded-lg bg-slate-50 px-3 py-2">
-                  <p className="text-slate-400">Readiness</p>
-                  <p className="text-base font-semibold text-slate-900">{Math.round(selectedLayerCoverage * 100)}%</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-b border-slate-100 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Слои L1-L9</p>
-                <DatabaseOutlined className="text-slate-400" />
-              </div>
-              <div className="mt-3 space-y-1.5">
-                {defenseLayers.map((layer) => {
-                  const coverage = layers?.layerCoverage.find((item) => item.layerId === layer.id)?.coveredPct ?? 0;
-                  const layerSlots = echelonModel.slots.filter((slot) => slot.layerId === layer.id);
-                  const occupiedSlots = layerSlots.filter((slot) => slot.status === "occupied").length;
-                  return (
-                    <button
-                      key={layer.id}
-                      type="button"
-                      className={`grid w-full grid-cols-[2.75rem_1fr_auto] items-center gap-2 rounded-lg border px-2 py-2 text-left transition ${
-                        selectedLayerId === layer.id
-                          ? "border-blue-400 bg-blue-50 text-blue-900"
-                          : "border-slate-100 bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50"
-                      }`}
-                      onClick={() => selectLayerWithDefaultSlot(layer.id)}
-                    >
-                      <span className="rounded-md bg-slate-900 px-1.5 py-1 text-center text-[11px] font-bold text-white">{layer.shortName}</span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">{layer.name}</span>
-                        <span className="block truncate text-[11px] text-slate-500">{layer.distanceBandM.label}</span>
-                      </span>
-                      <span className="text-right text-[11px] text-slate-500">
-                        {Math.round(coverage * 100)}%
-                        <span className="block">{occupiedSlots}/{layerSlots.length} слотов</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
 
             <div className="p-4">
@@ -298,10 +244,10 @@ export function DroneDefensePrototype() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Каталог СЗ</p>
                   <h2 className="mt-1 text-sm font-semibold text-slate-950">
-                    {selectedLayer.shortName} · {selectedLayer.name} · {selectedSlot?.label ?? "слот не выбран"}
+                    {selectedLayer.shortName} · {selectedLayer.name}
                   </h2>
                   <p className="text-xs text-slate-500">
-                    {selectedLayer.distanceBandM.label} от объекта · {selectedSlot?.status === "occupied" ? "слот занят" : "слот доступен"}
+                    {selectedLayer.distanceBandM.label} от объекта · стройте и удаляйте через +/−
                   </p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
@@ -314,32 +260,16 @@ export function DroneDefensePrototype() {
                 onChange={(event) => setCatalogQuery(event.target.value)}
                 placeholder="Найти средство защиты..."
               />
-              <div className="mt-3 space-y-2">
-                {filteredLayerGroups.map((group) => {
-                  const placement = configuration.placements.find((item) => item.catalogGroupId === group.id);
-                  const isSelected = Boolean(placement && (!selectedSlot || placement.slotId === selectedSlot.id));
-                  const isBlockedByOccupiedSlot = Boolean(selectedSlot?.status === "occupied" && !isSelected);
-                  return (
-                    <article key={group.id} className="rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-900">{group.name}</p>
-                          <p className="mt-1 text-xs text-slate-500">Вес критерия {group.weightPct}%</p>
-                        </div>
-                        <button
-                          className={`h-8 shrink-0 rounded-lg px-2 text-xs font-semibold ${
-                            isSelected ? "bg-rose-50 text-rose-700" : "bg-blue-600 text-white"
-                          } disabled:bg-slate-100 disabled:text-slate-400`}
-                          type="button"
-                          disabled={isBlockedByOccupiedSlot}
-                          onClick={() => (isSelected ? removeCatalogGroup(group.id) : addCatalogGroup(group.id))}
-                        >
-                          {isSelected ? "Убрать" : isBlockedByOccupiedSlot ? "Слот занят" : selectedSlot ? `В ${selectedSlot.label}` : "Поставить"}
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+              <div className="mt-3">
+                <DefenseToolsPanel
+                  groups={filteredLayerGroups}
+                  slots={selectedLayerSlots}
+                  placements={configuration.placements}
+                  selectedToolId={activeToolId}
+                  onSelectTool={handleSelectTool}
+                  onAddTool={addToolToSlot}
+                  onRemoveTool={(group) => removeCatalogGroup(group.id)}
+                />
               </div>
             </div>
           </div>
@@ -370,13 +300,18 @@ export function DroneDefensePrototype() {
               catalog={catalog}
               selectedLayerId={selectedLayerId}
               selectedSlotId={selectedSlotId}
-              selectedLayerGroups={selectedLayerGroups}
+              activeToolId={activeToolId}
+              placementHint={placementHint}
               onSelectLayer={selectLayerWithDefaultSlot}
               onSelectSlot={(slot) => {
                 setSelectedLayerId(slot.layerId);
                 setSelectedSlotId(slot.id);
               }}
-              onAddCatalogGroup={addCatalogGroup}
+              onSelectTool={(groupId) => {
+                setActiveToolId(groupId);
+                const group = selectedLayerGroups.find((item) => item.id === groupId);
+                setLastPlacementMessage(group ? `${selectedLayer.shortName} · ${group.name}: используйте + или −` : null);
+              }}
               onRemoveCatalogGroup={removeCatalogGroup}
               onOpenComparison={() => setView("comparison")}
               onOpenDrilldown={() => setView("drilldown")}

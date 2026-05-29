@@ -1,8 +1,8 @@
 import {
   buildEchelonMapModel,
-  findNextBuildableCatalogGroupForLayer,
   getSlotBuildProfile,
 } from "@/modules/drone-defense/domain/echelon-map-model";
+import { canPlaceCatalogGroupInSlot } from "@/modules/drone-defense/domain/echelon-build-assets";
 import {
   buildCatalogPlacement,
   buildCatalogResponse,
@@ -82,16 +82,30 @@ for (const layer of defenseLayers) {
   }
 }
 
-const nextSuppressionGroup = findNextBuildableCatalogGroupForLayer({
-  layerId: selectedLayer.id,
-  catalogGroups: [
-    { id: "l4-ew-gnss", layerId: selectedLayer.id, name: "already placed" },
-    { id: "l4-ew-radio", layerId: selectedLayer.id, name: "next buildable" },
-    { id: "l2-radar", layerId: "layer_02_detection", name: "wrong layer" },
-  ],
+const freeSuppressionSlot = model.slots.find(
+  (slot) => slot.layerId === selectedLayer.id && slot.status === "empty",
+);
+
+if (!freeSuppressionSlot) {
+  throw new Error("Selected echelon must expose a free slot for explicit placement checks");
+}
+
+const repeatSuppressionCheck = canPlaceCatalogGroupInSlot({
+  groupId: "l4-ew-gnss",
+  slot: freeSuppressionSlot,
   placements: configuration.placements,
 });
 
-if (nextSuppressionGroup?.id !== "l4-ew-radio") {
-  throw new Error("Slot build action must pick the next unplaced catalog group for the clicked echelon");
+if (repeatSuppressionCheck.canPlace || repeatSuppressionCheck.reason !== "already-placed") {
+  throw new Error("GIS placement mode must not allow the same catalog group in multiple slots");
+}
+
+const selectedSuppressionCheck = canPlaceCatalogGroupInSlot({
+  groupId: "l4-ew-radio",
+  slot: freeSuppressionSlot,
+  placements: configuration.placements,
+});
+
+if (!selectedSuppressionCheck.canPlace) {
+  throw new Error("GIS placement mode must allow the selected catalog group in a free slot of its echelon");
 }

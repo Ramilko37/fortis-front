@@ -22,6 +22,16 @@ export type SlotBuildOption = {
   isPlaceholder: boolean;
 };
 
+export type CatalogGroupBuildOption = SlotBuildOption & {
+  layerId: DefenseLayerId;
+};
+
+export type CatalogGroupSlotPlacementCheck = {
+  canPlace: boolean;
+  reason: "available" | "unknown-group" | "wrong-layer" | "slot-occupied" | "already-placed";
+  message: string;
+};
+
 const placeholderByLayer: Record<DefenseLayerId, string> = {
   layer_01_external_warning: "/drone-defense/echelons/l1/regional-mchs-center.png",
   layer_02_detection: "/drone-defense/echelons/l2/radar-station.png",
@@ -80,6 +90,78 @@ export function getBuildAssetsForLayer(layerId: DefenseLayerId) {
   return buildAssetIcons.filter((asset) => asset.layerId === layerId);
 }
 
+export function getBuildOptionForCatalogGroup({
+  groupId,
+  placements,
+}: {
+  groupId: string;
+  placements: Placement[];
+}): CatalogGroupBuildOption | null {
+  void placements;
+  const asset = getBuildAssetForCatalogGroup(groupId);
+  if (!asset) return null;
+
+  return {
+    groupId: asset.groupId,
+    layerId: asset.layerId,
+    label: asset.label,
+    imageUrl: asset.imageUrl,
+    isPlaceholder: Boolean(asset.isPlaceholder),
+  };
+}
+
+export function canPlaceCatalogGroupInSlot({
+  groupId,
+  slot,
+  placements,
+}: {
+  groupId: string;
+  slot: EchelonMapSlot;
+  placements: Placement[];
+}): CatalogGroupSlotPlacementCheck {
+  const asset = getBuildAssetForCatalogGroup(groupId);
+  if (!asset) {
+    return {
+      canPlace: false,
+      reason: "unknown-group",
+      message: "Нельзя установить это средство защиты на выбранный слот",
+    };
+  }
+
+  if (asset.layerId !== slot.layerId) {
+    return {
+      canPlace: false,
+      reason: "wrong-layer",
+      message: "Нельзя установить это средство защиты на выбранный слот",
+    };
+  }
+
+  const hasPlacementInSlot = placements.some((placement) => placement.slotId === slot.id);
+
+  if (slot.status === "occupied" || hasPlacementInSlot) {
+    return {
+      canPlace: false,
+      reason: "slot-occupied",
+      message: "Выбранный слот уже занят",
+    };
+  }
+
+  const isAlreadyPlaced = placements.some((placement) => placement.catalogGroupId === groupId);
+  if (isAlreadyPlaced) {
+    return {
+      canPlace: false,
+      reason: "already-placed",
+      message: "Это средство защиты уже установлено",
+    };
+  }
+
+  return {
+    canPlace: true,
+    reason: "available",
+    message: "Слот доступен для установки",
+  };
+}
+
 export function getBuildOptionForSlot({
   slot,
   catalogGroups,
@@ -89,7 +171,7 @@ export function getBuildOptionForSlot({
   catalogGroups: BuildCatalogGroup[];
   placements: Placement[];
 }): SlotBuildOption | null {
-  if (slot.status === "occupied") return null;
+  if (slot.status === "occupied" || placements.some((placement) => placement.slotId === slot.id)) return null;
 
   const layerGroups = catalogGroups.filter((group) => group.layerId === slot.layerId);
   const group = layerGroups[slot.slotIndex - 1];

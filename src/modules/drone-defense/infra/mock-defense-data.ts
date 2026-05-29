@@ -95,7 +95,7 @@ export function buildCatalogPlacement({
   const layerGapBoost = 1 + group.weightPct / 100;
 
   return {
-    id: `${facilityId}-${scenarioId}-${group.id}`,
+    id: `${facilityId}-${scenarioId}-${group.id}${slotId ? `-${slotId}` : ""}`,
     assetId: group.assetTemplateId,
     facilityId,
     scenarioId,

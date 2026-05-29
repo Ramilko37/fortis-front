@@ -32,6 +32,7 @@ export type EchelonMapPlacement = {
   isCatalogPlacement: boolean;
   slotId?: string;
   catalogGroupId?: string;
+  qty: number;
 };
 
 export type EchelonMapSlot = {
@@ -301,6 +302,7 @@ export function buildEchelonMapModel({
           isCatalogPlacement: Boolean(placement.catalogGroupId),
           slotId: placement.slotId,
           catalogGroupId: placement.catalogGroupId,
+          qty: placement.qty,
         };
       })
     : [];

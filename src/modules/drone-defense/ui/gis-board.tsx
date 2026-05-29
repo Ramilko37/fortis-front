@@ -4,15 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import { H3HexagonLayer } from "@deck.gl/geo-layers";
 import { IconLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
-import { Layer } from "@deck.gl/core";
+import { Layer, WebMercatorViewport } from "@deck.gl/core";
 import MaplibreMap from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { StyleSpecification } from "maplibre-gl";
-import {
-  defenseLayers,
-  getCatalogGroupsForLayer,
-  type EchelonCatalogGroup,
-} from "@/modules/drone-defense/infra/mock-defense-data";
+import { defenseLayers, getCatalogGroupsForLayer, type EchelonCatalogGroup } from "@/modules/drone-defense/infra/mock-defense-data";
 import {
   buildEchelonMapModel,
   buildLayerFocusViewState,
@@ -24,9 +20,7 @@ import {
 } from "@/modules/drone-defense/domain/echelon-map-model";
 import {
   getBuildAssetForCatalogGroup,
-  getBuildOptionForSlot,
   type BuildAssetIcon,
-  type SlotBuildOption,
 } from "@/modules/drone-defense/domain/echelon-build-assets";
 import { withBasePath } from "@/shared/lib/base-path";
 import type {
@@ -51,10 +45,11 @@ type GisBoardProps = {
   catalog: DefenseCatalogResponse | null;
   selectedLayerId: DefenseLayerId;
   selectedSlotId: string | null;
-  selectedLayerGroups: EchelonCatalogGroup[];
+  activeToolId: string | null;
+  placementHint: string;
   onSelectLayer: (layerId: DefenseLayerId) => void;
   onSelectSlot: (slot: EchelonMapSlot) => void;
-  onAddCatalogGroup: (groupId: string, slot?: EchelonMapSlot) => void;
+  onSelectTool: (groupId: string) => void;
   onRemoveCatalogGroup: (groupId: string) => void;
   onOpenComparison?: () => void;
   onOpenDrilldown?: () => void;
@@ -130,12 +125,19 @@ function interpolateViewState(from: LayerFocusViewState, to: LayerFocusViewState
 
 type SlotBuildIcon = {
   slot: EchelonMapSlot;
-  option: SlotBuildOption;
+  group: EchelonCatalogGroup;
+  asset: BuildAssetIcon;
+  placement: EchelonMapPlacement | null;
 };
 
 type BuiltPlacementIcon = {
   placement: EchelonMapPlacement;
   asset: BuildAssetIcon;
+};
+
+type MapToolMarker = SlotBuildIcon & {
+  x: number;
+  y: number;
 };
 
 export function GisBoard({
@@ -150,10 +152,11 @@ export function GisBoard({
   catalog,
   selectedLayerId,
   selectedSlotId,
-  selectedLayerGroups,
+  activeToolId,
+  placementHint,
   onSelectLayer,
   onSelectSlot,
-  onAddCatalogGroup,
+  onSelectTool,
   onRemoveCatalogGroup,
   onOpenComparison,
   onOpenDrilldown,
@@ -163,19 +166,14 @@ export function GisBoard({
   const viewStateRef = useRef<LayerFocusViewState>(fallbackViewState);
   const animationFrameRef = useRef<number | null>(null);
   const isAnimatingFocusRef = useRef(false);
+  const boardRef = useRef<HTMLElement | null>(null);
+  const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
 
   const selectedFacility = facilities.find((item) => item.id === selectedFacilityId);
   const visibleFacilities = useMemo(() => (selectedFacility ? [selectedFacility] : []), [selectedFacility]);
-  const buildableCatalogGroups = useMemo(
-    () => defenseLayers.flatMap((layer) => getCatalogGroupsForLayer(layer.id)),
-    [],
-  );
   const layerCoverage = hexCoverageByLayer(layers);
   const selectedLayer = defenseLayers.find((layer) => layer.id === selectedLayerId) ?? defenseLayers[0];
   const selectedLayerPlacements = configuration.placements.filter((placement) => placement.layerId === selectedLayerId);
-  const nextGroupToPlace = selectedLayerGroups.find(
-    (group) => !configuration.placements.some((placement) => placement.catalogGroupId === group.id),
-  );
   const echelonModel = useMemo(
     () =>
       buildEchelonMapModel({
@@ -188,10 +186,6 @@ export function GisBoard({
         selectedSlotId,
       }),
     [catalog, configuration, layers, selectedFacility, selectedLayerId, selectedSlotId],
-  );
-  const selectedSlot = useMemo(
-    () => echelonModel.slots.find((slot) => slot.id === selectedSlotId) ?? null,
-    [echelonModel.slots, selectedSlotId],
   );
   const removableLayerPlacement =
     configuration.placements.find((placement) => placement.slotId === selectedSlotId && placement.catalogGroupId) ??
@@ -216,6 +210,20 @@ export function GisBoard({
         : fallbackViewState,
     [selectedFacility, selectedLayer],
   );
+
+  useEffect(() => {
+    if (!boardRef.current) return;
+
+    const resizeObserver = new ResizeObserver(([entry]) => {
+      setBoardSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+
+    resizeObserver.observe(boardRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   useEffect(() => {
     if (animationFrameRef.current !== null) {
@@ -259,13 +267,56 @@ export function GisBoard({
   const iconPlacements = useMemo(
     () =>
       echelonModel.placements
+        .filter((placement) => placement.layerId !== selectedLayerId)
         .map((placement) => ({
           placement,
           asset: placement.catalogGroupId ? getBuildAssetForCatalogGroup(placement.catalogGroupId) : null,
         }))
         .filter((item): item is BuiltPlacementIcon => Boolean(item.asset)),
-    [echelonModel.placements],
+    [echelonModel.placements, selectedLayerId],
   );
+
+  const mapToolMarkers = useMemo<MapToolMarker[]>(() => {
+    if (boardSize.width <= 0 || boardSize.height <= 0) return [];
+
+    const viewport = new WebMercatorViewport({
+      width: boardSize.width,
+      height: boardSize.height,
+      longitude: viewState.longitude,
+      latitude: viewState.latitude,
+      zoom: viewState.zoom,
+      pitch: viewState.pitch ?? 0,
+      bearing: viewState.bearing ?? 0,
+    });
+    const selectedSlots = echelonModel.slots.filter((slot) => slot.layerId === selectedLayerId);
+    const selectedGroups = getCatalogGroupsForLayer(selectedLayerId);
+
+    return selectedSlots.flatMap((slot) => {
+      const group = selectedGroups[slot.slotIndex - 1];
+      if (!group) return [];
+      const asset = getBuildAssetForCatalogGroup(group.id);
+      if (!asset) return [];
+
+      const placement =
+        echelonModel.placements.find((item) => item.slotId === slot.id && item.catalogGroupId === group.id) ?? null;
+      const [x, y] = viewport.project(slot.position);
+
+      if (x < -80 || y < -80 || x > boardSize.width + 80 || y > boardSize.height + 80) return [];
+
+      return [{ slot, group, asset, placement, x, y }];
+    });
+  }, [
+    boardSize.height,
+    boardSize.width,
+    echelonModel.placements,
+    echelonModel.slots,
+    selectedLayerId,
+    viewState.bearing,
+    viewState.latitude,
+    viewState.longitude,
+    viewState.pitch,
+    viewState.zoom,
+  ]);
 
   const deckLayers = useMemo(
     () =>
@@ -276,16 +327,32 @@ export function GisBoard({
           const zoneLayer = defenseLayers.find((layer) => layer.id === zone.layerId);
           const isFilledDiskZone = (zoneLayer?.distanceBandM.min ?? 0) <= 0;
           const zoneSlots = echelonModel.slots.filter((slot) => slot.layerId === zone.layerId);
-          const buildSlots = zoneSlots
-            .map((slot) => ({
-              slot,
-              option: getBuildOptionForSlot({
-                slot,
-                catalogGroups: buildableCatalogGroups,
-                placements: configuration.placements,
-              }),
-            }))
-            .filter((item): item is SlotBuildIcon => isActive && Boolean(item.option));
+          const zoneGroups = getCatalogGroupsForLayer(zone.layerId);
+          const buildSlots = isActive
+            ? zoneSlots.flatMap((slot) => {
+                const group = zoneGroups[slot.slotIndex - 1];
+                if (!group) return [];
+                const asset = getBuildAssetForCatalogGroup(group.id);
+                if (!asset) return [];
+                const placement =
+                  echelonModel.placements.find((item) => item.slotId === slot.id && item.catalogGroupId === group.id) ??
+                  null;
+                return [{
+                  slot,
+                  group,
+                  asset,
+                  placement,
+                }];
+              })
+            : [];
+          const builtSlotIds = new Set(buildSlots.filter((item) => item.placement).map((item) => item.slot.id));
+          const zoneSlotsWithDisplayStatus = zoneSlots.map((slot) =>
+            builtSlotIds.has(slot.id) && slot.status !== "selected"
+              ? { ...slot, status: "occupied" as const }
+              : slot,
+          );
+          const zoneSlotData = isActive ? zoneSlotsWithDisplayStatus : zoneSlots;
+          const unbuiltSlotIds = new Set(buildSlots.filter((item) => !item.placement).map((item) => item.slot.id));
           const zoneFillColor = (item: EchelonZone) =>
             isActive
               ? ([item.fillColor[0], item.fillColor[1], item.fillColor[2], 132] as [number, number, number, number])
@@ -308,28 +375,31 @@ export function GisBoard({
             if (!object) return;
 
             onSelectSlot(object);
-
-            const option = getBuildOptionForSlot({
-              slot: object,
-              catalogGroups: buildableCatalogGroups,
-              placements: configuration.placements,
-            });
-
-            if (option) {
-              onAddCatalogGroup(option.groupId, object);
-            }
           };
           const getSlotBuildTitle = (slot: EchelonMapSlot) => {
-            const option = getBuildOptionForSlot({
-              slot,
-              catalogGroups: buildableCatalogGroups,
-              placements: configuration.placements,
-            });
-            const profile = getSlotBuildProfile(slot.layerId);
+            const group = zoneGroups[slot.slotIndex - 1];
+            const placement = group
+              ? echelonModel.placements.find((item) => item.slotId === slot.id && item.catalogGroupId === group.id)
+              : null;
 
-            if (slot.status === "occupied") return `${zone.shortName} · ${slot.label}: построено`;
-            if (!option) return `${zone.shortName} · ${slot.label}: все юниты эшелона построены`;
-            return `${profile.title}: ${option.label}`;
+            if (!group) return `${zone.shortName} · ${slot.label}`;
+            return `${zone.shortName} · ${slot.label}: ${group.name} · ${placement ? `построено ${placement.qty}` : "не построено"}`;
+          };
+          const getSlotFillColor = (item: EchelonMapSlot): [number, number, number, number] => {
+            if (!isActive) {
+              return [item.color[0], item.color[1], item.color[2], item.status === "occupied" ? 145 : 90];
+            }
+
+            if (builtSlotIds.has(item.id)) return [15, 23, 42, 185];
+            if (unbuiltSlotIds.has(item.id)) return [226, 232, 240, 170];
+            return item.color;
+          };
+          const getSlotLineColor = (item: EchelonMapSlot): [number, number, number, number] => {
+            if (item.status === "selected") return [15, 23, 42, 255];
+            if (!isActive) return [148, 163, 184, 120];
+            if (builtSlotIds.has(item.id)) return [255, 255, 255, 245];
+            if (unbuiltSlotIds.has(item.id)) return [100, 116, 139, 170];
+            return zone.lineColor;
           };
           return [
             isFilledDiskZone
@@ -366,20 +436,13 @@ export function GisBoard({
                 }),
             new ScatterplotLayer<EchelonMapSlot>({
               id: `echelon-${layerSlug}-slots`,
-              data: zoneSlots,
+              data: zoneSlotData,
               getPosition: (item) => item.position,
               getRadius: (item) => (item.status === "selected" ? 2400 : item.status === "occupied" ? 2100 : 1600),
               radiusMinPixels: 8,
               radiusMaxPixels: 18,
-              getFillColor: (item) =>
-                isActive
-                  ? item.color
-                  : [item.color[0], item.color[1], item.color[2], item.status === "occupied" ? 145 : 90],
-              getLineColor: (item) => {
-                if (item.status === "selected") return [15, 23, 42, 255];
-                if (item.status === "occupied") return [255, 255, 255, 245];
-                return isActive ? zone.lineColor : [148, 163, 184, 120];
-              },
+              getFillColor: getSlotFillColor,
+              getLineColor: getSlotLineColor,
               lineWidthMinPixels: 2,
               stroked: true,
               pickable: true,
@@ -387,36 +450,9 @@ export function GisBoard({
               onHover: ({ object }) =>
                 setHoverLabel(object ? getSlotBuildTitle(object) : null),
             }),
-            new IconLayer<SlotBuildIcon>({
-              id: `echelon-${layerSlug}-build-icons`,
-              data: buildSlots,
-              getPosition: (item) => item.slot.position,
-              getIcon: (item) => ({
-                url: withBasePath(item.option.imageUrl),
-                width: 128,
-                height: 128,
-                anchorY: 64,
-              }),
-              getSize: (item) => (item.slot.status === "selected" ? 52 : 46),
-              sizeUnits: "pixels",
-              billboard: true,
-              pickable: true,
-              onClick: ({ object }) => handleSlotClick(object?.slot),
-              onHover: ({ object }) =>
-                setHoverLabel(object ? `Построить: ${object.option.label}` : null),
-            }),
             new TextLayer<EchelonMapSlot>({
               id: `echelon-${layerSlug}-slot-labels`,
-              data: zoneSlots.filter((slot) => {
-                if (!isActive) return true;
-                const buildOption = getBuildOptionForSlot({
-                  slot,
-                  catalogGroups: buildableCatalogGroups,
-                  placements: configuration.placements,
-                });
-                const builtAsset = slot.catalogGroupId ? getBuildAssetForCatalogGroup(slot.catalogGroupId) : null;
-                return !buildOption && !builtAsset;
-              }),
+              data: isActive ? [] : zoneSlots,
               getPosition: (item) => item.position,
               getText: (item) => (item.status === "occupied" ? item.label : getSlotBuildProfile(item.layerId).glyph),
               getColor: (item) =>
@@ -516,7 +552,7 @@ export function GisBoard({
         }),
         new TextLayer<EchelonMapPlacement>({
           id: "echelon-placement-labels",
-          data: echelonModel.placements.filter((item) => item.layerId === selectedLayerId),
+          data: echelonModel.placements.filter((item) => item.layerId === selectedLayerId && !item.catalogGroupId),
           getPosition: (item) => item.position,
           getText: (item) => item.label,
           getColor: [15, 23, 42, 255],
@@ -567,13 +603,10 @@ export function GisBoard({
       ] satisfies Layer[],
     [
       echelonModel,
-      buildableCatalogGroups,
-      configuration.placements,
       filteredHexes,
       filteredRoutes,
       iconPlacements,
       layerCoverage,
-      onAddCatalogGroup,
       onSelectFacility,
       onSelectLayer,
       onSelectSlot,
@@ -585,7 +618,10 @@ export function GisBoard({
   );
 
   return (
-    <section className={`relative h-[calc(100vh-11.5rem)] min-h-[540px] overflow-hidden rounded-lg border border-slate-200 ${className}`}>
+    <section
+      ref={boardRef}
+      className={`relative h-[calc(100vh-11.5rem)] min-h-[540px] overflow-hidden rounded-lg border border-slate-200 ${className}`}
+    >
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: nextViewState }) => {
@@ -607,6 +643,56 @@ export function GisBoard({
         <MaplibreMap mapStyle={mapStyle} />
       </DeckGL>
 
+      <div className="pointer-events-none absolute inset-0 z-10">
+        {mapToolMarkers.map((marker) => {
+          const isBuilt = Boolean(marker.placement);
+          const isSelected = activeToolId === marker.group.id || selectedSlotId === marker.slot.id;
+          return (
+            <button
+              key={marker.slot.id}
+              type="button"
+              className={`pointer-events-auto absolute h-[58px] w-[58px] cursor-pointer overflow-visible rounded-xl border-2 bg-white/95 p-1 shadow-lg shadow-slate-950/20 backdrop-blur transition ${
+                isSelected
+                  ? "border-blue-500 ring-2 ring-blue-400/45"
+                  : isBuilt
+                    ? "border-emerald-400"
+                    : "border-white/90"
+              }`}
+              style={{
+                left: marker.x,
+                top: marker.y,
+                transform: "translate(-50%, -72%)",
+              }}
+              title={`${marker.group.name}: ${isBuilt ? "установлено" : "не добавлено"}`}
+              onClick={() => {
+                onSelectSlot(marker.slot);
+                onSelectTool(marker.group.id);
+              }}
+              onMouseEnter={() =>
+                setHoverLabel(`${marker.slot.label}: ${marker.group.name} · ${isBuilt ? "установлено" : "не добавлено"}`)
+              }
+              onMouseLeave={() => setHoverLabel(null)}
+            >
+              <span
+                className={`block h-full w-full rounded-lg border bg-center bg-contain bg-no-repeat ${
+                  isBuilt
+                    ? "border-slate-200 bg-white"
+                    : "border-slate-200 bg-slate-100 grayscale"
+                }`}
+                style={{ backgroundImage: `url("${withBasePath(marker.asset.imageUrl)}")` }}
+              />
+              <span
+                className={`absolute -right-2 -top-2 grid h-6 min-w-6 place-items-center rounded-full border-2 border-white px-1 text-[11px] font-bold shadow ${
+                  isBuilt ? "bg-slate-950 text-white" : "bg-slate-200 text-slate-500"
+                }`}
+              >
+                {marker.placement?.qty ?? 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="absolute left-4 top-4 z-10 flex max-w-[min(42rem,calc(100%-2rem))] flex-wrap items-center gap-2">
         <button
           type="button"
@@ -618,7 +704,7 @@ export function GisBoard({
         <div className="rounded-lg border border-white/60 bg-white/95 px-3 py-2 text-xs shadow-md shadow-slate-900/10 backdrop-blur">
           <p className="font-semibold text-slate-950">{selectedFacility?.name ?? "Facility"}</p>
           <p className="text-slate-500">
-            {selectedLayer.shortName} · {selectedSlot?.label ?? "слот не выбран"} · {selectedLayer.distanceBandM.label}
+            {placementHint}
           </p>
         </div>
       </div>
@@ -654,21 +740,6 @@ export function GisBoard({
           );
         })}
         <span className="mx-1 h-6 w-px bg-slate-200" />
-        <button
-          className="h-9 rounded-md px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-          type="button"
-          onClick={() => nextGroupToPlace && onAddCatalogGroup(nextGroupToPlace.id)}
-          disabled={!nextGroupToPlace || selectedSlot?.status === "occupied"}
-          title={
-            selectedSlot?.status === "occupied"
-              ? "Выбранный слот уже занят"
-              : nextGroupToPlace
-                ? `Поставить: ${nextGroupToPlace.name}`
-                : "Все группы выбранного эшелона уже поставлены"
-          }
-        >
-          Поставить
-        </button>
         <button
           className="h-9 rounded-md px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
           type="button"
