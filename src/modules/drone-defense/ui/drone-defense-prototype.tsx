@@ -196,6 +196,16 @@ export function DroneDefensePrototype() {
             ))}
           </nav>
           <div className="space-y-2 border-t border-slate-100 px-2 py-3">
+            <Link
+              href="/calculator"
+              className="flex h-14 w-full flex-col items-center justify-center gap-1 rounded-xl bg-slate-900 text-[10px] font-semibold text-white shadow-md transition hover:bg-slate-800"
+              title="Просчитать конфигурацию в калькуляторе"
+            >
+              <span className="text-lg">
+                <CalculatorOutlined />
+              </span>
+              <span>Расчёт</span>
+            </Link>
             <button className="flex h-12 w-full items-center justify-center rounded-xl text-lg text-slate-400 hover:bg-slate-100" type="button" title="Сохранить">
               <SaveOutlined />
             </button>
@@ -229,6 +239,13 @@ export function DroneDefensePrototype() {
                 </button>
               ))}
             </div>
+            <Link
+              href="/calculator"
+              className="mt-2 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 text-xs font-semibold text-white lg:hidden"
+            >
+              <CalculatorOutlined />
+              Просчитать конфигурацию
+            </Link>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">

@@ -217,3 +217,121 @@
     background: oklch(from var(--accent) l c h / 0.2);
   }
 }
+
+/* ─── Calculator print report (browser "Save as PDF") ──────────────────────
+   The report lives inside a `hidden print:block` wrapper in calculator-page.
+   These rules style it for A4 paper and force background colours to render. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+.report-root {
+  color: #0f172a;
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.report-titlebar {
+  border-left: 4px solid #0e7490;
+  padding-left: 12px;
+  margin-bottom: 16px;
+}
+.report-titlebar h1 {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.report-titlebar p {
+  margin: 0;
+  color: #475569;
+  font-size: 10px;
+  max-width: 95%;
+}
+.report-section {
+  margin-bottom: 18px;
+  break-inside: avoid;
+}
+.report-section h2 {
+  font-family: var(--font-syne), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5px;
+}
+.report-table th,
+.report-table td {
+  border: 1px solid #e2e8f0;
+  padding: 4px 7px;
+  text-align: left;
+  vertical-align: top;
+}
+.report-table th {
+  background: #f1f5f9;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+.report-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-ibm-plex-mono), monospace;
+}
+.report-table .strong {
+  font-weight: 600;
+}
+.report-table .echelon-cell {
+  background: #f8fafc;
+  font-weight: 600;
+  width: 18%;
+}
+.report-table tfoot td {
+  background: #f1f5f9;
+  font-weight: 700;
+}
+.report-table .total {
+  font-size: 11px;
+}
+.report-legend {
+  font-size: 9px;
+  color: #475569;
+  margin: 0 0 8px;
+}
+.report-note {
+  font-size: 8.5px;
+  color: #64748b;
+  margin: 6px 0 0;
+}
+.report-footer {
+  margin-top: 20px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 8px;
+  color: #94a3b8;
+}
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
