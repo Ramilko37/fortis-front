@@ -13,6 +13,8 @@ import { buildEchelonMapModel, type EchelonMapSlot } from "@/modules/drone-defen
 import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
+import { getDefenseItemByMapGroupId, getDefenseItemById } from "@/shared/config/defense-catalog";
+import { useDefenseConfigurationStore } from "@/shared/lib/use-defense-configuration-store";
 import type { DefenseLayerId } from "@/shared/types/drone-defense";
 
 export function DroneDefensePrototype() {
@@ -28,7 +30,7 @@ export function DroneDefensePrototype() {
     view,
     facilityId,
     scenarioId,
-    configuration,
+    configuration: studioConfiguration,
     catalog,
     facilities,
     layers,
@@ -39,10 +41,20 @@ export function DroneDefensePrototype() {
     moveLocalPlacement,
     removeLocalPlacement,
   } = useDefenseStudioStore();
+  const {
+    configuration: sharedConfiguration,
+    addDefenseItem,
+    removeDefenseItem,
+    restoreConfigurationFromLocalStorage,
+  } = useDefenseConfigurationStore();
 
   useEffect(() => {
     void init();
   }, [init]);
+
+  useEffect(() => {
+    restoreConfigurationFromLocalStorage();
+  }, [restoreConfigurationFromLocalStorage]);
 
   const selectedFacility = useMemo(
     () => facilities.find((item) => item.id === facilityId) ?? null,
@@ -59,18 +71,52 @@ export function DroneDefensePrototype() {
     return selectedLayerGroups.filter((group) => group.name.toLowerCase().includes(query));
   }, [catalogQuery, selectedLayerGroups]);
   const placementHint = lastPlacementMessage ?? `Эшелон ${selectedLayer.shortName} · Добавьте или удалите средства защиты в сетке`;
+  const sharedCatalogPlacements = useMemo(
+    () =>
+      Object.entries(sharedConfiguration.selectedItems).flatMap(([itemId, quantity]) => {
+        const item = getDefenseItemById(itemId);
+        const groupId = item?.mapCatalogGroupIds[0];
+        if (!item || !groupId || quantity <= 0) return [];
+        const layerGroups = getCatalogGroupsForLayer(item.layerId ?? selectedLayerId);
+        const slotIndex = Math.max(0, layerGroups.findIndex((group) => group.id === groupId));
+        const slotId = item.layerId ? `${item.layerId}-slot-${String(slotIndex + 1).padStart(2, "0")}` : undefined;
+        return [
+          {
+            ...buildCatalogPlacement({
+              facilityId,
+              scenarioId,
+              groupId,
+              slotId,
+            }),
+            qty: quantity,
+          },
+        ];
+      }),
+    [facilityId, scenarioId, selectedLayerId, sharedConfiguration.selectedItems],
+  );
+  const localScenePlacements = useMemo(
+    () => studioConfiguration.placements.filter((placement) => placement.id.startsWith("local-")),
+    [studioConfiguration.placements],
+  );
+  const mapConfiguration = useMemo(
+    () => ({
+      ...studioConfiguration,
+      placements: [...sharedCatalogPlacements, ...localScenePlacements],
+    }),
+    [localScenePlacements, sharedCatalogPlacements, studioConfiguration],
+  );
   const echelonModel = useMemo(
     () =>
       buildEchelonMapModel({
         facility: selectedFacility,
         layers: defenseLayers,
         layerCoverage: layers,
-        configuration,
+        configuration: mapConfiguration,
         catalog,
         selectedLayerId,
         selectedSlotId,
       }),
-    [catalog, configuration, layers, selectedFacility, selectedLayerId, selectedSlotId],
+    [catalog, mapConfiguration, layers, selectedFacility, selectedLayerId, selectedSlotId],
   );
   const selectedLayerSlots = useMemo(
     () => echelonModel.slots.filter((slot) => slot.layerId === selectedLayerId),
@@ -101,11 +147,13 @@ export function DroneDefensePrototype() {
     setSelectedLayerId(slot.layerId);
     setSelectedSlotId(slot.id);
     setActiveToolId(group.id);
-    if (configuration.placements.some((placement) => placement.catalogGroupId === group.id)) {
-      setLastPlacementMessage(`${group.name} уже установлено на эшелон ${selectedLayer.shortName}`);
+    const item = getDefenseItemByMapGroupId(group.id);
+    if (item) {
+      addDefenseItem(item.id);
+      setLastPlacementMessage(`${group.name} добавлено в общую конфигурацию`);
       return;
     }
-    if (configuration.placements.some((placement) => placement.slotId === slot.id)) {
+    if (mapConfiguration.placements.some((placement) => placement.slotId === slot.id)) {
       setLastPlacementMessage(`${slot.label} уже занят`);
       return;
     }
@@ -115,7 +163,13 @@ export function DroneDefensePrototype() {
   };
 
   const removeCatalogGroup = (groupId: string) => {
-    const placement = configuration.placements.find((item) => item.catalogGroupId === groupId);
+    const item = getDefenseItemByMapGroupId(groupId);
+    if (item) {
+      removeDefenseItem(item.id);
+      setLastPlacementMessage(`${item.title} удалено из общей конфигурации`);
+      return;
+    }
+    const placement = mapConfiguration.placements.find((item) => item.catalogGroupId === groupId);
     if (!placement) return;
     void removeLocalPlacement(placement.id);
     setLastPlacementMessage(`${placement.catalogGroupName ?? "Средство защиты"} удалено`);
@@ -191,7 +245,7 @@ export function DroneDefensePrototype() {
               <DefenseToolsPanel
                 groups={filteredLayerGroups}
                 slots={selectedLayerSlots}
-                placements={configuration.placements}
+                placements={mapConfiguration.placements}
                 selectedToolId={activeToolId}
                 onSelectTool={handleSelectTool}
                 onAddTool={addToolToSlot}
@@ -223,7 +277,7 @@ export function DroneDefensePrototype() {
             hexCells={studioPreviewData.hexCells}
             threatRoutes={studioPreviewData.threatRoutes}
             layers={layers}
-            configuration={configuration}
+            configuration={mapConfiguration}
             catalog={catalog}
             selectedLayerId={selectedLayerId}
             selectedSlotId={selectedSlotId}
@@ -250,7 +304,7 @@ export function DroneDefensePrototype() {
               key={`${facilityId}:${scenarioId}`}
               facilityName={selectedFacility?.name ?? "Facility"}
               scenario={scenarioId}
-              configuration={configuration}
+              configuration={mapConfiguration}
               onScenarioChange={(nextScenarioId) => void setScenarioId(nextScenarioId)}
               onLocalPlacementUpsert={(placement) => void upsertLocalPlacement(placement)}
               onLocalPlacementMove={(args) => void moveLocalPlacement(args)}

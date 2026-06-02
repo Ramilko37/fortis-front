@@ -32,7 +32,7 @@ export function DefenseToolIcon({
   onRemove,
 }: DefenseToolIconProps) {
   const isBuilt = installedCount > 0;
-  const canAdd = !isBuilt && !disabledReason;
+  const canAdd = installedCount < maxCount && !disabledReason;
   const canRemove = isBuilt;
   const title = disabledReason ?? `${name}: ${isBuilt ? "установлено" : "можно построить"}`;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { BulbOutlined, MoonOutlined, PrinterOutlined } from "@ant-design/icons";
@@ -17,11 +17,20 @@ import { computeWeightedScore, priorityForScore } from "@/modules/defense-calcul
 import { fitToBudget } from "@/modules/defense-calculator/domain/budget-fit";
 import { formatMln, priorityLabel } from "@/modules/defense-calculator/domain/format";
 import { CalculatorReport } from "@/modules/defense-calculator/ui/calculator-report";
+import { defenseItems } from "@/shared/config/defense-catalog";
+import {
+  calculatorAssetIdToDefenseItemId,
+  configurationToCalculatorLines,
+  calculateTotalPositions,
+  calculateTotalUnits,
+} from "@/shared/lib/defense-configuration";
+import { useDefenseConfigurationStore } from "@/shared/lib/use-defense-configuration-store";
 import type {
-  Configuration,
-  ConfigurationLine,
+  DefenseAsset,
+  EchelonId,
   PriorityColor,
 } from "@/modules/defense-calculator/domain/calculator-types";
+import type { DefenseLayerId } from "@/shared/types/drone-defense";
 
 type Tab = "configure" | "compare" | "budget";
 
@@ -35,57 +44,98 @@ const PRIORITY_TEXT: Record<PriorityColor, string> = {
   orange: "text-amber-600",
   red: "text-rose-600",
 };
+const DEFENSE_LAYER_SECTIONS: Array<{
+  id: DefenseLayerId;
+  order: number;
+  shortName: string;
+  name: string;
+  rangeLabel: string;
+}> = [
+  { id: "layer_01_external_warning", order: 1, shortName: "L1", name: "Внешнее предупреждение", rangeLabel: "60-120 км" },
+  { id: "layer_02_detection", order: 2, shortName: "L2", name: "Обнаружение", rangeLabel: "30-60 км" },
+  { id: "layer_03_identification", order: 3, shortName: "L3", name: "Идентификация", rangeLabel: "15-30 км" },
+  { id: "layer_04_suppression", order: 4, shortName: "L4", name: "Подавление", rangeLabel: "8-15 км" },
+  { id: "layer_05_mid_range_kinetic", order: 5, shortName: "L5", name: "Средний рубеж", rangeLabel: "4-8 км" },
+  { id: "layer_06_last_line_kinetic", order: 6, shortName: "L6", name: "Последний рубеж", rangeLabel: "1,5-4 км" },
+  { id: "layer_07_accuracy_disruption", order: 7, shortName: "L7", name: "Срыв точности", rangeLabel: "0,5-1,5 км" },
+  { id: "layer_08_passive_protection", order: 8, shortName: "L8", name: "Пассивная защита", rangeLabel: "100-500 м" },
+  { id: "layer_09_hardening", order: 9, shortName: "L9", name: "Hardening", rangeLabel: "0-100 м" },
+];
+
+function defenseItemForAssetId(assetId: string) {
+  const itemId = calculatorAssetIdToDefenseItemId(assetId);
+  return itemId ? defenseItems.find((item) => item.id === itemId) : null;
+}
+
+function layerIdForAsset(assetId: string): DefenseLayerId | null {
+  return defenseItemForAssetId(assetId)?.layerId ?? null;
+}
+
+function scoreToSyntheticScores(score: number): DefenseAsset["scores"] {
+  const normalized = Math.max(1, Math.min(5, score / 20));
+  return {
+    effectiveness: normalized,
+    deploySpeed: normalized,
+    cost: normalized,
+    scalability: normalized,
+    availability: normalized,
+    governance: normalized,
+    adaptivity: normalized,
+  };
+}
+
+function mapOnlyDefenseAssets(): DefenseAsset[] {
+  return defenseItems.flatMap((item) => {
+    if (item.calculatorAssetId || !item.echelonId) return [];
+    return [
+      {
+        id: item.id,
+        name: item.title,
+        echelonId: item.echelonId as EchelonId,
+        unitPriceMln: item.pricePerUnitMln ?? 0,
+        unit: item.unitLabel === "комплект" ? "комплект" : "шт",
+        scores: scoreToSyntheticScores(item.score),
+        scoreSource: "expert-stub",
+      },
+    ];
+  });
+}
 
 export function CalculatorPage() {
   const [tab, setTab] = useState<Tab>("configure");
-  const [config, setConfig] = useState<Configuration>(() => {
-    const nak = referenceConfigurations.find((c) => c.id === "nak")!;
-    return { id: "custom", name: "Моя конфигурация", lines: nak.lines.map((l) => ({ ...l })) };
-  });
   const [budgetMln, setBudgetMln] = useState(9300);
+  const {
+    configuration,
+    setDefenseItemQuantity,
+    loadPresetConfiguration,
+    applyBudgetSelection,
+    restoreConfigurationFromLocalStorage,
+  } = useDefenseConfigurationStore();
+
+  useEffect(() => {
+    restoreConfigurationFromLocalStorage();
+  }, [restoreConfigurationFromLocalStorage]);
+
+  const calculatorAssets = useMemo(() => [...assets, ...mapOnlyDefenseAssets()], []);
 
   const context: CostingContext = useMemo(
-    () => ({ assets, echelons, criteria, thresholds: defaultThresholds }),
-    [],
+    () => ({ assets: calculatorAssets, echelons, criteria, thresholds: defaultThresholds }),
+    [calculatorAssets],
   );
 
   const scoredAssets = useMemo(
     () =>
-      assets.map((asset) => {
+      calculatorAssets.map((asset) => {
         const weightedScore = computeWeightedScore(asset.scores, criteria);
         return { asset, weightedScore, priority: priorityForScore(weightedScore, defaultThresholds) };
       }),
-    [],
+    [calculatorAssets],
   );
 
-  const quantityFor = (assetId: string) =>
-    config.lines.find((line) => line.assetId === assetId)?.quantity ?? 0;
-
-  const setQuantity = (assetId: string, quantity: number) => {
-    const q = Math.max(0, Math.floor(quantity || 0));
-    setConfig((prev) => {
-      const without = prev.lines.filter((line) => line.assetId !== assetId);
-      const lines: ConfigurationLine[] = q > 0 ? [...without, { assetId, quantity: q }] : without;
-      return { ...prev, lines };
-    });
-  };
-
-  const loadReference = (refId: string) => {
-    const ref = referenceConfigurations.find((c) => c.id === refId);
-    if (!ref) return;
-    setConfig({ id: "custom", name: `Моя (на базе ${ref.name})`, lines: ref.lines.map((l) => ({ ...l })) });
-  };
-
-  // For reference-matching configs, apply the PDF bundled lump sums; otherwise honest unit×qty.
-  const estimate = useMemo(() => {
-    const matchingRef = referenceConfigurations.find(
-      (ref) =>
-        ref.lines.length === config.lines.length &&
-        ref.lines.every((rl) => config.lines.some((cl) => cl.assetId === rl.assetId && cl.quantity === rl.quantity)),
-    );
-    const overrides = matchingRef ? bundleOverridesMln[matchingRef.id] : undefined;
-    return estimateConfiguration(config, { ...context, lineTotalOverridesMln: overrides });
-  }, [config, context]);
+  const budgetResult = useMemo(
+    () => fitToBudget(budgetMln, { assets, criteria, thresholds: defaultThresholds }),
+    [budgetMln],
+  );
 
   const referenceEstimates = useMemo(
     () =>
@@ -95,12 +145,44 @@ export function CalculatorPage() {
     [context],
   );
 
-  const budgetResult = useMemo(
-    () => fitToBudget(budgetMln, { assets, criteria, thresholds: defaultThresholds }),
-    [budgetMln],
+  const calculatorConfig = useMemo(
+    () => ({
+      id: configuration.id,
+      name: configuration.name,
+      lines: configurationToCalculatorLines(configuration),
+    }),
+    [configuration],
   );
 
-  const placedCount = config.lines.reduce((acc, line) => acc + line.quantity, 0);
+  const quantityFor = (assetId: string) => {
+    const itemId = calculatorAssetIdToDefenseItemId(assetId);
+    return itemId ? configuration.selectedItems[itemId] ?? 0 : 0;
+  };
+
+  const setQuantity = (assetId: string, quantity: number) => {
+    const itemId = calculatorAssetIdToDefenseItemId(assetId);
+    if (!itemId) return;
+    setDefenseItemQuantity(itemId, quantity);
+  };
+
+  const loadReference = (refId: string) => {
+    loadPresetConfiguration(refId);
+  };
+
+  // For reference-matching configs, apply the PDF bundled lump sums; otherwise honest unit×qty.
+  const estimate = useMemo(() => {
+    const matchingRef = referenceConfigurations.find(
+      (ref) =>
+        ref.lines.length === calculatorConfig.lines.length &&
+        ref.lines.every((rl) => calculatorConfig.lines.some((cl) => cl.assetId === rl.assetId && cl.quantity === rl.quantity)),
+    );
+    const overrides = matchingRef ? bundleOverridesMln[matchingRef.id] : undefined;
+    return estimateConfiguration(calculatorConfig, { ...context, lineTotalOverridesMln: overrides });
+  }, [calculatorConfig, context]);
+
+  const placedCount = calculateTotalUnits(configuration);
+  const positionsCount = calculateTotalPositions(configuration);
+  const isConfigurationEmpty = positionsCount === 0;
 
   return (
     <div className="font-(family-name:--font-manrope) min-h-screen bg-[#eef3f8] text-slate-800">
@@ -159,11 +241,19 @@ export function CalculatorPage() {
                 {formatMln(estimate.totalMln)}
               </p>
               <p className="mt-0.5 font-mono text-[11px] text-slate-400 ">
-                {placedCount} ед. · {config.lines.length} позиций
+                {placedCount} ед. · {positionsCount} позиций
               </p>
             </div>
           </div>
         </header>
+
+        <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+          isConfigurationEmpty ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-900"
+        }`}>
+          {isConfigurationEmpty
+            ? "Конфигурация пока не собрана. Добавьте средства защиты на карте или загрузите эталон."
+            : "Расчёт построен на основе текущей конфигурации карты"}
+        </div>
 
         {/* Tabs */}
         <nav className="mt-6 flex gap-1 rounded-xl border border-slate-200 bg-white/70 p-1 ">
@@ -203,13 +293,18 @@ export function CalculatorPage() {
             <CompareTab referenceEstimates={referenceEstimates} myEstimate={estimate} />
           ) : null}
           {tab === "budget" ? (
-            <BudgetTab budgetMln={budgetMln} setBudgetMln={setBudgetMln} result={budgetResult} />
+            <BudgetTab
+              budgetMln={budgetMln}
+              setBudgetMln={setBudgetMln}
+              result={budgetResult}
+              onApplySelection={() => applyBudgetSelection(budgetResult.picks)}
+            />
           ) : null}
         </main>
 
         <footer className="mt-8 border-t border-slate-200 pt-4 font-mono text-[11px] text-slate-400">
-          Цены — из эталонного документа (проверены арифметикой). Оценки по 7&nbsp;критериям — предварительная
-          экспертная оценка, редактируется. Логика расчёта неизменна при масштабировании на новые объекты.
+          Базовые цены — из эталонного документа, расширенный каталог карты дополнен ориентировочными CAPEX-оценками.
+          Оценки по 7&nbsp;критериям — предварительная экспертная оценка, редактируется.
         </footer>
       </div>
 
@@ -220,6 +315,7 @@ export function CalculatorPage() {
           referenceEstimates={referenceEstimates}
           scoredAssets={scoredAssets}
           budgetResult={budgetResult}
+          generatedAt={new Date()}
         />
       </div>
     </div>
@@ -258,7 +354,7 @@ function ThemeToggle() {
 // ─── Configure tab ──────────────────────────────────────────────────────────
 
 type ScoredAsset = {
-  asset: (typeof assets)[number];
+  asset: DefenseAsset;
   weightedScore: number;
   priority: PriorityColor;
 };
@@ -277,6 +373,27 @@ function ConfigureTab({
   loadReference: (refId: string) => void;
 }) {
   const card = "rounded-2xl border border-slate-200 bg-white ";
+  const estimateLines = estimate.echelons.flatMap((echelon) => echelon.lines);
+  const layerSummaries = DEFENSE_LAYER_SECTIONS.map((layer) => {
+    const layerAssets = scoredAssets.filter((item) => layerIdForAsset(item.asset.id) === layer.id);
+    const layerLines = estimateLines.filter((line) => layerIdForAsset(line.assetId) === layer.id);
+    const selectedAssetScores = layerAssets
+      .filter(({ asset }) => quantityFor(asset.id) > 0)
+      .map(({ weightedScore }) => weightedScore);
+    const totalMln = layerLines.reduce((acc, line) => acc + line.lineTotalMln, 0);
+    const coveragePct =
+      selectedAssetScores.length > 0
+        ? selectedAssetScores.reduce((acc, value) => acc + value, 0) / selectedAssetScores.length / 100
+        : 0;
+    return {
+      layer,
+      assets: layerAssets,
+      totalMln,
+      coveragePct,
+      isEmpty: layerLines.length === 0,
+    };
+  });
+
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
       <div className="space-y-4">
@@ -294,32 +411,30 @@ function ConfigureTab({
           ))}
         </div>
 
-        {echelons.map((echelon) => {
-          const echelonAssets = scoredAssets.filter((s) => s.asset.echelonId === echelon.id);
-          const echelonEstimate = estimate.echelons.find((e) => e.echelonId === echelon.id);
-          if (echelonAssets.length === 0) return null;
+        {layerSummaries.map(({ layer, assets: layerAssets, totalMln, coveragePct }) => {
+          if (layerAssets.length === 0) return null;
           return (
-            <section key={echelon.id} className={`${card} p-4`}>
+            <section key={layer.id} className={`${card} p-4`}>
               <div className="flex items-baseline justify-between gap-3 border-b border-slate-200 pb-3 ">
                 <div className="flex items-baseline gap-2.5">
                   <span className="rounded-md bg-slate-200 px-2 py-0.5 font-mono text-[11px] font-bold text-blue-700">
-                    {echelon.order}
+                    {layer.shortName}
                   </span>
                   <h3 className="font-(family-name:--font-syne) text-base font-semibold text-slate-900 ">
-                    {echelon.name}
+                    {layer.name}
                   </h3>
-                  <span className="font-mono text-[11px] text-slate-400 ">{echelon.rangeLabel}</span>
+                  <span className="font-mono text-[11px] text-slate-400 ">{layer.rangeLabel}</span>
                 </div>
                 <div className="text-right">
                   <span className="font-mono text-sm font-semibold tabular-nums text-slate-700 ">
-                    {formatMln(echelonEstimate?.echelonTotalMln ?? 0)}
+                    {formatMln(totalMln)}
                   </span>
-                  <CoverageBar pct={echelonEstimate?.coveragePct ?? 0} />
+                  <CoverageBar pct={coveragePct} />
                 </div>
               </div>
 
               <div className="mt-3 space-y-1.5">
-                {echelonAssets.map(({ asset, weightedScore, priority }) => {
+                {layerAssets.map(({ asset, weightedScore, priority }) => {
                   const qty = quantityFor(asset.id);
                   const lineTotal = asset.unitPriceMln * qty;
                   return (
@@ -363,17 +478,17 @@ function ConfigureTab({
 
       <aside className="lg:sticky lg:top-6 lg:self-start">
         <div className="rounded-2xl border border-slate-200 bg-white p-4  ">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-slate-500">Смета по эшелонам</p>
+          <p className="font-mono text-[11px] uppercase tracking-wider text-slate-500">Смета по эшелонам карты</p>
           <div className="mt-3 space-y-1">
-            {estimate.echelons.map((e) => (
-              <div key={e.echelonId} className="flex items-center justify-between gap-2 text-sm">
-                <span className={`truncate ${e.isEmpty ? "text-slate-400" : "text-slate-600 "}`}>
-                  {e.echelonName}
+            {layerSummaries.map(({ layer, totalMln, isEmpty }) => (
+              <div key={layer.id} className="flex items-center justify-between gap-2 text-sm">
+                <span className={`truncate ${isEmpty ? "text-slate-400" : "text-slate-600 "}`}>
+                  {layer.shortName} · {layer.name}
                 </span>
                 <span
-                  className={`font-mono tabular-nums ${e.isEmpty ? "text-slate-300" : "text-slate-700 "}`}
+                  className={`font-mono tabular-nums ${isEmpty ? "text-slate-300" : "text-slate-700 "}`}
                 >
-                  {e.isEmpty ? "—" : formatMln(e.echelonTotalMln)}
+                  {isEmpty ? "—" : formatMln(totalMln)}
                 </span>
               </div>
             ))}
@@ -509,10 +624,12 @@ function BudgetTab({
   budgetMln,
   setBudgetMln,
   result,
+  onApplySelection,
 }: {
   budgetMln: number;
   setBudgetMln: (v: number) => void;
   result: ReturnType<typeof fitToBudget>;
+  onApplySelection: () => void;
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
@@ -543,6 +660,13 @@ function BudgetTab({
             Порядок закупки: сначала первоочередные (зелёные) по убыванию балла, затем средний и последний
             приоритет. Жадный отбор в&nbsp;рамках бюджета.
           </p>
+          <button
+            type="button"
+            onClick={onApplySelection}
+            className="mt-4 h-10 w-full rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Применить подбор к карте
+          </button>
         </div>
       </aside>
 

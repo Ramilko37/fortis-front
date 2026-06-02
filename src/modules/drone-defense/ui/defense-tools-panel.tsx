@@ -4,6 +4,7 @@ import type { EchelonCatalogGroup } from "@/modules/drone-defense/infra/mock-def
 import { getBuildAssetForCatalogGroup } from "@/modules/drone-defense/domain/echelon-build-assets";
 import type { EchelonMapSlot } from "@/modules/drone-defense/domain/echelon-map-model";
 import { DefenseToolIcon } from "@/modules/drone-defense/ui/defense-tool-icon";
+import { getDefenseItemByMapGroupId } from "@/shared/config/defense-catalog";
 import type { Placement } from "@/shared/types/drone-defense";
 
 type DefenseToolsPanelProps = {
@@ -38,9 +39,8 @@ export function DefenseToolsPanel({
       {groups.map((group, index) => {
         const asset = getBuildAssetForCatalogGroup(group.id);
         const slot = slots[index] ?? null;
-        const placement = slot
-          ? placements.find((item) => item.catalogGroupId === group.id && item.slotId === slot.id)
-          : null;
+        const placement = placements.find((item) => item.catalogGroupId === group.id) ?? null;
+        const defenseItem = getDefenseItemByMapGroupId(group.id);
         const installedCount = placement?.qty ?? 0;
         const disabledReason = !slot
           ? "Для этого средства нет слота на выбранном эшелоне"
@@ -57,7 +57,7 @@ export function DefenseToolsPanel({
             roleLabel={`${asset.label} · слот ${slot?.label ?? "—"} · вес ${group.weightPct}%`}
             imageUrl={asset.imageUrl}
             installedCount={installedCount}
-            maxCount={1}
+            maxCount={defenseItem?.maxQuantity ?? 1}
             disabledReason={disabledReason}
             isPlaceholder={asset.isPlaceholder}
             isSelected={selectedToolId === group.id}

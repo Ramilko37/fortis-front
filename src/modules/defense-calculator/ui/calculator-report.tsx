@@ -32,28 +32,70 @@ export function CalculatorReport({
   referenceEstimates,
   scoredAssets,
   budgetResult,
+  generatedAt,
 }: {
   myEstimate: ConfigurationEstimate;
   referenceEstimates: Array<ReturnType<typeof estimateConfiguration>>;
   scoredAssets: ScoredAsset[];
   budgetResult: ReturnType<typeof fitToBudget>;
+  generatedAt?: Date;
 }) {
   const columns = [...referenceEstimates, myEstimate];
   const minTotal = Math.min(...columns.map((c) => c.totalMln));
   const weightsSummary = criteria.map((c) => `${c.name} ${c.weight}`).join(" · ");
+  const picksIncludedCount = budgetResult.picks.filter((pick) => pick.included).length;
+  const generatedAtLabel = (generatedAt ?? new Date()).toLocaleString("ru-RU");
 
   return (
     <div className="report-root">
-      {/* Title block */}
       <div className="report-titlebar">
         <h1>Расчёт конфигурации средств защиты от&nbsp;БПЛА</h1>
         <p>
           Целевая угроза: дрон массой 200&nbsp;кг (включая БЧ&nbsp;75&nbsp;кг), предельная скорость 200&nbsp;км/ч.
           Автоматический просчёт сметы, приоритета и&nbsp;покрытия эшелонов.
         </p>
+        <p className="report-date" suppressHydrationWarning>
+          Дата генерации: {generatedAtLabel}
+        </p>
       </div>
 
-      {/* 1. My estimate */}
+      <section className="report-section">
+        <h2>Сводка отчёта</h2>
+        <table className="report-table report-table-tight">
+          <thead>
+            <tr>
+              <th>Показатель</th>
+              <th className="num">Значение</th>
+              <th>Комментарий</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Выбранная конфигурация</td>
+              <td className="num strong">{myEstimate.configurationName}</td>
+              <td>Текущий рабочий вариант</td>
+            </tr>
+            <tr>
+              <td>Итоговая стоимость</td>
+              <td className="num total">{formatMln(myEstimate.totalMln)}</td>
+              <td>Сумма по всем эшелонам</td>
+            </tr>
+            <tr>
+              <td>Бюджетный режим</td>
+              <td className="num">{formatMln(budgetResult.budgetMln)}</td>
+              <td>
+                Распределено {formatMln(budgetResult.spentMln)}, остаток {formatMln(budgetResult.remainingMln)}
+              </td>
+            </tr>
+            <tr>
+              <td>Позиции в бюджете</td>
+              <td className="num">{picksIncludedCount} / {budgetResult.picks.length}</td>
+              <td>Количество включенных средств</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <section className="report-section">
         <h2>1. Смета выбранной конфигурации — {myEstimate.configurationName}</h2>
         <table className="report-table">
@@ -97,7 +139,6 @@ export function CalculatorReport({
         </table>
       </section>
 
-      {/* 2. Comparison */}
       <section className="report-section">
         <h2>2. Сравнение конфигураций</h2>
         <table className="report-table">
@@ -144,7 +185,6 @@ export function CalculatorReport({
         </table>
       </section>
 
-      {/* 3. Priorities */}
       <section className="report-section">
         <h2>3. Приоритет средств защиты</h2>
         <p className="report-legend">
@@ -185,7 +225,6 @@ export function CalculatorReport({
         <p className="report-note">Веса критериев (сумма 100): {weightsSummary}.</p>
       </section>
 
-      {/* 4. Budget fit */}
       <section className="report-section">
         <h2>4. Подбор под бюджет — {formatMln(budgetResult.budgetMln)}</h2>
         <p className="report-note">
@@ -222,8 +261,8 @@ export function CalculatorReport({
       </section>
 
       <p className="report-footer">
-        Цены — из эталонного документа (проверены арифметикой). Оценки по 7&nbsp;критериям — предварительная
-        экспертная оценка. Логика расчёта неизменна при масштабировании на новые объекты.
+        Базовые цены — из эталонного документа, расширенный каталог карты дополнен ориентировочными CAPEX-оценками.
+        Оценки по 7&nbsp;критериям — предварительная экспертная оценка.
       </p>
     </div>
   );

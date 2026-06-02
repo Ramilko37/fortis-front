@@ -145,7 +145,7 @@ export const assets: DefenseAsset[] = [
     id: "pantsir-zrpk",
     name: "ЗРПК «Панцирь»",
     echelonId: "ech_5_fire_reserve",
-    unitPriceMln: 0, // price not listed in PDF; organizational/state-provided
+    unitPriceMln: 850, // ориентировочная CAPEX-оценка; цена не была указана в исходном PDF
     unit: "шт",
     scores: scores(5, 3, 1, 3, 2, 1, 3), // ≈58 (orange)
     scoreSource: "expert-stub",
