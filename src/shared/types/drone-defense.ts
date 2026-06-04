@@ -36,6 +36,8 @@ export type DefenseLayer = {
   name: string;
   shortName: string;
   defaultWeight: number;
+  color?: string;
+  opacity?: number;
   distanceBandM: {
     min: number;
     max: number;
