@@ -1,7 +1,9 @@
 import { defenseAssetLibrary } from "@/shared/config/defense-asset-library";
+import { getDefenseItemById } from "@/shared/config/defense-catalog";
 import { defaultDefenseProjectLayers, defaultProtectedObject } from "@/shared/config/default-defense-layers";
 import type {
   Coordinates,
+  DefenseAssetCategory,
   DefenseAssetLibraryItem,
   DefenseProject,
   EditableDefenseLayer,
@@ -60,6 +62,23 @@ export type LayerInsertOption =
       availableWidthM: number;
     };
 
+export type AssetCatalogItem = {
+  assetId: string;
+  title: string;
+  subtitle: string;
+  category: DefenseAssetCategory;
+  roles: DefenseAssetLibraryItem["roles"];
+  pricePerUnitMln: number | null;
+  score: number;
+  priority: DefenseAssetLibraryItem["priority"];
+  imageUrl: string;
+  isRecommendedForActiveLayer: boolean;
+  placedCount: number;
+  maxQuantity: number;
+  placementType: DefenseAssetLibraryItem["placementType"];
+  tags: string[];
+};
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -78,6 +97,58 @@ function isLayerVisible(layer: EditableDefenseLayer) {
 
 function normalizeMeters(value: number | undefined, fallback: number) {
   return Math.max(0, Math.floor(Number.isFinite(value) ? Number(value) : fallback));
+}
+
+const fallbackAssetImageByCategory: Record<DefenseAssetCategory, string> = {
+  "early-warning": "/drone-defense/echelons/l1/regional-mchs-center.png",
+  detection: "/drone-defense/echelons/l2/radar-station.png",
+  classification: "/drone-defense/echelons/l2/target-classification-software.png",
+  jamming: "/drone-defense/echelons/placeholders/l4.svg",
+  spoofing: "/drone-defense/echelons/placeholders/l4.svg",
+  kinetic: "/drone-defense/echelons/placeholders/l6.svg",
+  interceptor: "/drone-defense/echelons/placeholders/l5.svg",
+  "passive-protection": "/drone-defense/echelons/placeholders/l8.svg",
+  "engineering-protection": "/drone-defense/echelons/placeholders/l9.svg",
+  infrastructure: "/drone-defense/echelons/placeholders/l9.svg",
+  software: "/drone-defense/echelons/l2/target-classification-software.png",
+  "command-center": "/drone-defense/echelons/l1/regional-operations-hq-fsb-curator.png",
+  "external-service": "/drone-defense/echelons/l1/osint-monitoring-workstation.png",
+};
+
+function assetSubtitle(asset: DefenseAssetLibraryItem) {
+  const roles = asset.roles.join(", ");
+  const price = asset.pricePerUnitMln === null ? "без CAPEX" : `${asset.pricePerUnitMln} млн/${asset.unitLabel}`;
+  return `${asset.shortName ?? asset.category} · ${roles} · ${price}`;
+}
+
+export function getAssetCatalogItems(
+  project: DefenseProject,
+  activeLayerCode: string | undefined,
+  placedObjects: PlacedDefenseObject[] = project.placedObjects,
+): AssetCatalogItem[] {
+  return project.assetLibrary.map((asset) => {
+    const legacyItem = getDefenseItemById(asset.id);
+    const placedCount = placedObjects
+      .filter((object) => object.assetId === asset.id)
+      .reduce((acc, object) => acc + object.quantity, 0);
+    const recommendedCodes = asset.recommendedLayerCodes ?? [];
+    return {
+      assetId: asset.id,
+      title: asset.name,
+      subtitle: assetSubtitle(asset),
+      category: asset.category,
+      roles: asset.roles,
+      pricePerUnitMln: asset.pricePerUnitMln,
+      score: asset.score ?? 0,
+      priority: asset.priority,
+      imageUrl: asset.iconUrl ?? fallbackAssetImageByCategory[asset.category],
+      isRecommendedForActiveLayer: Boolean(activeLayerCode && recommendedCodes.includes(activeLayerCode)),
+      placedCount,
+      maxQuantity: legacyItem?.maxQuantity ?? 1,
+      placementType: asset.placementType,
+      tags: asset.tags ?? [],
+    };
+  });
 }
 
 export function getLayerRadii(layer: EditableDefenseLayer): LayerRadii {
@@ -255,6 +326,30 @@ export function createDefaultDefenseProject(): DefenseProject {
   };
 }
 
+export function recenterProject(project: DefenseProject, center: Coordinates): DefenseProject {
+  const recenteredLayers = project.layers.map((layer) => {
+    if (layer.geometry.type === "ring" || layer.geometry.type === "circle") {
+      return {
+        ...layer,
+        geometry: {
+          ...layer.geometry,
+          center,
+        },
+      };
+    }
+    return layer;
+  });
+
+  return withUpdatedAt({
+    ...project,
+    baseObject: {
+      ...project.baseObject,
+      center,
+    },
+    layers: recenteredLayers,
+  });
+}
+
 export function updateLayerGeometryFromRadii(
   layer: EditableDefenseLayer,
   radii: { innerRadiusM?: number; widthM?: number; center?: Coordinates },
@@ -422,6 +517,36 @@ export function movePlacedObjectInProject(project: DefenseProject, objectId: str
       item.id === objectId ? { ...item, coordinates, updatedAt: nowIso() } : item,
     ),
   });
+}
+
+export function transferPlacedObjectToLayerInProject(
+  project: DefenseProject,
+  objectId: string,
+  layerId: string,
+): { project: DefenseProject; validation: PlacementValidationResult } {
+  const object = project.placedObjects.find((item) => item.id === objectId);
+  if (!object) {
+    return {
+      project,
+      validation: { isValid: false, level: "error", message: "Объект не найден" },
+    };
+  }
+
+  const validation = validateObjectPlacement(project, object.assetId, layerId, object.coordinates);
+  if (!validation.isValid) return { project, validation };
+
+  return {
+    project: withUpdatedAt({
+      ...project,
+      activeLayerId: layerId,
+      selectedObjectId: objectId,
+      placedObjects: project.placedObjects.map((item) =>
+        item.id === objectId ? { ...item, layerId, updatedAt: nowIso() } : item,
+      ),
+      source: project.source === "preset" ? "custom" : project.source,
+    }),
+    validation,
+  };
 }
 
 export function updatePlacedObjectInProject(

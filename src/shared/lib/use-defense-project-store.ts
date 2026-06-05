@@ -13,7 +13,9 @@ import {
   legacySelectedConfigurationToProject,
   movePlacedObjectInProject,
   placeObjectInProject,
+  recenterProject,
   setAssetQuantityInProject,
+  transferPlacedObjectToLayerInProject,
   updateLayerGeometryFromRadii,
   updateLayerOrder,
   updatePlacedObjectInProject,
@@ -56,10 +58,13 @@ type DefenseProjectState = {
   setLayerVisibility: (layerId: string, isVisible: boolean) => void;
   setLayerLocked: (layerId: string, isLocked: boolean) => void;
   selectLayer: (layerId: string) => void;
+  setBaseObjectCenter: (center: Coordinates) => void;
   selectAsset: (assetId: string) => void;
+  selectObject: (objectId: string) => void;
   setAssetQuantity: (assetId: string, quantity: number) => void;
   placeObject: (assetId: string, layerId: string, coordinates: Coordinates) => PlacementValidationResult;
   moveObject: (objectId: string, coordinates: Coordinates) => PlacementValidationResult;
+  transferObjectToLayer: (objectId: string, layerId: string) => PlacementValidationResult;
   updatePlacedObject: (objectId: string, patch: Partial<PlacedDefenseObject>) => void;
   deletePlacedObject: (objectId: string) => void;
   duplicatePlacedObject: (objectId: string) => void;
@@ -238,8 +243,24 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       };
       applyProject(project, set);
     },
+    setBaseObjectCenter: (center) => {
+      const current = get().project.baseObject.center;
+      if (current.lat === center.lat && current.lng === center.lng) return;
+      applyProject(recenterProject(get().project, center), set);
+    },
     selectAsset: (assetId) => {
       const project = { ...get().project, selectedAssetId: assetId, mode: "place-object" as const };
+      applyProject(project, set);
+    },
+    selectObject: (objectId) => {
+      const object = get().project.placedObjects.find((item) => item.id === objectId);
+      if (!object) return;
+      const project = {
+        ...get().project,
+        selectedObjectId: objectId,
+        activeLayerId: object.layerId,
+        layers: get().project.layers.map((layer) => ({ ...layer, isActive: layer.id === object.layerId })),
+      };
       applyProject(project, set);
     },
     setAssetQuantity: (assetId, quantity) => applyProject(setAssetQuantityInProject(get().project, assetId, quantity), set),
@@ -258,6 +279,11 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       if (!validation.isValid) return validation;
       applyProject(movePlacedObjectInProject(get().project, objectId, coordinates), set);
       return validation;
+    },
+    transferObjectToLayer: (objectId, layerId) => {
+      const result = transferPlacedObjectToLayerInProject(get().project, objectId, layerId);
+      if (result.validation.isValid) applyProject(result.project, set);
+      return result.validation;
     },
     updatePlacedObject: (objectId, patch) => applyProject(updatePlacedObjectInProject(get().project, objectId, patch), set),
     deletePlacedObject: (objectId) => applyProject(deletePlacedObjectInProject(get().project, objectId), set),

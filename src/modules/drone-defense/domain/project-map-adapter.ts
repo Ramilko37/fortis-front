@@ -1,4 +1,5 @@
 import { getDefenseItemById } from "@/shared/config/defense-catalog";
+import { calculateLayerConflicts } from "@/shared/lib/defense-project";
 import type { DefenseProject } from "@/shared/types/defense-project";
 import type { DefenseLayerId, DefenseScenarioId, Placement } from "@/shared/types/drone-defense";
 
@@ -13,30 +14,34 @@ export function placedObjectsToMapPlacements({
   facilityId,
   scenarioId,
 }: PlacedObjectsToMapPlacementsArgs): Placement[] {
+  const conflictObjectIds = new Set(calculateLayerConflicts(project).map((object) => object.id));
   return project.placedObjects.flatMap((object) => {
+    const projectAsset = project.assetLibrary.find((asset) => asset.id === object.assetId);
     const catalogItem = getDefenseItemById(object.assetId);
-    const groupId = catalogItem?.mapCatalogGroupIds[0];
-    if (!catalogItem || !groupId) return [];
+    const groupId = projectAsset?.mapCatalogGroupIds?.[0] ?? catalogItem?.mapCatalogGroupIds[0];
+    const label = object.name ?? projectAsset?.name ?? catalogItem?.title ?? object.assetId;
 
     return [
       {
         id: object.id,
-        assetId: catalogItem.mapAssetTemplateId ?? "asset-radar-l2",
+        assetId: catalogItem?.mapAssetTemplateId ?? "asset-radar-l2",
         facilityId,
         scenarioId,
         layerId: object.layerId as DefenseLayerId,
         catalogGroupId: groupId,
-        catalogGroupName: object.name ?? catalogItem.title,
+        catalogGroupName: label,
         mapRef: {
           lat: object.coordinates.lat,
           lon: object.coordinates.lng,
         },
         qty: object.quantity,
         readiness: object.status === "active" ? 0.9 : 0.72,
-        layerGapBoost: 1 + (catalogItem.coverageWeight ?? catalogItem.score) / 100,
+        layerGapBoost: 1 + ((catalogItem?.coverageWeight ?? catalogItem?.score ?? projectAsset?.score ?? 0) / 100),
         criticalityBoost: 1.05,
         feasibility: 0.82,
         environmentModifier: 0.92,
+        isSelected: object.id === project.selectedObjectId,
+        isConflict: conflictObjectIds.has(object.id),
       },
     ];
   });
