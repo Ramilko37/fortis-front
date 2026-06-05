@@ -13,6 +13,7 @@ type DefenseToolsPanelProps = {
   slots: EchelonMapSlot[];
   placements: Placement[];
   selectedToolId: string | null;
+  selectedObjectAssetId?: string;
   onSelectTool: (asset: AssetCatalogItem) => void;
   onAddTool: (asset: AssetCatalogItem, slot: EchelonMapSlot | null) => void;
   onRemoveTool: (asset: AssetCatalogItem) => void;
@@ -24,6 +25,7 @@ export function DefenseToolsPanel({
   slots,
   placements,
   selectedToolId,
+  selectedObjectAssetId,
   onSelectTool,
   onAddTool,
   onRemoveTool,
@@ -71,6 +73,7 @@ export function DefenseToolsPanel({
             installedCount={installedCount}
             maxCount={assetItem.maxQuantity}
             disabledReason={disabledReason}
+            canRemove={assetItem.assetId === selectedObjectAssetId}
             isPlaceholder={buildAsset?.isPlaceholder ?? !primaryGroupId}
             isSelected={selectedToolId === assetItem.assetId}
             onSelect={() => onSelectTool(assetItem)}

@@ -106,6 +106,10 @@ export type PlacedDefenseObject = {
   status: "planned" | "active" | "inactive" | "maintenance";
   customPricePerUnitMln?: number;
   customCoverageRadius?: number;
+  customCoverageAngle?: number;
+  hasGeometryConflict?: boolean;
+  hasCoverageConflict?: boolean;
+  hasTerrainConflict?: boolean;
   notes?: string;
   createdAt: string;
   updatedAt: string;

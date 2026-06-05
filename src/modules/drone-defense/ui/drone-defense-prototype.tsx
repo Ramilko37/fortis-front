@@ -311,6 +311,10 @@ export function DroneDefensePrototype() {
     () => project.placedObjects.filter((object) => object.layerId === selectedLayerId),
     [project.placedObjects, selectedLayerId],
   );
+  const selectedPlacedObject = useMemo(
+    () => project.placedObjects.find((object) => object.id === selectedObjectId) ?? null,
+    [project.placedObjects, selectedObjectId],
+  );
   const selectedLayerSummary = layerSummaries.find((summary) => summary.layerId === selectedLayerId);
   const selectedLayerLocked = Boolean(selectedLayer?.isLocked);
   const canCreateLayer = project.layers.length < MAX_DEFENSE_PROJECT_LAYERS;
@@ -505,9 +509,11 @@ export function DroneDefensePrototype() {
 
   const removeCatalogAsset = (assetId: string) => {
     const asset = project.assetLibrary.find((item) => item.id === assetId);
-    const placedObject = project.placedObjects.find((object) => object.assetId === assetId);
-    if (!placedObject) return;
-    deletePlacedObject(placedObject.id);
+    if (!selectedPlacedObject || selectedPlacedObject.assetId !== assetId) {
+      setLastPlacementMessage(`${asset?.name ?? "Средство защиты"}: выберите размещённый объект для удаления`);
+      return;
+    }
+    deletePlacedObject(selectedPlacedObject.id);
     setLastPlacementMessage(`${asset?.name ?? "Средство защиты"} удалено из общей конфигурации`);
   };
 
@@ -970,6 +976,7 @@ export function DroneDefensePrototype() {
                     slots={selectedLayerLocked ? [] : selectedLayerSlots}
                     placements={mapConfiguration.placements}
                     selectedToolId={activeToolId}
+                    selectedObjectAssetId={selectedPlacedObject?.assetId}
                     onSelectTool={handleSelectTool}
                     onAddTool={addToolToSlot}
                     onRemoveTool={(asset) => removeCatalogAsset(asset.assetId)}

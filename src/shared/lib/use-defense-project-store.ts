@@ -4,6 +4,7 @@ import { create } from "zustand";
 import {
   createDefaultDefenseProject,
   createRingLayer,
+  applyAssetQuantityDraftsToProject,
   canEditLayer,
   deleteLayerFromProject,
   deletePlacedObjectInProject,
@@ -15,6 +16,7 @@ import {
   placeObjectInProject,
   recenterProject,
   setAssetQuantityInProject,
+  syncPlacedObjectConflictFlags,
   transferPlacedObjectToLayerInProject,
   updateLayerGeometryFromRadii,
   updateLayerOrder,
@@ -172,11 +174,11 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     },
     updateLayer: (layerId, patch) => {
       if (!canEditLayer(get().project, layerId)) return;
-      const project = {
+      const project = syncPlacedObjectConflictFlags({
         ...get().project,
         layers: get().project.layers.map((layer) => (layer.id === layerId ? { ...layer, ...patch } : layer)),
         updatedAt: new Date().toISOString(),
-      };
+      });
       applyProject(project, set);
     },
     updateLayerGeometry: (layerId, radii) => {
@@ -204,11 +206,11 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       const updatedLayer = updateLayerGeometryFromRadii(layer, radii);
       const validation = validateLayerGeometry(get().project, updatedLayer, layerId);
       if (!validation.isValid) return { ok: false, validation };
-      const project = {
+      const project = syncPlacedObjectConflictFlags({
         ...get().project,
         layers: get().project.layers.map((item) => (item.id === layerId ? updatedLayer : item)),
         updatedAt: new Date().toISOString(),
-      };
+      });
       applyProject(project, set);
       return { ok: true, layer: updatedLayer };
     },
@@ -299,12 +301,10 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       applyProject(project, set);
     },
     applyBudgetSelection: (picks) => {
-      let project: DefenseProject = { ...get().project, placedObjects: [] };
-      picks.filter((pick) => pick.included).forEach((pick) => {
-        const assetId = project.assetLibrary.find((asset) => asset.calculatorAssetId === pick.assetId)?.id ?? pick.assetId;
-        project = setAssetQuantityInProject(project, assetId, 1);
-      });
-      applyProject({ ...project, source: "custom" }, set);
+      const lines = picks
+        .filter((pick) => pick.included)
+        .map((pick) => ({ assetId: pick.assetId, quantity: 1 }));
+      applyProject({ ...applyAssetQuantityDraftsToProject(get().project, lines), source: "custom" }, set);
     },
     clearProject: () => {
       const project = createDefaultDefenseProject();

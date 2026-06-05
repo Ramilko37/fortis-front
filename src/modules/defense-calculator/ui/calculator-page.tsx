@@ -21,6 +21,7 @@ import {
   calculateProjectTotalObjects,
   calculateProjectTotalUnits,
   calculateLayerSummaries,
+  priceForPlacedObject,
   projectToCalculatorConfiguration,
 } from "@/shared/lib/defense-project";
 import { useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
@@ -56,23 +57,11 @@ function calculatorAssetIdForProjectAsset(project: DefenseProject, assetId: stri
   return project.assetLibrary.find((asset) => asset.id === assetId)?.calculatorAssetId ?? assetId;
 }
 
-function projectAssetIdForCalculatorAsset(project: DefenseProject, calculatorAssetId: string) {
-  return (
-    project.assetLibrary.find((asset) => (asset.calculatorAssetId ?? asset.id) === calculatorAssetId)?.id ??
-    calculatorAssetId
-  );
-}
-
-function projectAssetForCalculatorAsset(project: DefenseProject, calculatorAssetId: string) {
-  return project.assetLibrary.find((asset) => (asset.calculatorAssetId ?? asset.id) === calculatorAssetId) ?? null;
-}
-
 export function CalculatorPage() {
   const [tab, setTab] = useState<Tab>("configure");
   const [budgetMln, setBudgetMln] = useState(9300);
   const {
     project,
-    setAssetQuantity,
     loadPresetProject,
     applyBudgetSelection,
     restoreProjectFromLocalStorage,
@@ -115,17 +104,6 @@ export function CalculatorPage() {
     () => projectToCalculatorConfiguration(project),
     [project],
   );
-
-  const quantityFor = (assetId: string) => {
-    const projectAssetId = projectAssetIdForCalculatorAsset(project, assetId);
-    return project.placedObjects
-      .filter((object) => object.assetId === projectAssetId)
-      .reduce((acc, object) => acc + object.quantity, 0);
-  };
-
-  const setQuantity = (assetId: string, quantity: number) => {
-    setAssetQuantity(projectAssetIdForCalculatorAsset(project, assetId), quantity);
-  };
 
   const loadReference = (refId: string) => {
     loadPresetProject(refId);
@@ -249,8 +227,6 @@ export function CalculatorPage() {
               estimate={estimate}
               project={project}
               layerSummaries={layerSummaries}
-              quantityFor={quantityFor}
-              setQuantity={setQuantity}
               loadReference={loadReference}
             />
           ) : null}
@@ -330,39 +306,45 @@ function ConfigureTab({
   estimate,
   project,
   layerSummaries,
-  quantityFor,
-  setQuantity,
   loadReference,
 }: {
   scoredAssets: ScoredAsset[];
   estimate: ReturnType<typeof estimateConfiguration>;
   project: DefenseProject;
   layerSummaries: LayerSummary[];
-  quantityFor: (assetId: string) => number;
-  setQuantity: (assetId: string, quantity: number) => void;
   loadReference: (refId: string) => void;
 }) {
   const card = "rounded-2xl border border-slate-200 bg-white ";
+  const statusLabel: Record<DefenseProject["placedObjects"][number]["status"], string> = {
+    planned: "План",
+    active: "Активен",
+    inactive: "Отключён",
+    maintenance: "Сервис",
+  };
   const layerSections = [...project.layers].sort((a, b) => a.order - b.order).map((layer) => {
     const summary = layerSummaries.find((item) => item.layerId === layer.id);
     const placedObjects = project.placedObjects.filter((object) => object.layerId === layer.id);
-    const placedCalculatorAssetIds = new Set(
-      placedObjects.map((object) => calculatorAssetIdForProjectAsset(project, object.assetId)),
-    );
-    const layerAssets = scoredAssets.filter((item) => {
-      if (placedCalculatorAssetIds.has(item.asset.id)) return true;
-      return projectAssetForCalculatorAsset(project, item.asset.id)?.recommendedLayerCodes?.includes(layer.code) ?? false;
+    const objectRows = placedObjects.map((object) => {
+      const projectAsset = project.assetLibrary.find((asset) => asset.id === object.assetId);
+      const calculatorAssetId = calculatorAssetIdForProjectAsset(project, object.assetId);
+      const scoredAsset = scoredAssets.find((item) => item.asset.id === calculatorAssetId);
+      return {
+        object,
+        projectAsset,
+        asset: scoredAsset?.asset,
+        weightedScore: scoredAsset?.weightedScore ?? projectAsset?.score ?? 0,
+        priority: scoredAsset?.priority ?? "red",
+        unitPriceMln: priceForPlacedObject(project, object),
+      };
     });
-    const selectedAssetScores = layerAssets
-      .filter(({ asset }) => quantityFor(asset.id) > 0)
-      .map(({ weightedScore }) => weightedScore);
+    const selectedAssetScores = objectRows.map(({ weightedScore }) => weightedScore);
     const coveragePct =
       selectedAssetScores.length > 0
         ? selectedAssetScores.reduce((acc, value) => acc + value, 0) / selectedAssetScores.length / 100
         : 0;
     return {
       layer,
-      assets: layerAssets,
+      objectRows,
       totalMln: summary?.totalMln ?? 0,
       coveragePct,
       isEmpty: (summary?.objectCount ?? 0) === 0,
@@ -388,8 +370,8 @@ function ConfigureTab({
           ))}
         </div>
 
-        {layerSections.map(({ layer, assets: layerAssets, totalMln, coveragePct, conflictCount, rangeLabel }) => {
-          if (layerAssets.length === 0) return null;
+        {layerSections.map(({ layer, objectRows, totalMln, coveragePct, conflictCount, rangeLabel }) => {
+          if (objectRows.length === 0) return null;
           return (
             <section key={layer.id} className={`${card} p-4`}>
               <div className="flex items-baseline justify-between gap-3 border-b border-slate-200 pb-3 ">
@@ -416,38 +398,46 @@ function ConfigureTab({
               </div>
 
               <div className="mt-3 space-y-1.5">
-                {layerAssets.map(({ asset, weightedScore, priority }) => {
-                  const qty = quantityFor(asset.id);
-                  const lineTotal = asset.unitPriceMln * qty;
+                {objectRows.map(({ object, projectAsset, asset, weightedScore, priority, unitPriceMln }) => {
+                  const lineTotal = unitPriceMln * object.quantity;
                   return (
                     <div
-                      key={asset.id}
+                      key={object.id}
                       className={`grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
-                        qty > 0
-                          ? "border-slate-200 bg-slate-50  "
-                          : "border-transparent hover:bg-slate-50 "
+                        object.hasGeometryConflict || object.hasCoverageConflict || object.hasTerrainConflict
+                          ? "border-amber-200 bg-amber-50"
+                          : "border-slate-200 bg-slate-50"
                       }`}
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className={`h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[priority]}`} />
-                          <p className="truncate text-sm font-medium text-slate-800">{asset.name}</p>
+                          <p className="truncate text-sm font-medium text-slate-800">
+                            {object.name ?? projectAsset?.name ?? asset?.name ?? object.assetId}
+                          </p>
+                          <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[10px] text-slate-600">
+                            x{object.quantity}
+                          </span>
+                          {object.hasGeometryConflict || object.hasCoverageConflict || object.hasTerrainConflict ? (
+                            <span className="shrink-0 rounded bg-amber-200 px-1.5 py-0.5 font-mono text-[10px] text-amber-800">
+                              конфликт
+                            </span>
+                          ) : null}
                         </div>
                         <p className="mt-0.5 font-mono text-[11px] text-slate-400 ">
-                          {asset.unitPriceMln > 0 ? `${formatMln(asset.unitPriceMln)}/${asset.unit}` : "без CAPEX"}
+                          {unitPriceMln > 0 ? `${formatMln(unitPriceMln)}/${asset?.unit ?? projectAsset?.unitLabel ?? "ед."}` : "без CAPEX"}
                           <span className="mx-1.5 text-slate-300">·</span>
                           <span className={PRIORITY_TEXT[priority]}>балл {weightedScore.toFixed(0)}</span>
                           <span className="mx-1.5 text-slate-300">·</span>
                           <span className="text-slate-400">{priorityLabel[priority]}</span>
+                          <span className="mx-1.5 text-slate-300">·</span>
+                          <span className="text-slate-400">{statusLabel[object.status]}</span>
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        {qty > 0 ? (
-                          <span className="hidden w-20 text-right font-mono text-xs tabular-nums text-slate-600  sm:block">
-                            {formatMln(lineTotal)}
-                          </span>
-                        ) : null}
-                        <Stepper value={qty} onChange={(v) => setQuantity(asset.id, v)} unit={asset.unit} />
+                        <span className="w-24 text-right font-mono text-xs tabular-nums text-slate-600 sm:block">
+                          {formatMln(lineTotal)}
+                        </span>
                       </div>
                     </div>
                   );
@@ -484,29 +474,6 @@ function ConfigureTab({
           </div>
         </div>
       </aside>
-    </div>
-  );
-}
-
-function Stepper({ value, onChange, unit }: { value: number; onChange: (v: number) => void; unit: string }) {
-  const btn =
-    "grid h-7 w-7 place-items-center rounded-lg border border-slate-300 text-slate-500 transition hover:border-slate-400 hover:text-slate-900 disabled:opacity-30   ";
-  return (
-    <div className="flex items-center gap-1.5">
-      <button type="button" onClick={() => onChange(value - 1)} className={btn} disabled={value <= 0} aria-label="Убавить">
-        −
-      </button>
-      <input
-        type="number"
-        min={0}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-7 w-12 rounded-lg border border-slate-300 bg-white text-center font-mono text-sm tabular-nums text-slate-900 outline-none focus:border-blue-500   "
-        aria-label={`Количество (${unit})`}
-      />
-      <button type="button" onClick={() => onChange(value + 1)} className={btn} aria-label="Добавить">
-        +
-      </button>
     </div>
   );
 }

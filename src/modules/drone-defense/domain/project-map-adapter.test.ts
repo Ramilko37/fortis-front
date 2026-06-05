@@ -1,6 +1,6 @@
 // Run: npx tsx src/modules/drone-defense/domain/project-map-adapter.test.ts
 
-import { createDefaultDefenseProject, placeObjectInProject, updateLayerGeometryFromRadii } from "@/shared/lib/defense-project";
+import { applyAssetQuantityDraftsToProject, createDefaultDefenseProject, placeObjectInProject, updateLayerGeometryFromRadii } from "@/shared/lib/defense-project";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -24,8 +24,22 @@ assert(placements.length === 1, "placed object must produce one map placement");
 assert(placements[0].catalogGroupId === "l2-radar", "mobile-radar placement must use l2-radar map group");
 assert(placements[0].layerId === l2.id, "map placement must keep project layer id");
 assert(placements[0].qty === 1, "map placement qty must reflect object quantity");
+assert(placements[0].readiness === 0.72, "planned map placement must expose planned readiness");
 assert(placements[0].mapRef?.lat === 55.44 && placements[0].mapRef?.lon === 37.1, "map placement must carry object coordinates");
 assert(placements[0].isSelected, "map placement must expose selected object state");
+
+const activeAggregateProject = {
+  ...applyAssetQuantityDraftsToProject(project, [{ assetId: "mobile-radar", quantity: 4 }]),
+};
+activeAggregateProject.placedObjects = activeAggregateProject.placedObjects.map((object) => ({ ...object, status: "active" as const }));
+const aggregatePlacements = placedObjectsToMapPlacements({
+  project: activeAggregateProject,
+  facilityId: "facility-alpha",
+  scenarioId: "baseline",
+});
+assert(aggregatePlacements.length === 1, "aggregate draft object must produce one map placement");
+assert(aggregatePlacements[0].qty === 4, "aggregate map placement qty must reflect object quantity");
+assert(aggregatePlacements[0].readiness === 0.9, "active map placement must expose active readiness");
 
 const conflictProject = {
   ...placedProject,

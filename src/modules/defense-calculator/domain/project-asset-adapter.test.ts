@@ -41,5 +41,17 @@ assert(
   !calculatorPageSource.includes("@/shared/config/defense-catalog"),
   "calculator page must not import the legacy defenseItems catalog directly",
 );
+assert(
+  !calculatorPageSource.includes("setAssetQuantity"),
+  "calculator page must not edit project quantities directly",
+);
+assert(
+  !calculatorPageSource.includes("function Stepper"),
+  "calculator page must not render interactive quantity steppers",
+);
+assert(
+  calculatorPageSource.includes("project.placedObjects"),
+  "calculator page must render read-only rows from placedObjects",
+);
 
 console.log("project-asset-adapter.test.ts: calculator reads canonical project asset library");

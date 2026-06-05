@@ -5,6 +5,7 @@ import {
   useDefenseProjectStore,
 } from "@/shared/lib/use-defense-project-store";
 import { calculateLayerConflicts } from "@/shared/lib/defense-project";
+import { projectToCalculatorConfiguration } from "@/shared/lib/defense-project";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -55,6 +56,34 @@ assert(useDefenseProjectStore.getState().project.placedObjects.length === 2, "re
 
 useDefenseProjectStore.getState().deletePlacedObject(useDefenseProjectStore.getState().project.placedObjects[0].id);
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "deletePlacedObject must remove an object");
+useDefenseProjectStore.getState().selectObject(useDefenseProjectStore.getState().project.placedObjects[0].id);
+const selectedForDelete = useDefenseProjectStore.getState().selectedObjectId;
+assert(selectedForDelete, "store must have selected object before delete selection check");
+useDefenseProjectStore.getState().deletePlacedObject(selectedForDelete);
+assert(useDefenseProjectStore.getState().selectedObjectId === undefined, "deletePlacedObject must clear deleted selection");
+assert(
+  !projectToCalculatorConfiguration(useDefenseProjectStore.getState().project).lines.some((line) => line.assetId === "mobile-radar"),
+  "deletePlacedObject must remove deleted object from calculation lines",
+);
+
+useDefenseProjectStore.getState().applyBudgetSelection([{ assetId: "mobile-radar", included: true }]);
+assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "budget selection must create visible draft objects");
+assert(useDefenseProjectStore.getState().project.placedObjects[0].quantity === 1, "budget draft object must keep selected quantity");
+assert(useDefenseProjectStore.getState().project.placedObjects[0].status === "planned", "budget draft object must be planned");
+
+useDefenseProjectStore.getState().loadPresetProject("nak");
+const presetObjects = useDefenseProjectStore.getState().project.placedObjects;
+const presetRadar = presetObjects.find((object) => object.assetId === "mobile-radar");
+assert(presetObjects.length > 0, "loadPresetProject must create map-visible draft objects");
+assert(presetRadar && presetRadar.quantity > 1, "loadPresetProject must preserve aggregate quantities on draft objects");
+assert(
+  projectToCalculatorConfiguration(useDefenseProjectStore.getState().project).lines.some((line) => line.assetId === "mobile-radar" && line.quantity === presetRadar.quantity),
+  "preset draft objects must drive calculator lines",
+);
+
+useDefenseProjectStore.getState().clearProject();
+useDefenseProjectStore.getState().selectLayer(l2.id);
+useDefenseProjectStore.getState().placeObject("mobile-radar", l2.id, { lat: 55.44, lng: 37.1 });
 
 const layerWithObject = useDefenseProjectStore.getState().project.placedObjects[0].layerId;
 const blockedDeletion = useDefenseProjectStore.getState().deleteLayer(layerWithObject);

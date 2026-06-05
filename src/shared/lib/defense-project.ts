@@ -62,6 +62,11 @@ export type LayerInsertOption =
       availableWidthM: number;
     };
 
+export type PlacedObjectConflictFlags = Pick<
+  PlacedDefenseObject,
+  "hasGeometryConflict" | "hasCoverageConflict" | "hasTerrainConflict"
+>;
+
 export type AssetCatalogItem = {
   assetId: string;
   title: string;
@@ -598,6 +603,10 @@ export function createPlacedObject(
     status: patch.status ?? "planned",
     customPricePerUnitMln: patch.customPricePerUnitMln,
     customCoverageRadius: patch.customCoverageRadius,
+    customCoverageAngle: patch.customCoverageAngle,
+    hasGeometryConflict: patch.hasGeometryConflict,
+    hasCoverageConflict: patch.hasCoverageConflict,
+    hasTerrainConflict: patch.hasTerrainConflict,
     notes: patch.notes,
     createdAt: patch.createdAt ?? timestamp,
     updatedAt: timestamp,
@@ -618,7 +627,7 @@ export function placeObjectInProject(
   const validation = validateObjectPlacement(project, assetId, layerId, coordinates);
   if (!validation.isValid) return project;
   const object = createPlacedObject(project, assetId, layerId, coordinates, patch);
-  return withUpdatedAt({
+  return withUpdatedAt(syncPlacedObjectConflictFlags({
     ...project,
     placedObjects: [...project.placedObjects, object],
     selectedObjectId: object.id,
@@ -626,7 +635,7 @@ export function placeObjectInProject(
     activeLayerId: layerId,
     mode: "view",
     source: project.source === "preset" ? "custom" : project.source,
-  });
+  }));
 }
 
 export function movePlacedObjectInProject(project: DefenseProject, objectId: string, coordinates: Coordinates): DefenseProject {
@@ -634,12 +643,12 @@ export function movePlacedObjectInProject(project: DefenseProject, objectId: str
   if (!object) return project;
   const validation = validateObjectPlacement(project, object.assetId, object.layerId, coordinates);
   if (!validation.isValid) return project;
-  return withUpdatedAt({
+  return withUpdatedAt(syncPlacedObjectConflictFlags({
     ...project,
     placedObjects: project.placedObjects.map((item) =>
       item.id === objectId ? { ...item, coordinates, updatedAt: nowIso() } : item,
     ),
-  });
+  }));
 }
 
 export function transferPlacedObjectToLayerInProject(
@@ -659,7 +668,7 @@ export function transferPlacedObjectToLayerInProject(
   if (!validation.isValid) return { project, validation };
 
   return {
-    project: withUpdatedAt({
+    project: withUpdatedAt(syncPlacedObjectConflictFlags({
       ...project,
       activeLayerId: layerId,
       selectedObjectId: objectId,
@@ -667,7 +676,7 @@ export function transferPlacedObjectToLayerInProject(
         item.id === objectId ? { ...item, layerId, updatedAt: nowIso() } : item,
       ),
       source: project.source === "preset" ? "custom" : project.source,
-    }),
+    })),
     validation,
   };
 }
@@ -677,7 +686,7 @@ export function updatePlacedObjectInProject(
   objectId: string,
   patch: Partial<PlacedDefenseObject>,
 ): DefenseProject {
-  return withUpdatedAt({
+  return withUpdatedAt(syncPlacedObjectConflictFlags({
     ...project,
     placedObjects: project.placedObjects.map((item) =>
       item.id === objectId
@@ -689,15 +698,15 @@ export function updatePlacedObjectInProject(
           }
         : item,
     ),
-  });
+  }));
 }
 
 export function deletePlacedObjectInProject(project: DefenseProject, objectId: string): DefenseProject {
-  return withUpdatedAt({
+  return withUpdatedAt(syncPlacedObjectConflictFlags({
     ...project,
     placedObjects: project.placedObjects.filter((item) => item.id !== objectId),
     selectedObjectId: project.selectedObjectId === objectId ? undefined : project.selectedObjectId,
-  });
+  }));
 }
 
 export function deleteLayerFromProject(project: DefenseProject, layerId: string): DeleteLayerResult {
@@ -761,11 +770,11 @@ export function duplicatePlacedObjectInProject(project: DefenseProject, objectId
     createdAt: nowIso(),
     updatedAt: nowIso(),
   };
-  return withUpdatedAt({
+  return withUpdatedAt(syncPlacedObjectConflictFlags({
     ...project,
     placedObjects: [...project.placedObjects, copy],
     selectedObjectId: copy.id,
-  });
+  }));
 }
 
 function layerForAsset(project: DefenseProject, assetId: string): EditableDefenseLayer {
@@ -777,40 +786,94 @@ function layerForAsset(project: DefenseProject, assetId: string): EditableDefens
   );
 }
 
-function coordinatesForIndex(project: DefenseProject, index: number): Coordinates {
+function coordinatesForDraftObject(project: DefenseProject, layer: EditableDefenseLayer, index: number): Coordinates {
+  const center =
+    layer.geometry.type === "ring" || layer.geometry.type === "circle"
+      ? layer.geometry.center
+      : project.baseObject.center;
+  const radii = getLayerRadii(layer);
+  const radiusM =
+    radii.outerRadiusM > radii.innerRadiusM
+      ? radii.innerRadiusM + Math.max(250, (radii.outerRadiusM - radii.innerRadiusM) / 2)
+      : Math.max(500, radii.outerRadiusM || 1000);
+  const angleRad = ((index * 47 + 23) * Math.PI) / 180;
+  const metersPerDegreeLat = 111320;
+  const metersPerDegreeLng = Math.max(1, metersPerDegreeLat * Math.cos((center.lat * Math.PI) / 180));
   return {
-    lat: project.baseObject.center.lat + 0.001 * (index + 1),
-    lng: project.baseObject.center.lng + 0.001 * (index + 1),
+    lat: center.lat + (Math.sin(angleRad) * radiusM) / metersPerDegreeLat,
+    lng: center.lng + (Math.cos(angleRad) * radiusM) / metersPerDegreeLng,
   };
+}
+
+function assetIdForProjectLine(project: DefenseProject, assetId: string) {
+  return project.assetLibrary.find((asset) => asset.id === assetId || asset.calculatorAssetId === assetId)?.id ?? assetId;
+}
+
+export function getPlacedObjectConflictFlags(
+  project: DefenseProject,
+  object: PlacedDefenseObject,
+): PlacedObjectConflictFlags {
+  const layer = project.layers.find((item) => item.id === object.layerId);
+  const asset = project.assetLibrary.find((item) => item.id === object.assetId);
+  const hasGeometryConflict =
+    Boolean(layer && asset && asset.placementType !== "non-physical" && !isPointInsideLayerGeometry(layer, object.coordinates));
+  return {
+    hasGeometryConflict,
+    hasCoverageConflict: false,
+    hasTerrainConflict: false,
+  };
+}
+
+export function syncPlacedObjectConflictFlags(project: DefenseProject): DefenseProject {
+  return {
+    ...project,
+    placedObjects: project.placedObjects.map((object) => ({
+      ...object,
+      ...getPlacedObjectConflictFlags(project, object),
+    })),
+  };
+}
+
+export function applyAssetQuantityDraftsToProject(
+  project: DefenseProject,
+  lines: Array<{ assetId: string; quantity: number }>,
+): DefenseProject {
+  const draftBase = { ...project, placedObjects: [] };
+  const placedObjects: PlacedDefenseObject[] = [];
+  lines.forEach((line, index) => {
+    const normalizedQuantity = Math.max(0, Math.floor(Number.isFinite(line.quantity) ? line.quantity : 0));
+    if (normalizedQuantity <= 0) return;
+    const projectAssetId = assetIdForProjectLine(draftBase, line.assetId);
+    const layer = layerForAsset(draftBase, projectAssetId);
+    placedObjects.push(
+      createPlacedObject(draftBase, projectAssetId, layer.id, coordinatesForDraftObject(draftBase, layer, index), {
+        quantity: normalizedQuantity,
+        status: "planned",
+      }),
+    );
+  });
+
+  return withUpdatedAt(syncPlacedObjectConflictFlags({
+    ...draftBase,
+    placedObjects,
+    activeLayerId: placedObjects[0]?.layerId ?? draftBase.activeLayerId,
+    selectedAssetId: placedObjects[0]?.assetId ?? draftBase.selectedAssetId,
+    selectedObjectId: placedObjects[0]?.id,
+    source: draftBase.source === "preset" ? "custom" : draftBase.source,
+  }));
 }
 
 export function setAssetQuantityInProject(project: DefenseProject, assetId: string, quantity: number): DefenseProject {
   const normalized = Math.max(0, Math.floor(Number.isFinite(quantity) ? quantity : 0));
-  const currentObjects = project.placedObjects.filter((object) => object.assetId === assetId);
-  const otherObjects = project.placedObjects.filter((object) => object.assetId !== assetId);
-  const currentUnits = currentObjects.reduce((acc, object) => acc + object.quantity, 0);
-  if (normalized === currentUnits) return project;
-  if (normalized === 0) {
-    return withUpdatedAt({ ...project, placedObjects: otherObjects });
-  }
-
-  const layer = layerForAsset(project, assetId);
-  const nextObjects: PlacedDefenseObject[] = [];
-  for (let index = 0; index < normalized; index += 1) {
-    nextObjects.push(
-      currentObjects[index] ??
-        createPlacedObject(project, assetId, layer.id, coordinatesForIndex(project, index), {
-          quantity: 1,
-        }),
-    );
-  }
-
-  return withUpdatedAt({
-    ...project,
-    placedObjects: [...otherObjects, ...nextObjects],
-    activeLayerId: layer.id,
-    selectedAssetId: assetId,
-  });
+  const lineByAsset = new Map<string, number>();
+  project.placedObjects
+    .filter((object) => object.assetId !== assetId)
+    .forEach((object) => lineByAsset.set(object.assetId, (lineByAsset.get(object.assetId) ?? 0) + object.quantity));
+  if (normalized > 0) lineByAsset.set(assetId, normalized);
+  return applyAssetQuantityDraftsToProject(
+    project,
+    [...lineByAsset.entries()].map(([lineAssetId, lineQuantity]) => ({ assetId: lineAssetId, quantity: lineQuantity })),
+  );
 }
 
 export function priceForPlacedObject(project: DefenseProject, object: PlacedDefenseObject): number {
@@ -909,10 +972,10 @@ export function legacySelectedConfigurationToProject(configuration: SelectedConf
     source: "legacy-migration",
     basePresetId: configuration.basePresetId,
   };
-  Object.entries(configuration.selectedItems).forEach(([assetId, quantity]) => {
-    project = setAssetQuantityInProject(project, assetId, quantity);
-  });
-  return project;
+  return applyAssetQuantityDraftsToProject(
+    project,
+    Object.entries(configuration.selectedItems).map(([assetId, quantity]) => ({ assetId, quantity })),
+  );
 }
 
 export function exportDefenseProjectJson(project: DefenseProject): string {
@@ -924,8 +987,8 @@ export function importDefenseProjectJson(raw: string): DefenseProject {
   if (parsed.schemaVersion !== PROJECT_SCHEMA_VERSION || !Array.isArray(parsed.layers) || !Array.isArray(parsed.placedObjects)) {
     throw new Error("Invalid defense project JSON");
   }
-  return {
+  return syncPlacedObjectConflictFlags({
     ...parsed,
     layers: parsed.layers.map((layer) => ({ ...layer, isVisible: isLayerVisible(layer) })),
-  };
+  });
 }

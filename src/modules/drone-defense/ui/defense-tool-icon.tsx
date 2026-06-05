@@ -16,6 +16,7 @@ export type DefenseToolIconProps = {
   installedCount: number;
   maxCount: number;
   disabledReason?: string;
+  canRemove?: boolean;
   isPlaceholder?: boolean;
   isSelected?: boolean;
   onSelect: () => void;
@@ -35,6 +36,7 @@ export function DefenseToolIcon({
   installedCount,
   maxCount,
   disabledReason,
+  canRemove: canRemoveOverride,
   isPlaceholder = false,
   isSelected = false,
   onSelect,
@@ -43,7 +45,7 @@ export function DefenseToolIcon({
 }: DefenseToolIconProps) {
   const isBuilt = installedCount > 0;
   const canAdd = installedCount < maxCount && !disabledReason;
-  const canRemove = isBuilt;
+  const canRemove = canRemoveOverride ?? isBuilt;
   const title = disabledReason ?? `${name}: ${isBuilt ? "размещено" : "можно разместить"}`;
   const compatibilityClass = {
     recommended: "bg-emerald-100 text-emerald-700",
