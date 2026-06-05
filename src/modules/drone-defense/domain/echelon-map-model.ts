@@ -25,11 +25,14 @@ export type EchelonZone = {
 
 export type EchelonMapPlacement = {
   id: string;
+  sourcePlacementId: string;
   layerId: DefenseLayerId;
   label: string;
   position: [number, number];
   color: [number, number, number, number];
   isCatalogPlacement: boolean;
+  isSelected?: boolean;
+  isConflict?: boolean;
   slotId?: string;
   catalogGroupId?: string;
   qty: number;
@@ -318,11 +321,14 @@ export function buildEchelonMapModel({
           : slot?.position ?? placementPosition(facility.center, layer, index);
         return {
           id: placement.slotId ? `${placement.id}:${placement.slotId}:${layerId}` : `${placement.id}:${layerId}`,
+          sourcePlacementId: placement.id,
           layerId,
           label: placement.catalogGroupName ?? asset?.name ?? placement.assetId,
           position,
           color: [...color, 245] as [number, number, number, number],
           isCatalogPlacement: Boolean(placement.catalogGroupId),
+          isSelected: placement.isSelected,
+          isConflict: placement.isConflict,
           slotId: placement.slotId,
           catalogGroupId: placement.catalogGroupId,
           qty: placement.qty,
