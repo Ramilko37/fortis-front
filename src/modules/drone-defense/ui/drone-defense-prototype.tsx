@@ -18,12 +18,30 @@ import {
   validateLayerGeometry,
 } from "@/shared/lib/defense-project";
 import { MAX_DEFENSE_PROJECT_LAYERS, useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
-import type { DefenseProject, EditableDefenseLayer } from "@/shared/types/defense-project";
+import type { DefenseAssetCategory, DefenseProject, EditableDefenseLayer } from "@/shared/types/defense-project";
 import type { LayerInsertOption } from "@/shared/lib/defense-project";
 import type { DefenseLayer, DefenseLayerId } from "@/shared/types/drone-defense";
 import type { PointerEvent as ReactPointerEvent } from "react";
 
-type CatalogFilter = "all" | "recommended" | "placed";
+type CatalogFilter =
+  | "all"
+  | "recommended"
+  | "detection"
+  | "suppression"
+  | "fire"
+  | "passive"
+  | "infrastructure"
+  | "software"
+  | "placed";
+
+const catalogFilterCategories: Partial<Record<CatalogFilter, DefenseAssetCategory[]>> = {
+  detection: ["detection"],
+  suppression: ["jamming", "spoofing"],
+  fire: ["kinetic", "interceptor"],
+  passive: ["passive-protection", "engineering-protection"],
+  infrastructure: ["early-warning", "infrastructure", "command-center"],
+  software: ["software", "classification", "external-service"],
+};
 
 function formatDistance(meters: number) {
   if (meters >= 1000) return `${(meters / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км`;
@@ -194,12 +212,19 @@ export function DroneDefensePrototype() {
   const filteredCatalogItems = useMemo(() => {
     const query = catalogQuery.trim().toLowerCase();
     return assetCatalogItems.filter((item) => {
-      if (catalogFilter === "recommended" && !item.isRecommendedForActiveLayer) return false;
       if (catalogFilter === "placed" && item.placedCount <= 0) return false;
+      if (catalogFilter === "recommended" && item.compatibilityStatus !== "recommended") return false;
+      const categoryFilter = catalogFilterCategories[catalogFilter];
+      if (categoryFilter && !categoryFilter.includes(item.category)) return false;
       if (!query) return true;
       const haystack = [
         item.title,
         item.subtitle,
+        item.categoryLabel,
+        item.rangeLabel,
+        item.priceLabel,
+        item.coverageLabel,
+        item.compatibilityLabel,
         item.category,
         ...item.roles,
         ...item.tags,
@@ -897,10 +922,16 @@ export function DroneDefensePrototype() {
                     </p>
                   </div>
                   <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-                    <div className="grid h-9 min-w-[16rem] max-w-full flex-1 grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1 sm:flex-none">
+                    <div className="grid min-w-[16rem] max-w-full flex-1 grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1 sm:flex-none lg:grid-cols-5">
                       {[
                         { id: "all", label: "Все" },
                         { id: "recommended", label: "Рекоменд." },
+                        { id: "detection", label: "Обнаруж." },
+                        { id: "suppression", label: "Подавл." },
+                        { id: "fire", label: "Пораж." },
+                        { id: "passive", label: "Пассив." },
+                        { id: "infrastructure", label: "Инфра" },
+                        { id: "software", label: "ПО" },
                         { id: "placed", label: "Размещ." },
                       ].map((item) => (
                         <button

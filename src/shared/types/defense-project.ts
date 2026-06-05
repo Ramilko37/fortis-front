@@ -59,7 +59,9 @@ export type DefenseAssetRole =
 
 export type LayerType = LayerGeometryType;
 
-export type DefenseAssetLibraryItem = {
+export type DefenseAssetCoverageType = "circle" | "sector" | "line" | "polygon" | "none";
+
+export type DefenseAsset = {
   id: string;
   name: string;
   shortName?: string;
@@ -71,8 +73,11 @@ export type DefenseAssetLibraryItem = {
   unitLabel: string;
   compatibleLayerTypes?: LayerType[];
   recommendedLayerCodes?: string[];
+  compatibleLayerCodes?: string[];
+  incompatibleLayerCodes?: string[];
   minEffectiveDistance?: number;
   maxEffectiveDistance?: number;
+  coverageType: DefenseAssetCoverageType;
   coverageRadius?: number;
   coverageAngle?: number;
   deploymentType: "static" | "mobile" | "infrastructure" | "software" | "external";
@@ -86,6 +91,8 @@ export type DefenseAssetLibraryItem = {
   calculatorAssetId?: string | null;
   mapCatalogGroupIds?: string[];
 };
+
+export type DefenseAssetLibraryItem = DefenseAsset;
 
 export type PlacedDefenseObject = {
   id: string;
@@ -118,7 +125,7 @@ export type DefenseProject = {
   projectName: string;
   baseObject: ProtectedObject;
   layers: EditableDefenseLayer[];
-  assetLibrary: DefenseAssetLibraryItem[];
+  assetLibrary: DefenseAsset[];
   placedObjects: PlacedDefenseObject[];
   activeLayerId?: string;
   selectedAssetId?: string;

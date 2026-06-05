@@ -5,20 +5,18 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { BulbOutlined, MoonOutlined, PrinterOutlined } from "@ant-design/icons";
 import {
-  assets,
   bundleOverridesMln,
   criteria,
   defaultThresholds,
   echelons,
   referenceConfigurations,
 } from "@/modules/defense-calculator/infra/catalog-data";
+import { projectAssetsToCalculatorAssets } from "@/modules/defense-calculator/domain/project-asset-adapter";
 import { estimateConfiguration, type CostingContext } from "@/modules/defense-calculator/domain/costing";
 import { computeWeightedScore, priorityForScore } from "@/modules/defense-calculator/domain/scoring";
 import { fitToBudget } from "@/modules/defense-calculator/domain/budget-fit";
 import { formatMln, priorityLabel } from "@/modules/defense-calculator/domain/format";
 import { CalculatorReport } from "@/modules/defense-calculator/ui/calculator-report";
-import { defenseItems } from "@/shared/config/defense-catalog";
-import { calculatorAssetIdToDefenseItemId } from "@/shared/lib/defense-configuration";
 import {
   calculateProjectTotalObjects,
   calculateProjectTotalUnits,
@@ -29,7 +27,6 @@ import { useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
 import type { DefenseProject, LayerSummary } from "@/shared/types/defense-project";
 import type {
   DefenseAsset,
-  EchelonId,
   PriorityColor,
 } from "@/modules/defense-calculator/domain/calculator-types";
 
@@ -45,27 +42,6 @@ const PRIORITY_TEXT: Record<PriorityColor, string> = {
   orange: "text-amber-600",
   red: "text-rose-600",
 };
-function defenseItemForAssetId(assetId: string) {
-  const itemId = calculatorAssetIdToDefenseItemId(assetId);
-  return itemId ? defenseItems.find((item) => item.id === itemId) : null;
-}
-
-const legacyLayerCodeById = new Map<string, string>([
-  ["layer_01_external_warning", "L1"],
-  ["layer_02_detection", "L2"],
-  ["layer_03_identification", "L3"],
-  ["layer_04_suppression", "L4"],
-  ["layer_05_mid_range_kinetic", "L5"],
-  ["layer_06_last_line_kinetic", "L6"],
-  ["layer_07_accuracy_disruption", "L7"],
-  ["layer_08_passive_protection", "L8"],
-  ["layer_09_hardening", "L9"],
-]);
-
-function recommendedLayerCodeForAsset(assetId: string) {
-  const layerId = defenseItemForAssetId(assetId)?.layerId;
-  return layerId ? legacyLayerCodeById.get(layerId) ?? null : null;
-}
 
 function formatDistance(meters: number) {
   if (meters >= 1000) return `${(meters / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км`;
@@ -80,34 +56,15 @@ function calculatorAssetIdForProjectAsset(project: DefenseProject, assetId: stri
   return project.assetLibrary.find((asset) => asset.id === assetId)?.calculatorAssetId ?? assetId;
 }
 
-function scoreToSyntheticScores(score: number): DefenseAsset["scores"] {
-  const normalized = Math.max(1, Math.min(5, score / 20));
-  return {
-    effectiveness: normalized,
-    deploySpeed: normalized,
-    cost: normalized,
-    scalability: normalized,
-    availability: normalized,
-    governance: normalized,
-    adaptivity: normalized,
-  };
+function projectAssetIdForCalculatorAsset(project: DefenseProject, calculatorAssetId: string) {
+  return (
+    project.assetLibrary.find((asset) => (asset.calculatorAssetId ?? asset.id) === calculatorAssetId)?.id ??
+    calculatorAssetId
+  );
 }
 
-function mapOnlyDefenseAssets(): DefenseAsset[] {
-  return defenseItems.flatMap((item) => {
-    if (item.calculatorAssetId || !item.echelonId) return [];
-    return [
-      {
-        id: item.id,
-        name: item.title,
-        echelonId: item.echelonId as EchelonId,
-        unitPriceMln: item.pricePerUnitMln ?? 0,
-        unit: item.unitLabel === "комплект" ? "комплект" : "шт",
-        scores: scoreToSyntheticScores(item.score),
-        scoreSource: "expert-stub",
-      },
-    ];
-  });
+function projectAssetForCalculatorAsset(project: DefenseProject, calculatorAssetId: string) {
+  return project.assetLibrary.find((asset) => (asset.calculatorAssetId ?? asset.id) === calculatorAssetId) ?? null;
 }
 
 export function CalculatorPage() {
@@ -125,7 +82,7 @@ export function CalculatorPage() {
     restoreProjectFromLocalStorage();
   }, [restoreProjectFromLocalStorage]);
 
-  const calculatorAssets = useMemo(() => [...assets, ...mapOnlyDefenseAssets()], []);
+  const calculatorAssets = useMemo(() => projectAssetsToCalculatorAssets(project.assetLibrary), [project.assetLibrary]);
 
   const context: CostingContext = useMemo(
     () => ({ assets: calculatorAssets, echelons, criteria, thresholds: defaultThresholds }),
@@ -142,8 +99,8 @@ export function CalculatorPage() {
   );
 
   const budgetResult = useMemo(
-    () => fitToBudget(budgetMln, { assets, criteria, thresholds: defaultThresholds }),
-    [budgetMln],
+    () => fitToBudget(budgetMln, { assets: calculatorAssets, criteria, thresholds: defaultThresholds }),
+    [budgetMln, calculatorAssets],
   );
 
   const referenceEstimates = useMemo(
@@ -160,16 +117,14 @@ export function CalculatorPage() {
   );
 
   const quantityFor = (assetId: string) => {
-    const itemId = calculatorAssetIdToDefenseItemId(assetId);
-    const projectAssetId = itemId ?? assetId;
+    const projectAssetId = projectAssetIdForCalculatorAsset(project, assetId);
     return project.placedObjects
       .filter((object) => object.assetId === projectAssetId)
       .reduce((acc, object) => acc + object.quantity, 0);
   };
 
   const setQuantity = (assetId: string, quantity: number) => {
-    const itemId = calculatorAssetIdToDefenseItemId(assetId);
-    setAssetQuantity(itemId ?? assetId, quantity);
+    setAssetQuantity(projectAssetIdForCalculatorAsset(project, assetId), quantity);
   };
 
   const loadReference = (refId: string) => {
@@ -396,7 +351,7 @@ function ConfigureTab({
     );
     const layerAssets = scoredAssets.filter((item) => {
       if (placedCalculatorAssetIds.has(item.asset.id)) return true;
-      return recommendedLayerCodeForAsset(item.asset.id) === layer.code;
+      return projectAssetForCalculatorAsset(project, item.asset.id)?.recommendedLayerCodes?.includes(layer.code) ?? false;
     });
     const selectedAssetScores = layerAssets
       .filter(({ asset }) => quantityFor(asset.id) > 0)

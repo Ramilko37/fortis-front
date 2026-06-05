@@ -10,6 +10,8 @@ function assert(condition: unknown, message: string): asserts condition {
 const project = createDefaultDefenseProject();
 const l2 = project.layers.find((layer) => layer.code === "L2");
 assert(l2, "test requires L2 layer");
+const l5 = project.layers.find((layer) => layer.code === "L5");
+assert(l5, "test requires L5 layer");
 
 const placedProject = placeObjectInProject(project, "mobile-radar", l2.id, { lat: 55.44, lng: 37.1 });
 const placements = placedObjectsToMapPlacements({
@@ -38,7 +40,7 @@ const conflictPlacements = placedObjectsToMapPlacements({
 });
 assert(conflictPlacements[0].isConflict, "map placement must expose conflict state for objects outside layer geometry");
 
-const aircraftProject = placeObjectInProject(project, "aircraft", l2.id, { lat: 55.44, lng: 37.11 });
+const aircraftProject = placeObjectInProject(project, "aircraft", l5.id, { lat: 55.15, lng: 37.1 });
 const fallbackPlacements = placedObjectsToMapPlacements({
   project: aircraftProject,
   facilityId: "facility-alpha",

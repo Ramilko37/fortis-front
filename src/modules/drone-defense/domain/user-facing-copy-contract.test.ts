@@ -67,4 +67,9 @@ for (const filePath of checkedFiles) {
   }
 }
 
+const defenseToolIconSource = readFileSync("src/modules/drone-defense/ui/defense-tool-icon.tsx", "utf8");
+if (!defenseToolIconSource.includes(">Разместить<")) {
+  throw new Error("DefenseToolIcon must expose a visible Разместить action, not only an icon title");
+}
+
 console.log("user-facing-copy-contract.test.ts: Defense Studio copy hides legacy slot/asset terms");

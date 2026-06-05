@@ -6,7 +6,12 @@ import { withBasePath } from "@/shared/lib/base-path";
 
 export type DefenseToolIconProps = {
   name: string;
-  roleLabel: string;
+  categoryLabel: string;
+  rangeLabel: string;
+  priceLabel: string;
+  coverageLabel: string;
+  compatibilityLabel: string;
+  compatibilityStatus: "recommended" | "compatible" | "warning" | "incompatible";
   imageUrl: string;
   installedCount: number;
   maxCount: number;
@@ -20,7 +25,12 @@ export type DefenseToolIconProps = {
 
 export function DefenseToolIcon({
   name,
-  roleLabel,
+  categoryLabel,
+  rangeLabel,
+  priceLabel,
+  coverageLabel,
+  compatibilityLabel,
+  compatibilityStatus,
   imageUrl,
   installedCount,
   maxCount,
@@ -35,6 +45,12 @@ export function DefenseToolIcon({
   const canAdd = installedCount < maxCount && !disabledReason;
   const canRemove = isBuilt;
   const title = disabledReason ?? `${name}: ${isBuilt ? "размещено" : "можно разместить"}`;
+  const compatibilityClass = {
+    recommended: "bg-emerald-100 text-emerald-700",
+    compatible: "bg-blue-100 text-blue-700",
+    warning: "bg-amber-100 text-amber-700",
+    incompatible: "bg-rose-100 text-rose-700",
+  }[compatibilityStatus];
 
   return (
     <div
@@ -70,10 +86,18 @@ export function DefenseToolIcon({
         </span>
         <span className="mt-2 block min-w-0">
           <span className="line-clamp-2 min-h-9 text-xs font-semibold leading-snug text-slate-950">{name}</span>
-          <span className="mt-1 block truncate text-[10px] text-slate-500">{roleLabel}</span>
+          <span className="mt-1 block truncate text-[10px] font-semibold text-slate-500">{categoryLabel}</span>
+          <span className="mt-1 grid gap-0.5 text-[10px] leading-tight text-slate-500">
+            <span className="truncate">{rangeLabel}</span>
+            <span className="truncate">{coverageLabel}</span>
+            <span className="truncate">{priceLabel}</span>
+          </span>
+          <span className={`mt-1.5 block truncate rounded-md px-1.5 py-1 text-[10px] font-semibold ${compatibilityClass}`}>
+            {compatibilityLabel}
+          </span>
         </span>
       </button>
-      <div className="mt-2 grid grid-cols-2 gap-1.5">
+      <div className="mt-2 grid grid-cols-[2rem_minmax(0,1fr)] gap-1.5">
         <button
           type="button"
           className="grid h-8 cursor-pointer place-items-center rounded-md bg-slate-100 text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-35"
@@ -85,12 +109,13 @@ export function DefenseToolIcon({
         </button>
         <button
           type="button"
-          className="grid h-8 cursor-pointer place-items-center rounded-md bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="flex h-8 min-w-0 cursor-pointer items-center justify-center gap-1 rounded-md bg-blue-600 px-2 text-[11px] font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
           disabled={!canAdd}
           onClick={onAdd}
           title={disabledReason ?? "Разместить средство"}
         >
           <PlusOutlined />
+          <span>Разместить</span>
         </button>
       </div>
     </div>

@@ -47,16 +47,13 @@ export function DefenseToolsPanel({
         const placement = assetPlacements[0] ?? null;
         const installedCount = assetItem.placedCount;
         const disabledReason =
-          assetItem.placementType === "non-physical"
-            ? undefined
-            : slot?.status === "occupied" && !placement
-              ? "Позиция уже занята другим средством"
-              : undefined;
-        const badge = assetItem.placementType === "non-physical"
-          ? "не требует размещения"
-          : assetItem.isRecommendedForActiveLayer
-            ? "рекомендовано"
-            : "можно разместить";
+          !assetItem.canPlaceInActiveLayer
+            ? assetItem.compatibilityLabel
+            : assetItem.placementType === "non-physical"
+              ? undefined
+              : slot?.status === "occupied" && !placement
+                ? "Позиция уже занята другим средством"
+                : undefined;
 
         const imageUrl = buildAsset?.imageUrl ?? assetItem.imageUrl;
 
@@ -64,7 +61,12 @@ export function DefenseToolsPanel({
           <DefenseToolIcon
             key={assetItem.assetId}
             name={assetItem.title}
-            roleLabel={`${badge} · ${assetItem.subtitle}`}
+            categoryLabel={assetItem.categoryLabel}
+            rangeLabel={assetItem.rangeLabel}
+            priceLabel={assetItem.priceLabel}
+            coverageLabel={assetItem.coverageLabel}
+            compatibilityLabel={assetItem.compatibilityLabel}
+            compatibilityStatus={assetItem.compatibilityStatus}
             imageUrl={imageUrl}
             installedCount={installedCount}
             maxCount={assetItem.maxQuantity}

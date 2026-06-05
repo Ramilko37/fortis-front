@@ -67,12 +67,21 @@ export type AssetCatalogItem = {
   title: string;
   subtitle: string;
   category: DefenseAssetCategory;
+  categoryLabel: string;
   roles: DefenseAssetLibraryItem["roles"];
   pricePerUnitMln: number | null;
+  priceLabel: string;
+  rangeLabel: string;
+  coverageType: DefenseAssetLibraryItem["coverageType"];
+  coverageTypeLabel: string;
+  coverageLabel: string;
   score: number;
   priority: DefenseAssetLibraryItem["priority"];
   imageUrl: string;
   isRecommendedForActiveLayer: boolean;
+  compatibilityStatus: "recommended" | "compatible" | "warning" | "incompatible";
+  compatibilityLabel: string;
+  canPlaceInActiveLayer: boolean;
   placedCount: number;
   maxQuantity: number;
   placementType: DefenseAssetLibraryItem["placementType"];
@@ -121,6 +130,109 @@ function assetSubtitle(asset: DefenseAssetLibraryItem) {
   return `${asset.shortName ?? asset.category} · ${roles} · ${price}`;
 }
 
+const categoryLabels: Record<DefenseAssetCategory, string> = {
+  "early-warning": "Раннее предупреждение",
+  detection: "Обнаружение",
+  classification: "Классификация",
+  jamming: "Подавление",
+  spoofing: "Спуфинг",
+  kinetic: "Поражение",
+  interceptor: "Перехват",
+  "passive-protection": "Пассивная защита",
+  "engineering-protection": "Инженерная защита",
+  infrastructure: "Инфраструктура",
+  software: "ПО/аналитика",
+  "command-center": "Командный центр",
+  "external-service": "Внешний сервис",
+};
+
+const coverageTypeLabels: Record<DefenseAssetLibraryItem["coverageType"], string> = {
+  circle: "Круговое покрытие",
+  sector: "Секторное покрытие",
+  line: "Линейное покрытие",
+  polygon: "Зональное покрытие",
+  none: "Без покрытия на карте",
+};
+
+function formatAssetDistance(meters: number | undefined) {
+  if (meters === undefined) return null;
+  if (meters >= 1000) return `${(meters / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км`;
+  return `${meters.toLocaleString("ru-RU")} м`;
+}
+
+function assetRangeLabel(asset: DefenseAssetLibraryItem) {
+  const min = formatAssetDistance(asset.minEffectiveDistance);
+  const max = formatAssetDistance(asset.maxEffectiveDistance ?? asset.coverageRadius);
+  if (min && max) return `${min}-${max}`;
+  if (max) return `до ${max}`;
+  if (asset.placementType === "non-physical") return "не требует размещения";
+  return "зона задаётся на карте";
+}
+
+function assetPriceLabel(asset: DefenseAssetLibraryItem) {
+  return asset.pricePerUnitMln === null
+    ? "без CAPEX"
+    : `${asset.pricePerUnitMln.toLocaleString("ru-RU")} млн ₽/${asset.unitLabel}`;
+}
+
+function assetCoverageLabel(asset: DefenseAssetLibraryItem) {
+  const radius = formatAssetDistance(asset.coverageRadius);
+  const typeLabel = coverageTypeLabels[asset.coverageType];
+  if (radius && asset.coverageAngle) return `${typeLabel}: ${radius}, ${asset.coverageAngle}°`;
+  if (radius) return `${typeLabel}: радиус ${radius}`;
+  if (asset.placementType === "zone-object") return `${typeLabel}: зона`;
+  if (asset.placementType === "non-physical") return typeLabel;
+  return `${typeLabel}: точка`;
+}
+
+function assetCompatibility(
+  asset: DefenseAssetLibraryItem,
+  activeLayerCode: string | undefined,
+): Pick<AssetCatalogItem, "compatibilityStatus" | "compatibilityLabel" | "canPlaceInActiveLayer" | "isRecommendedForActiveLayer"> {
+  if (!activeLayerCode) {
+    return {
+      compatibilityStatus: "compatible",
+      compatibilityLabel: "Выберите эшелон",
+      canPlaceInActiveLayer: true,
+      isRecommendedForActiveLayer: false,
+    };
+  }
+
+  if (asset.incompatibleLayerCodes?.includes(activeLayerCode)) {
+    return {
+      compatibilityStatus: "incompatible",
+      compatibilityLabel: `Недоступно для ${activeLayerCode}`,
+      canPlaceInActiveLayer: false,
+      isRecommendedForActiveLayer: false,
+    };
+  }
+
+  if (asset.recommendedLayerCodes?.includes(activeLayerCode)) {
+    return {
+      compatibilityStatus: "recommended",
+      compatibilityLabel: `Рекомендовано для ${activeLayerCode}`,
+      canPlaceInActiveLayer: true,
+      isRecommendedForActiveLayer: true,
+    };
+  }
+
+  if (asset.compatibleLayerCodes?.includes(activeLayerCode)) {
+    return {
+      compatibilityStatus: "compatible",
+      compatibilityLabel: `Совместимо с ${activeLayerCode}`,
+      canPlaceInActiveLayer: true,
+      isRecommendedForActiveLayer: false,
+    };
+  }
+
+  return {
+    compatibilityStatus: "warning",
+    compatibilityLabel: `Можно разместить в ${activeLayerCode}, но не рекомендовано`,
+    canPlaceInActiveLayer: true,
+    isRecommendedForActiveLayer: false,
+  };
+}
+
 export function getAssetCatalogItems(
   project: DefenseProject,
   activeLayerCode: string | undefined,
@@ -131,18 +243,24 @@ export function getAssetCatalogItems(
     const placedCount = placedObjects
       .filter((object) => object.assetId === asset.id)
       .reduce((acc, object) => acc + object.quantity, 0);
-    const recommendedCodes = asset.recommendedLayerCodes ?? [];
+    const compatibility = assetCompatibility(asset, activeLayerCode);
     return {
       assetId: asset.id,
       title: asset.name,
       subtitle: assetSubtitle(asset),
       category: asset.category,
+      categoryLabel: categoryLabels[asset.category],
       roles: asset.roles,
       pricePerUnitMln: asset.pricePerUnitMln,
+      priceLabel: assetPriceLabel(asset),
+      rangeLabel: assetRangeLabel(asset),
+      coverageType: asset.coverageType,
+      coverageTypeLabel: coverageTypeLabels[asset.coverageType],
+      coverageLabel: assetCoverageLabel(asset),
       score: asset.score ?? 0,
       priority: asset.priority,
       imageUrl: asset.iconUrl ?? fallbackAssetImageByCategory[asset.category],
-      isRecommendedForActiveLayer: Boolean(activeLayerCode && recommendedCodes.includes(activeLayerCode)),
+      ...compatibility,
       placedCount,
       maxQuantity: legacyItem?.maxQuantity ?? 1,
       placementType: asset.placementType,
@@ -436,6 +554,11 @@ export function validateObjectPlacement(
   const asset = project.assetLibrary.find((item) => item.id === assetId);
   if (!asset) return { isValid: false, level: "error", message: "Средство защиты не найдено" };
 
+  const compatibility = assetCompatibility(asset, layer.code);
+  if (!compatibility.canPlaceInActiveLayer) {
+    return { isValid: false, level: "error", message: compatibility.compatibilityLabel };
+  }
+
   if (asset.placementType !== "non-physical" && !isPointInsideLayerGeometry(layer, coordinates)) {
     return {
       isValid: false,
@@ -445,7 +568,7 @@ export function validateObjectPlacement(
   }
 
   const warning =
-    asset.recommendedLayerCodes?.length && !asset.recommendedLayerCodes.includes(layer.code)
+    compatibility.compatibilityStatus === "warning"
       ? "Это средство можно разместить в выбранном эшелоне, но оно не является рекомендованным для данной зоны."
       : undefined;
 
@@ -647,7 +770,11 @@ export function duplicatePlacedObjectInProject(project: DefenseProject, objectId
 
 function layerForAsset(project: DefenseProject, assetId: string): EditableDefenseLayer {
   const asset = project.assetLibrary.find((item) => item.id === assetId);
-  return project.layers.find((layer) => layer.code === asset?.recommendedLayerCodes?.[0]) ?? project.layers[0];
+  return (
+    project.layers.find((layer) => layer.code === asset?.recommendedLayerCodes?.[0]) ??
+    project.layers.find((layer) => layer.code === asset?.compatibleLayerCodes?.[0]) ??
+    project.layers[0]
+  );
 }
 
 function coordinatesForIndex(project: DefenseProject, index: number): Coordinates {

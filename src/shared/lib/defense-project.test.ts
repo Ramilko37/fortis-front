@@ -30,14 +30,22 @@ import {
   validateObjectPlacement,
 } from "@/shared/lib/defense-project";
 import { createEmptyConfiguration, setDefenseItemQuantityInConfiguration } from "@/shared/lib/defense-configuration";
+import type { DefenseAsset } from "@/shared/types/defense-project";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
 const project = createDefaultDefenseProject();
+const canonicalAssetContract: DefenseAsset = project.assetLibrary[0];
+assert(canonicalAssetContract.id, "project.assetLibrary must expose canonical DefenseAsset items");
 assert(project.layers.length === 9, "default project must keep L1-L9 as editable layers");
 assert(project.assetLibrary.some((asset) => asset.id === "mobile-radar"), "asset library must include mobile-radar");
+assert(project.assetLibrary.every((asset) => asset.coverageType), "canonical asset library must expose coverageType for every item");
+assert(
+  project.assetLibrary.every((asset) => asset.coverageType !== "none" || asset.coverageRadius === undefined),
+  "non-physical canonical assets must not expose map coverage radius",
+);
 assert(project.placedObjects.length === 0, "default project starts without placed objects");
 assert(project.layers.every((layer) => layer.geometry.type === "ring"), "default project layers must be editable rings");
 
@@ -55,6 +63,36 @@ assert(
 assert(
   !l2CatalogItems.find((item) => item.assetId === "laser")?.isRecommendedForActiveLayer,
   "shared asset catalog must not treat other-layer recommendations as restrictions",
+);
+assert(
+  project.assetLibrary.find((asset) => asset.id === "mobile-radar")?.recommendedLayerCodes?.includes("L3"),
+  "canonical asset library must support multi-layer recommendations",
+);
+assert(
+  project.assetLibrary.find((asset) => asset.id === "mobile-radar")?.compatibleLayerCodes?.includes("L3"),
+  "canonical asset library must expose compatible layer codes separately from legacy layerId",
+);
+const radarInL3 = getAssetCatalogItems(project, "L3", project.placedObjects).find((item) => item.assetId === "mobile-radar");
+assert(
+  radarInL3?.compatibilityStatus === "recommended" && radarInL3.compatibilityLabel.includes("Рекомендовано"),
+  "active-layer catalog must mark multi-layer recommendations as recommended",
+);
+const ewOnL2 = l2CatalogItems.find((item) => item.assetId === "ew-narrowband");
+assert(
+  ewOnL2?.compatibilityStatus === "warning" && ewOnL2.compatibilityLabel.includes("не рекомендовано"),
+  "active-layer catalog must keep warning-compatible assets visible",
+);
+const laserOnL2 = l2CatalogItems.find((item) => item.assetId === "laser");
+assert(
+  laserOnL2?.compatibilityStatus === "incompatible" && !laserOnL2.canPlaceInActiveLayer,
+  "active-layer catalog must mark explicitly incompatible assets as blocked",
+);
+assert(
+  typeof radarInL3?.categoryLabel === "string" &&
+    typeof radarInL3.rangeLabel === "string" &&
+    typeof radarInL3.priceLabel === "string" &&
+    typeof radarInL3.coverageLabel === "string",
+  "catalog items must expose display metadata for category, range, price and coverage",
 );
 const aircraftCatalogItem = l2CatalogItems.find((item) => item.assetId === "aircraft");
 assert(aircraftCatalogItem?.imageUrl, "assets without map catalog groups must receive fallback visual metadata");
