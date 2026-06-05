@@ -50,10 +50,10 @@ export function DefenseToolsPanel({
           assetItem.placementType === "non-physical"
             ? undefined
             : slot?.status === "occupied" && !placement
-              ? "Слот уже занят другим средством"
+              ? "Позиция уже занята другим средством"
               : undefined;
         const badge = assetItem.placementType === "non-physical"
-          ? "нефизический asset"
+          ? "не требует размещения"
           : assetItem.isRecommendedForActiveLayer
             ? "рекомендовано"
             : "можно разместить";

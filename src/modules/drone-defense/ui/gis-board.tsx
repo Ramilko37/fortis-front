@@ -567,13 +567,13 @@ export function GisBoard({
                 top: marker.y,
                 transform: "translate(-50%, -72%)",
               }}
-              title={`${marker.group.name}: ${isBuilt ? "установлено" : "не добавлено"}`}
+              title={`Позиция: ${marker.group.name} · ${isBuilt ? "установлено" : "не добавлено"}`}
               onClick={() => {
                 onSelectSlot(marker.slot);
                 onSelectTool(marker.group.id);
               }}
               onMouseEnter={() =>
-                setHoverLabel(`${marker.slot.label}: ${marker.group.name} · ${isBuilt ? "установлено" : "не добавлено"}`)
+                setHoverLabel(`Позиция: ${marker.group.name} · ${isBuilt ? "установлено" : "не добавлено"}`)
               }
               onMouseLeave={() => setHoverLabel(null)}
             >

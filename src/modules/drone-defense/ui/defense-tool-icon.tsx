@@ -34,7 +34,7 @@ export function DefenseToolIcon({
   const isBuilt = installedCount > 0;
   const canAdd = installedCount < maxCount && !disabledReason;
   const canRemove = isBuilt;
-  const title = disabledReason ?? `${name}: ${isBuilt ? "установлено" : "можно построить"}`;
+  const title = disabledReason ?? `${name}: ${isBuilt ? "размещено" : "можно разместить"}`;
 
   return (
     <div
@@ -61,10 +61,11 @@ export function DefenseToolIcon({
             draggable={false}
           />
           <span className={`absolute left-1.5 top-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${isBuilt ? "bg-emerald-600 text-white" : "bg-white/90 text-slate-600"}`}>
-            {isBuilt ? "ПОСТРОЕНО" : "ГОТОВО"}
+            {isBuilt ? "РАЗМЕЩЕНО" : "ГОТОВО"}
           </span>
-          <span className={`absolute bottom-1.5 right-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${isBuilt ? "bg-slate-950 text-white" : "bg-slate-200 text-slate-600"}`}>
-            {installedCount}/{maxCount}
+          <span className={`absolute bottom-1.5 right-1.5 flex flex-col items-end gap-0.5 rounded-md px-1.5 py-1 text-[9px] font-bold leading-none ${isBuilt ? "bg-slate-950 text-white" : "bg-slate-200 text-slate-600"}`}>
+            <span>Размещено: {installedCount}</span>
+            <span>Лимит: {maxCount}</span>
           </span>
         </span>
         <span className="mt-2 block min-w-0">
@@ -87,7 +88,7 @@ export function DefenseToolIcon({
           className="grid h-8 cursor-pointer place-items-center rounded-md bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
           disabled={!canAdd}
           onClick={onAdd}
-          title={disabledReason ?? "Построить средство"}
+          title={disabledReason ?? "Разместить средство"}
         >
           <PlusOutlined />
         </button>

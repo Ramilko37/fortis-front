@@ -130,10 +130,10 @@ export function PropertiesPanel({
           </div>
 
           <div className={styles.actionStrip}>
-            <IconButton label="Дублировать ассет" onClick={onDuplicate}>
+            <IconButton label="Дублировать элемент" onClick={onDuplicate}>
               <CopyOutlined />
             </IconButton>
-            <IconButton label="Удалить ассет" onClick={onDelete}>
+            <IconButton label="Удалить элемент" onClick={onDelete}>
               <DeleteOutlined />
             </IconButton>
           </div>
@@ -247,7 +247,7 @@ export function PropertiesPanel({
           {selectedPlantObject.assetType ? (
             <div className={styles.propertyGroup}>
               <h3>Справка</h3>
-              <PropertyRow label="Тип ассета" value={selectedPlantObject.assetType} />
+              <PropertyRow label="Тип элемента" value={selectedPlantObject.assetType} />
               <PropertyRow
                 label="Размер по умолчанию"
                 value={`${DEFAULT_ASSET_DIMENSIONS[selectedPlantObject.assetType].width} x ${DEFAULT_ASSET_DIMENSIONS[selectedPlantObject.assetType].depth} x ${DEFAULT_ASSET_DIMENSIONS[selectedPlantObject.assetType].height} м`}

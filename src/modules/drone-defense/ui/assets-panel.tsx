@@ -30,7 +30,7 @@ export function AssetsPanel({
   onCancelPlacement: () => void;
 }) {
   return (
-    <aside className={styles.assetsPanel} aria-label="Ассеты">
+    <aside className={styles.assetsPanel} aria-label="Защитные элементы">
       <div className={styles.panelHeader}>
         <h2>Защитные элементы</h2>
       </div>

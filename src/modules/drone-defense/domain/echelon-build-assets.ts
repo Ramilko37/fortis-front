@@ -124,7 +124,7 @@ export function canPlaceCatalogGroupInSlot({
     return {
       canPlace: false,
       reason: "unknown-group",
-      message: "Нельзя установить это средство защиты на выбранный слот",
+      message: "Нельзя установить это средство защиты в выбранной позиции",
     };
   }
 
@@ -132,7 +132,7 @@ export function canPlaceCatalogGroupInSlot({
     return {
       canPlace: false,
       reason: "wrong-layer",
-      message: "Нельзя установить это средство защиты на выбранный слот",
+      message: "Нельзя установить это средство защиты в выбранной позиции",
     };
   }
 
@@ -142,7 +142,7 @@ export function canPlaceCatalogGroupInSlot({
     return {
       canPlace: false,
       reason: "slot-occupied",
-      message: "Выбранный слот уже занят",
+      message: "Выбранная позиция уже занята",
     };
   }
 
@@ -158,7 +158,7 @@ export function canPlaceCatalogGroupInSlot({
   return {
     canPlace: true,
     reason: "available",
-    message: "Слот доступен для установки",
+    message: "Позиция доступна для установки",
   };
 }
 
