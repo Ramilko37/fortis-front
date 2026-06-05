@@ -65,6 +65,32 @@ if (!model.placements.some((placement) => placement.layerId === "layer_09_harden
   throw new Error("Catalog placements must appear as objects inside their selected map echelon");
 }
 
+const customLayer = {
+  ...defenseLayers[1],
+  id: "project_custom_detection" as typeof defenseLayers[number]["id"],
+  order: 10,
+  shortName: "L10",
+  name: "Проектный эшелон",
+};
+
+const customModel = buildEchelonMapModel({
+  facility,
+  layers: [customLayer],
+  layerCoverage: null,
+  configuration: { facilityId: facility.id, scenarioId: "balanced", placements: [] },
+  catalog,
+  selectedLayerId: customLayer.id,
+});
+
+const customZone = customModel.zones[0];
+if (!customZone?.fillColor.every((channel) => Number.isFinite(channel))) {
+  throw new Error("Custom project layers must receive a finite fallback map color");
+}
+
+if (!customModel.slots.length) {
+  throw new Error("Custom project layers must receive fallback build slots");
+}
+
 const externalWarningLayer = defenseLayers.find((layer) => layer.id === "layer_01_external_warning");
 const hardeningLayer = defenseLayers.find((layer) => layer.id === "layer_09_hardening");
 

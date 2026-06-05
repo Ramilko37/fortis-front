@@ -72,6 +72,18 @@ const layerColors: Record<DefenseLayerId, [number, number, number]> = {
   layer_09_hardening: [168, 85, 247],
 };
 
+const fallbackLayerColors: Array<[number, number, number]> = [
+  [37, 99, 235],
+  [6, 182, 212],
+  [20, 184, 166],
+  [34, 197, 94],
+  [132, 204, 22],
+  [245, 158, 11],
+  [249, 115, 22],
+  [239, 68, 68],
+  [168, 85, 247],
+];
+
 const layerOrderFactor = 37;
 const slotCountByLayer: Record<DefenseLayerId, number> = {
   layer_01_external_warning: 5,
@@ -108,7 +120,18 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function getSlotBuildProfile(layerId: DefenseLayerId) {
-  return slotBuildProfiles[layerId];
+  return slotBuildProfiles[layerId] ?? { glyph: "SZ", title: "Построить средство защиты" };
+}
+
+function layerColor(layer: DefenseLayer): [number, number, number] {
+  if (layer.color && /^#[0-9a-fA-F]{6}$/.test(layer.color)) {
+    return [
+      parseInt(layer.color.slice(1, 3), 16),
+      parseInt(layer.color.slice(3, 5), 16),
+      parseInt(layer.color.slice(5, 7), 16),
+    ];
+  }
+  return layerColors[layer.id] ?? fallbackLayerColors[(layer.order - 1) % fallbackLayerColors.length];
 }
 
 export function findNextBuildableCatalogGroupForLayer({
@@ -236,7 +259,7 @@ export function buildEchelonMapModel({
 
   const zones: EchelonZone[] = facility
     ? layers.map((layer) => {
-        const color = layerColors[layer.id];
+        const color = layerColor(layer);
         const coveragePct = coverageByLayer.get(layer.id) ?? 0;
         const placedCount = placementLayers.filter((item) => item.layerId === layer.id).length;
         return {
@@ -247,7 +270,7 @@ export function buildEchelonMapModel({
           coveragePct,
           placedCount,
           polygon: buildEchelonPolygon(facility.center, layer),
-          fillColor: [...color, Math.round(32 + coveragePct * 88)] as [number, number, number, number],
+          fillColor: [...color, Math.round((layer.opacity ?? 0.16) * 255)] as [number, number, number, number],
           lineColor: [...color, 220] as [number, number, number, number],
         };
       })
@@ -255,8 +278,8 @@ export function buildEchelonMapModel({
 
   const slots: EchelonMapSlot[] = facility
     ? layers.flatMap((layer) => {
-        const color = layerColors[layer.id];
-        const count = slotCountByLayer[layer.id];
+        const color = layerColor(layer);
+        const count = slotCountByLayer[layer.id] ?? 4;
         return Array.from({ length: count }, (_, index) => {
           const slotId = `${layer.id}-slot-${String(index + 1).padStart(2, "0")}`;
           const slotPlacement = configuration.placements.find((placement) => placement.slotId === slotId);
@@ -288,7 +311,7 @@ export function buildEchelonMapModel({
     ? placementLayers.map(({ placement, layerId }, index) => {
         const layer = layers.find((item) => item.id === layerId) ?? layers[0];
         const asset = assetsById.get(placement.assetId);
-        const color = layerColors[layerId];
+        const color = layer ? layerColor(layer) : fallbackLayerColors[index % fallbackLayerColors.length];
         const slot = placement.slotId ? slots.find((item) => item.id === placement.slotId) : null;
         const position = placement.mapRef
           ? ([placement.mapRef.lon, placement.mapRef.lat] as [number, number])
