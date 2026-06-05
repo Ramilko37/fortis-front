@@ -17,6 +17,7 @@ import {
   importDefenseProjectJson,
   legacySelectedConfigurationToProject,
   movePlacedObjectInProject,
+  transferPlacedObjectToLayerInProject,
   placeObjectInProject,
   projectToCalculatorConfiguration,
   setAssetQuantityInProject,
@@ -24,6 +25,7 @@ import {
   updateLayerGeometryFromRadii,
   getLayerRadii,
   findLayerInsertOptions,
+  getAssetCatalogItems,
   validateLayerGeometry,
   validateObjectPlacement,
 } from "@/shared/lib/defense-project";
@@ -42,6 +44,20 @@ assert(project.layers.every((layer) => layer.geometry.type === "ring"), "default
 const l2 = project.layers.find((layer) => layer.code === "L2");
 assert(l2, "default project must include L2");
 assert(l2.geometry.type === "ring" && l2.geometry.minRadiusM === 30000 && l2.geometry.maxRadiusM === 60000, "L2 must use configured inner and outer ring radii");
+
+const l2CatalogItems = getAssetCatalogItems(project, "L2", project.placedObjects);
+assert(l2CatalogItems.some((item) => item.assetId === "mobile-radar"), "shared asset catalog must include L2 recommended assets");
+assert(l2CatalogItems.some((item) => item.assetId === "laser"), "shared asset catalog must include assets from other echelons");
+assert(
+  l2CatalogItems.find((item) => item.assetId === "mobile-radar")?.isRecommendedForActiveLayer,
+  "shared asset catalog must mark assets recommended for the active layer",
+);
+assert(
+  !l2CatalogItems.find((item) => item.assetId === "laser")?.isRecommendedForActiveLayer,
+  "shared asset catalog must not treat other-layer recommendations as restrictions",
+);
+const aircraftCatalogItem = l2CatalogItems.find((item) => item.assetId === "aircraft");
+assert(aircraftCatalogItem?.imageUrl, "assets without map catalog groups must receive fallback visual metadata");
 
 const inside = { lat: 55.44, lng: 37.1 };
 const insideTooClose = { lat: 55.2, lng: 37.1 };
@@ -118,6 +134,11 @@ assert(tightenedLayer.geometry.type === "ring" && tightenedLayer.geometry.minRad
 
 const withRadar = placeObjectInProject(project, "mobile-radar", l2.id, inside);
 assert(withRadar.placedObjects.length === 1, "placing object must append to placedObjects");
+const catalogAfterPlacement = getAssetCatalogItems(withRadar, "L2", withRadar.placedObjects);
+assert(
+  catalogAfterPlacement.find((item) => item.assetId === "mobile-radar")?.placedCount === 1,
+  "shared asset catalog must expose placed count by asset",
+);
 assert(calculateProjectTotalObjects(withRadar) === 1, "object count must reflect placedObjects");
 assert(calculateProjectTotalUnits(withRadar) === 1, "unit count must reflect placed object quantity");
 assert(calculateProjectTotalCost(withRadar) === 20, "mobile-radar placed object must cost 20 mln");
@@ -175,6 +196,31 @@ assert(deletedEmptyLayer.ok && deletedEmptyLayer.project.layers.every((layer) =>
 
 const moved = movePlacedObjectInProject(withSecondRadar, withSecondRadar.placedObjects[0].id, { lat: 55.46, lng: 37.1 });
 assert(moved.placedObjects[0].coordinates.lat === 55.46, "moving inside layer must update coordinates");
+
+const mirrorLayer = createRingLayer(withSecondRadar, {
+  id: "layer-transfer-mirror",
+  code: "LM",
+  name: "Transfer mirror",
+  innerRadiusM: 30000,
+  widthM: 30000,
+});
+const transferProject = { ...withSecondRadar, layers: [...withSecondRadar.layers, mirrorLayer] };
+const transferOk = transferPlacedObjectToLayerInProject(transferProject, transferProject.placedObjects[0].id, mirrorLayer.id);
+assert(transferOk.validation.isValid, "transfer to a layer containing current coordinates must be valid");
+assert(
+  transferOk.project.placedObjects[0].layerId === mirrorLayer.id,
+  "valid transfer must update placed object layerId",
+);
+assert(transferOk.project.selectedObjectId === transferProject.placedObjects[0].id, "valid transfer must select transferred object");
+
+const l3 = project.layers.find((layer) => layer.code === "L3");
+assert(l3, "default project must include L3");
+const transferRejected = transferPlacedObjectToLayerInProject(withSecondRadar, withSecondRadar.placedObjects[0].id, l3.id);
+assert(!transferRejected.validation.isValid, "transfer outside target layer geometry must be rejected");
+assert(
+  transferRejected.project.placedObjects[0].layerId === withSecondRadar.placedObjects[0].layerId,
+  "rejected transfer must keep original layerId",
+);
 
 const duplicate = duplicatePlacedObjectInProject(withRadar, withRadar.placedObjects[0].id);
 assert(duplicate.placedObjects.length === 2, "duplicating object must create a second placed object");

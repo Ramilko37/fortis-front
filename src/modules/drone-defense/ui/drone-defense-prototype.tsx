@@ -2,24 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppstoreOutlined } from "@ant-design/icons";
-import {
-  buildCatalogPlacement,
-  defenseLayers,
-  echelonCatalogGroups,
-  getCatalogGroupsForLayer,
-  type EchelonCatalogGroup,
-} from "@/modules/drone-defense/infra/mock-defense-data";
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
 import { buildEchelonMapModel, type EchelonMapSlot } from "@/modules/drone-defense/domain/echelon-map-model";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
 import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
-import { getDefenseItemByMapGroupId } from "@/shared/config/defense-catalog";
 import {
   calculateLayerConflicts,
   calculateLayerSummaries,
   findLayerInsertOptions,
+  getAssetCatalogItems,
   getLayerRadii,
   priceForPlacedObject,
   validateLayerGeometry,
@@ -29,6 +22,8 @@ import type { DefenseProject, EditableDefenseLayer } from "@/shared/types/defens
 import type { LayerInsertOption } from "@/shared/lib/defense-project";
 import type { DefenseLayer, DefenseLayerId } from "@/shared/types/drone-defense";
 import type { PointerEvent as ReactPointerEvent } from "react";
+
+type CatalogFilter = "all" | "recommended" | "placed";
 
 function formatDistance(meters: number) {
   if (meters >= 1000) return `${(meters / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км`;
@@ -111,16 +106,11 @@ function buildWizardLayer(
   };
 }
 
-function catalogGroupsForProjectLayer(layer: EditableDefenseLayer | undefined) {
-  if (!layer) return echelonCatalogGroups;
-  const legacyLayer = defenseLayers.find((item) => item.shortName === layer.code);
-  const groups = legacyLayer ? getCatalogGroupsForLayer(legacyLayer.id) : [];
-  return groups.length > 0 ? groups : echelonCatalogGroups;
-}
-
 export function DroneDefensePrototype() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogFilter, setCatalogFilter] = useState<CatalogFilter>("all");
+  const [isCatalogTrayOpen, setIsCatalogTrayOpen] = useState(true);
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
   const [isLayerPanelExpanded, setIsLayerPanelExpanded] = useState(true);
   const [layerPanelMode, setLayerPanelMode] = useState<"view" | "edit">("view");
@@ -149,8 +139,12 @@ export function DroneDefensePrototype() {
     deleteLayer,
     updateLayerGeometry,
     selectLayer,
+    setBaseObjectCenter,
     selectAsset,
+    selectedObjectId,
+    selectObject,
     placeObject,
+    transferObjectToLayer,
     updatePlacedObject,
     deletePlacedObject,
     restoreProjectFromLocalStorage,
@@ -168,6 +162,11 @@ export function DroneDefensePrototype() {
     () => facilities.find((item) => item.id === facilityId) ?? null,
     [facilities, facilityId],
   );
+
+  useEffect(() => {
+    if (!selectedFacility) return;
+    setBaseObjectCenter({ lat: selectedFacility.center.lat, lng: selectedFacility.center.lon });
+  }, [selectedFacility, setBaseObjectCenter]);
   const projectMapLayers = useMemo(
     () =>
       [...project.layers]
@@ -188,12 +187,26 @@ export function DroneDefensePrototype() {
   const layerSummaries = useMemo(() => calculateLayerSummaries(project), [project]);
   const layerConflicts = useMemo(() => calculateLayerConflicts(project), [project]);
   const conflictObjectIds = useMemo(() => new Set(layerConflicts.map((object) => object.id)), [layerConflicts]);
-  const selectedLayerGroups = useMemo(() => catalogGroupsForProjectLayer(selectedLayer), [selectedLayer]);
-  const filteredLayerGroups = useMemo(() => {
+  const assetCatalogItems = useMemo(
+    () => getAssetCatalogItems(project, selectedLayer?.code, project.placedObjects),
+    [project, selectedLayer?.code],
+  );
+  const filteredCatalogItems = useMemo(() => {
     const query = catalogQuery.trim().toLowerCase();
-    if (!query) return selectedLayerGroups;
-    return selectedLayerGroups.filter((group) => group.name.toLowerCase().includes(query));
-  }, [catalogQuery, selectedLayerGroups]);
+    return assetCatalogItems.filter((item) => {
+      if (catalogFilter === "recommended" && !item.isRecommendedForActiveLayer) return false;
+      if (catalogFilter === "placed" && item.placedCount <= 0) return false;
+      if (!query) return true;
+      const haystack = [
+        item.title,
+        item.subtitle,
+        item.category,
+        ...item.roles,
+        ...item.tags,
+      ].join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [assetCatalogItems, catalogFilter, catalogQuery]);
   const selectedRadii = selectedLayer ? getLayerRadii(selectedLayer) : { innerRadiusM: 0, widthM: 0, outerRadiusM: 0 };
   const insertOptions = useMemo(() => findLayerInsertOptions(project), [project]);
   const wizardLayer = useMemo(() => {
@@ -269,10 +282,6 @@ export function DroneDefensePrototype() {
     () => echelonModel.slots.filter((slot) => slot.layerId === selectedLayerId),
     [echelonModel.slots, selectedLayerId],
   );
-  const selectedSlot = useMemo(
-    () => selectedLayerSlots.find((slot) => slot.id === selectedSlotId) ?? selectedLayerSlots.find((slot) => slot.status === "empty") ?? selectedLayerSlots[0] ?? null,
-    [selectedLayerSlots, selectedSlotId],
-  );
   const selectedLayerObjects = useMemo(
     () => project.placedObjects.filter((object) => object.layerId === selectedLayerId),
     [project.placedObjects, selectedLayerId],
@@ -282,6 +291,7 @@ export function DroneDefensePrototype() {
   const canCreateLayer = project.layers.length < MAX_DEFENSE_PROJECT_LAYERS;
   const canDeleteSelectedLayer = project.layers.length > 1 && selectedLayerObjects.length === 0;
   const isLayerEditMode = layerPanelMode === "edit";
+  const showCompactLayerPanel = isCatalogTrayOpen || !isLayerPanelExpanded;
 
   const draftForInsertOption = (option: LayerInsertOption | undefined): Pick<LayerWizardState, "draft" | "insertPosition"> => {
     const innerRadiusM = option?.minInnerRadiusM ?? 0;
@@ -381,47 +391,70 @@ export function DroneDefensePrototype() {
     setLastPlacementMessage(result.ok ? "Эшелон удалён" : result.message);
   };
 
-  const addCatalogGroup = (groupId: string, targetSlot: EchelonMapSlot | null = selectedSlot) => {
-    const placement = buildCatalogPlacement({
-      facilityId,
-      scenarioId,
-      groupId,
-      slotId: targetSlot?.id,
-      mapRef: targetSlot ? { lon: targetSlot.position[0], lat: targetSlot.position[1] } : undefined,
-    });
-    void upsertLocalPlacement(placement);
+  const selectPlacedObject = (objectId: string) => {
+    const object = project.placedObjects.find((item) => item.id === objectId);
+    if (!object) return;
+    selectObject(objectId);
+    setSelectedSlotId(null);
+    const asset = project.assetLibrary.find((item) => item.id === object.assetId);
+    setLastPlacementMessage(`${asset?.name ?? object.name ?? "Объект"} выбран на карте`);
   };
 
-  const handleSelectTool = (group: EchelonCatalogGroup) => {
-    setActiveToolId((current) => (current === group.id ? null : group.id));
-    setLastPlacementMessage(`${selectedLayer?.code ?? "—"} · ${group.name}: кликните по карте или используйте +`);
+  const transferPlacedObject = (objectId: string, layerId: string) => {
+    const object = project.placedObjects.find((item) => item.id === objectId);
+    const targetLayer = project.layers.find((layer) => layer.id === layerId);
+    if (!object || !targetLayer) return;
+    const validation = transferObjectToLayer(objectId, layerId);
+    if (!validation.isValid) {
+      setLastPlacementMessage(validation.message ?? "Нельзя перенести объект в выбранный эшелон");
+      return;
+    }
+    setSelectedSlotId(null);
+    setLastPlacementMessage(`${object.name ?? "Объект"} перенесён в ${targetLayer.code}`);
   };
 
-  const addToolToSlot = (group: EchelonCatalogGroup, slot: EchelonMapSlot) => {
-    selectLayer(slot.layerId);
-    setSelectedSlotId(slot.id);
-    setActiveToolId(group.id);
-    const item = getDefenseItemByMapGroupId(group.id);
-    if (item) {
-      const projectLayer = project.layers.find((layer) => layer.id === slot.layerId) ?? selectedLayer ?? project.layers[0];
-      const validation = placeObject(item.id, projectLayer.id, {
-        lat: slot.position[1],
-        lng: slot.position[0],
-      });
-      if (!validation.isValid) {
-        setLastPlacementMessage(validation.message ?? "Не удалось разместить объект");
-        return;
-      }
-      setLastPlacementMessage(`${group.name} добавлено в общую конфигурацию`);
-      return;
+  const handleSelectTool = (asset: ReturnType<typeof getAssetCatalogItems>[number]) => {
+    const nextId = activeToolId === asset.assetId ? null : asset.assetId;
+    setActiveToolId(nextId);
+    selectAsset(asset.assetId);
+    setLastPlacementMessage(
+      nextId
+        ? `${selectedLayer?.code ?? "—"} · ${asset.title}: кликните по карте внутри активного эшелона`
+        : null,
+    );
+  };
+
+  const addToolToSlot = (asset: ReturnType<typeof getAssetCatalogItems>[number], slot: EchelonMapSlot | null) => {
+    if (!selectedLayer) return;
+    setActiveToolId(asset.assetId);
+    selectAsset(asset.assetId);
+
+    const targetLayer = slot ? project.layers.find((layer) => layer.id === slot.layerId) ?? selectedLayer : selectedLayer;
+    if (slot) {
+      selectLayer(slot.layerId);
+      setSelectedSlotId(slot.id);
     }
-    if (mapConfiguration.placements.some((placement) => placement.slotId === slot.id)) {
-      setLastPlacementMessage(`${slot.label} уже занят`);
+
+    if (targetLayer.isLocked) {
+      setLastPlacementMessage("Эшелон заблокирован для размещения.");
       return;
     }
 
-    addCatalogGroup(group.id, slot);
-    setLastPlacementMessage(`${group.name} построено на ${selectedLayer?.code ?? "—"} · ${slot.label}`);
+    if (!slot && asset.placementType !== "non-physical") {
+      setLastPlacementMessage(`${asset.title}: выберите точку на карте внутри эшелона ${targetLayer.code}`);
+      return;
+    }
+
+    const coordinates = slot
+      ? { lat: slot.position[1], lng: slot.position[0] }
+      : project.baseObject.center;
+    const validation = placeObject(asset.assetId, targetLayer.id, coordinates);
+    setLastPlacementMessage(
+      validation.message ??
+        (validation.isValid
+          ? `${asset.title} размещено в эшелоне ${targetLayer.code}`
+          : "Не удалось разместить объект"),
+    );
   };
 
   const placeActiveToolAtCoordinate = ({ lng, lat }: { lng: number; lat: number }) => {
@@ -430,33 +463,27 @@ export function DroneDefensePrototype() {
       setLastPlacementMessage("Эшелон заблокирован для размещения.");
       return;
     }
-    const item = getDefenseItemByMapGroupId(activeToolId);
-    if (!item) {
-      setLastPlacementMessage("Это средство пока не связано с единым каталогом");
+    const asset = project.assetLibrary.find((item) => item.id === activeToolId);
+    if (!asset) {
+      setLastPlacementMessage("Средство защиты не найдено в библиотеке");
       return;
     }
-    selectAsset(item.id);
-    const validation = placeObject(item.id, selectedLayer.id, { lat, lng });
+    selectAsset(asset.id);
+    const validation = placeObject(asset.id, selectedLayer.id, { lat, lng });
     setLastPlacementMessage(
       validation.message ??
         (validation.isValid
-          ? `${item.title} размещено в эшелоне ${selectedLayer.code}`
+          ? `${asset.name} размещено в эшелоне ${selectedLayer.code}`
           : "Не удалось разместить объект"),
     );
   };
 
-  const removeCatalogGroup = (groupId: string) => {
-    const item = getDefenseItemByMapGroupId(groupId);
-    if (item) {
-      const placedObject = project.placedObjects.find((object) => object.assetId === item.id);
-      if (placedObject) deletePlacedObject(placedObject.id);
-      setLastPlacementMessage(`${item.title} удалено из общей конфигурации`);
-      return;
-    }
-    const placement = mapConfiguration.placements.find((item) => item.catalogGroupId === groupId);
-    if (!placement) return;
-    void removeLocalPlacement(placement.id);
-    setLastPlacementMessage(`${placement.catalogGroupName ?? "Средство защиты"} удалено`);
+  const removeCatalogAsset = (assetId: string) => {
+    const asset = project.assetLibrary.find((item) => item.id === assetId);
+    const placedObject = project.placedObjects.find((object) => object.assetId === assetId);
+    if (!placedObject) return;
+    deletePlacedObject(placedObject.id);
+    setLastPlacementMessage(`${asset?.name ?? "Средство защиты"} удалено из общей конфигурации`);
   };
 
   const selectLayerWithDefaultSlot = (layerId: string) => {
@@ -483,7 +510,7 @@ export function DroneDefensePrototype() {
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
-      <section className="z-10 flex max-h-[46vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white shadow-xl shadow-slate-900/5 lg:h-full lg:max-h-none lg:w-[360px] lg:border-b-0 lg:border-r">
+      <section className="z-10 flex max-h-[42vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white shadow-xl shadow-slate-900/5 lg:h-full lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
         <div className="border-b border-slate-100 p-4">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-600 text-white">
@@ -502,11 +529,18 @@ export function DroneDefensePrototype() {
             <p className="mt-0.5 text-sm font-semibold text-blue-950">
               {placementHint}
             </p>
+            <button
+              type="button"
+              className="mt-3 h-9 w-full cursor-pointer rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700"
+              onClick={() => setIsCatalogTrayOpen(true)}
+            >
+              Открыть библиотеку СЗ
+            </button>
           </div>
 
           <div className="p-4">
             {selectedLayer ? (
-              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+              <div className="rounded-xl border border-slate-200 bg-white p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Объекты эшелона</p>
@@ -533,13 +567,25 @@ export function DroneDefensePrototype() {
                       return (
                         <div
                           key={object.id}
-                          className={`rounded-lg border p-2 ${
-                            isConflict ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-slate-50"
+                          className={`cursor-pointer rounded-lg border p-2 transition ${
+                            object.id === selectedObjectId
+                              ? "border-blue-400 bg-blue-50 shadow-sm shadow-blue-600/10"
+                              : isConflict
+                                ? "border-amber-200 bg-amber-50"
+                                : "border-slate-200 bg-slate-50 hover:border-blue-200"
                           }`}
+                          onClick={() => selectPlacedObject(object.id)}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="truncate text-xs font-semibold text-slate-900">{object.name ?? asset?.name ?? object.assetId}</p>
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <p className="truncate text-xs font-semibold text-slate-900">{object.name ?? asset?.name ?? object.assetId}</p>
+                                {isConflict ? (
+                                  <span className="shrink-0 rounded bg-amber-200 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-800">
+                                    conflict
+                                  </span>
+                                ) : null}
+                              </div>
                               <p className="mt-0.5 text-[10px] text-slate-500">
                                 {unitPrice > 0 ? `${unitPrice} млн/ед.` : "без CAPEX"}
                                 {isConflict ? " · вне границ" : ""}
@@ -548,7 +594,10 @@ export function DroneDefensePrototype() {
                             <button
                               type="button"
                               className="h-7 cursor-pointer rounded-md border border-rose-200 px-2 text-[10px] font-semibold text-rose-600 hover:bg-rose-50"
-                              onClick={() => deletePlacedObject(object.id)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                deletePlacedObject(object.id);
+                              }}
                             >
                               Удалить
                             </button>
@@ -559,11 +608,13 @@ export function DroneDefensePrototype() {
                               min={1}
                               className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
                               value={object.quantity}
+                              onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updatePlacedObject(object.id, { quantity: Number(event.target.value) })}
                             />
                             <select
                               className="h-8 cursor-pointer rounded-md border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
                               value={object.status}
+                              onClick={(event) => event.stopPropagation()}
                               onChange={(event) => updatePlacedObject(object.id, { status: event.target.value as typeof object.status })}
                             >
                               <option value="planned">planned</option>
@@ -572,6 +623,18 @@ export function DroneDefensePrototype() {
                               <option value="maintenance">maintenance</option>
                             </select>
                           </div>
+                          <select
+                            className="mt-2 h-8 w-full cursor-pointer rounded-md border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
+                            value={object.layerId}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) => transferPlacedObject(object.id, event.target.value)}
+                          >
+                            {orderedProjectLayers.map((layer) => (
+                              <option key={layer.id} value={layer.id}>
+                                {layer.code} · {layer.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       );
                     })
@@ -579,37 +642,6 @@ export function DroneDefensePrototype() {
                 </div>
               </div>
             ) : null}
-
-            <div className="mt-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Каталог СЗ</p>
-                  <h2 className="mt-1 text-sm font-semibold text-slate-950">
-                    {selectedLayer?.code ?? "—"} · {selectedLayer?.name ?? "Эшелон не выбран"}
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    {formatDistance(selectedRadii.innerRadiusM)}-{formatDistance(selectedRadii.outerRadiusM)} от объекта · выберите средство и кликните по карте
-                  </p>
-                </div>
-              </div>
-              <input
-                className="mt-3 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-400"
-                value={catalogQuery}
-                onChange={(event) => setCatalogQuery(event.target.value)}
-                placeholder="Найти средство защиты..."
-              />
-              <div className="mt-3">
-                <DefenseToolsPanel
-                  groups={filteredLayerGroups}
-                  slots={selectedLayerLocked ? [] : selectedLayerSlots}
-                  placements={mapConfiguration.placements}
-                  selectedToolId={activeToolId}
-                  onSelectTool={handleSelectTool}
-                  onAddTool={addToolToSlot}
-                  onRemoveTool={(group) => removeCatalogGroup(group.id)}
-                />
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -649,28 +681,35 @@ export function DroneDefensePrototype() {
                 selectLayer(slot.layerId);
                 setSelectedSlotId(slot.id);
               }}
+              onSelectPlacement={selectPlacedObject}
               onSelectTool={(groupId) => {
-                setActiveToolId(groupId);
-                const group = selectedLayerGroups.find((item) => item.id === groupId);
-                setLastPlacementMessage(group ? `${selectedLayer?.code ?? "—"} · ${group.name}: кликните по карте` : null);
+                const asset =
+                  project.assetLibrary.find((item) => item.id === groupId) ??
+                  project.assetLibrary.find((item) => item.mapCatalogGroupIds?.includes(groupId));
+                setActiveToolId(asset?.id ?? null);
+                setLastPlacementMessage(
+                  asset ? `${selectedLayer?.code ?? "—"} · ${asset.name}: кликните по карте` : null,
+                );
               }}
               onPlaceActiveTool={placeActiveToolAtCoordinate}
             />
 
             {selectedLayer ? (
               <div
-                className={`pointer-events-none absolute inset-x-3 bottom-3 z-20 flex lg:inset-x-5 ${
-                  isLayerPanelExpanded ? "justify-start" : "justify-center"
+                className={`pointer-events-none absolute inset-x-3 z-20 flex transition-[bottom] lg:inset-x-5 ${
+                  isCatalogTrayOpen ? "bottom-[21.5rem]" : "bottom-3"
+                } ${
+                  showCompactLayerPanel ? "justify-center" : "justify-start"
                 }`}
               >
                 <div
                   className={`pointer-events-auto border border-white/70 bg-white/95 shadow-2xl shadow-slate-900/20 backdrop-blur ${
-                    isLayerPanelExpanded
-                      ? "w-full rounded-xl p-3"
-                      : "max-w-full overflow-x-auto rounded-lg p-1"
+                    showCompactLayerPanel
+                      ? "max-w-full overflow-x-auto rounded-lg p-1"
+                      : "w-full rounded-xl p-3"
                   }`}
                 >
-                  {!isLayerPanelExpanded ? (
+                  {showCompactLayerPanel ? (
                     <div className="flex items-center gap-1">
                       {orderedProjectLayers.map((layer) => {
                         const isSelected = layer.id === selectedLayer.id;
@@ -691,7 +730,10 @@ export function DroneDefensePrototype() {
                       <button
                         type="button"
                         className="h-9 cursor-pointer rounded-md bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700"
-                        onClick={() => setIsLayerPanelExpanded(true)}
+                        onClick={() => {
+                          setIsCatalogTrayOpen(false);
+                          setIsLayerPanelExpanded(true);
+                        }}
                         title="Развернуть панель эшелонов"
                       >
                         ↑
@@ -836,6 +878,83 @@ export function DroneDefensePrototype() {
                   )}
                 </div>
               </div>
+            ) : null}
+
+            <div
+              className={`absolute inset-x-3 bottom-3 z-30 transition-transform duration-200 lg:inset-x-5 ${
+                isCatalogTrayOpen ? "translate-y-0" : "translate-y-[calc(100%+0.75rem)]"
+              }`}
+            >
+              <div className="overflow-hidden rounded-xl border border-white/70 bg-white/95 shadow-2xl shadow-slate-900/20 backdrop-blur">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-3 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-500">Библиотека СЗ</p>
+                    <h2 className="truncate text-sm font-semibold text-slate-950">
+                      Размещение в {selectedLayer?.code ?? "—"} · {selectedLayer?.name ?? "Эшелон не выбран"}
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      {formatDistance(selectedRadii.innerRadiusM)}-{formatDistance(selectedRadii.outerRadiusM)} от объекта
+                    </p>
+                  </div>
+                  <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+                    <div className="grid h-9 min-w-[16rem] max-w-full flex-1 grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1 sm:flex-none">
+                      {[
+                        { id: "all", label: "Все" },
+                        { id: "recommended", label: "Рекоменд." },
+                        { id: "placed", label: "Размещ." },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`cursor-pointer rounded-md px-2 text-[11px] font-semibold transition ${
+                            catalogFilter === item.id
+                              ? "bg-white text-blue-700 shadow-sm"
+                              : "text-slate-500 hover:bg-white/70 hover:text-slate-900"
+                          }`}
+                          onClick={() => setCatalogFilter(item.id as CatalogFilter)}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      className="h-9 min-w-[13rem] flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-400 sm:max-w-[18rem]"
+                      value={catalogQuery}
+                      onChange={(event) => setCatalogQuery(event.target.value)}
+                      placeholder="Найти средство..."
+                    />
+                    <button
+                      type="button"
+                      className="h-9 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                      onClick={() => setIsCatalogTrayOpen(false)}
+                    >
+                      Свернуть
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-[15.5rem] overflow-y-auto p-3">
+                  <DefenseToolsPanel
+                    assets={filteredCatalogItems}
+                    projectAssets={project.assetLibrary}
+                    slots={selectedLayerLocked ? [] : selectedLayerSlots}
+                    placements={mapConfiguration.placements}
+                    selectedToolId={activeToolId}
+                    onSelectTool={handleSelectTool}
+                    onAddTool={addToolToSlot}
+                    onRemoveTool={(asset) => removeCatalogAsset(asset.assetId)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {!isCatalogTrayOpen ? (
+              <button
+                type="button"
+                className="absolute bottom-3 right-3 z-40 h-10 cursor-pointer rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-xl shadow-blue-950/20 transition hover:bg-blue-700 lg:right-5"
+                onClick={() => setIsCatalogTrayOpen(true)}
+              >
+                Библиотека СЗ
+              </button>
             ) : null}
           </>
         ) : null}

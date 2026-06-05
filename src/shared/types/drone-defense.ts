@@ -109,6 +109,8 @@ export type Placement = {
   criticalityBoost: number;
   feasibility: number;
   environmentModifier: number;
+  isSelected?: boolean;
+  isConflict?: boolean;
   sceneRef?: {
     x: number;
     z: number;

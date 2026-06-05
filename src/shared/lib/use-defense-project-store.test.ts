@@ -40,6 +40,9 @@ assert(storage.has(FORTIS_DEFENSE_PROJECT_STORAGE_KEY), "store must persist proj
 useDefenseProjectStore.getState().moveObject(placed[0].id, { lat: 55.45, lng: 37.1 });
 assert(useDefenseProjectStore.getState().project.placedObjects[0].coordinates.lat === 55.45, "moveObject must update coordinates");
 
+useDefenseProjectStore.getState().selectObject(placed[0].id);
+assert(useDefenseProjectStore.getState().selectedObjectId === placed[0].id, "selectObject must expose object selection");
+
 useDefenseProjectStore.getState().duplicatePlacedObject(placed[0].id);
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 2, "duplicatePlacedObject must add a second object");
 
@@ -133,9 +136,47 @@ assert(
   "updateLayerGeometry may leave existing objects as conflicts",
 );
 
+const l3ForTransfer = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "L3");
+assert(l3ForTransfer, "store project must include L3 before transfer check");
+const conflictObject = useDefenseProjectStore.getState().project.placedObjects[0];
+const invalidTransfer = useDefenseProjectStore.getState().transferObjectToLayer(conflictObject.id, l3ForTransfer.id);
+assert(!invalidTransfer.isValid, "transferObjectToLayer must reject coordinates outside target layer");
+assert(
+  useDefenseProjectStore.getState().project.placedObjects[0].layerId === conflictObject.layerId,
+  "rejected transferObjectToLayer must keep original layer",
+);
+
+const l2AfterEdit = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "L2");
+assert(l2AfterEdit, "store project must include edited L2 before valid transfer setup");
+useDefenseProjectStore.getState().createLayerFromDraft({
+  name: "Зеркало переноса",
+  code: "LZ",
+  innerRadiusM: 30000,
+  widthM: 20000,
+});
+const mirrorTransferLayer = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "LZ");
+assert(mirrorTransferLayer, "mirror transfer layer must be created");
+useDefenseProjectStore.getState().updatePlacedObject(conflictObject.id, { coordinates: { lat: 55.44, lng: 37.1 } });
+const validTransfer = useDefenseProjectStore.getState().transferObjectToLayer(conflictObject.id, mirrorTransferLayer.id);
+assert(validTransfer.isValid, "transferObjectToLayer must accept coordinates inside target layer");
+assert(
+  useDefenseProjectStore.getState().project.placedObjects[0].layerId === mirrorTransferLayer.id,
+  "valid transferObjectToLayer must update layerId",
+);
+
 for (let index = 0; index < 30; index += 1) {
   useDefenseProjectStore.getState().createLayer({ name: `Лимит ${index}`, code: `LM${index}` });
 }
 assert(useDefenseProjectStore.getState().project.layers.length === 20, "createLayer must cap project layers at 20");
+
+useDefenseProjectStore.getState().clearProject();
+useDefenseProjectStore.getState().setBaseObjectCenter({ lat: 56.8389, lng: 60.5945 });
+const recenteredProject = useDefenseProjectStore.getState().project;
+const recenteredL2 = recenteredProject.layers.find((layer) => layer.code === "L2");
+assert(recenteredProject.baseObject.center.lat === 56.8389, "setBaseObjectCenter must update the protected object center");
+assert(
+  recenteredL2?.geometry.type === "ring" && recenteredL2.geometry.center.lng === 60.5945,
+  "setBaseObjectCenter must keep ring layer geometry aligned with the selected facility",
+);
 
 console.log("use-defense-project-store.test.ts: project store contracts passed");

@@ -14,6 +14,7 @@ import type {
 } from "@/modules/defense-calculator/domain/calculator-types";
 import type { estimateConfiguration } from "@/modules/defense-calculator/domain/costing";
 import type { fitToBudget } from "@/modules/defense-calculator/domain/budget-fit";
+import type { LayerSummary } from "@/shared/types/defense-project";
 
 const PRINT_PRIORITY_COLOR: Record<PriorityColor, string> = {
   green: "#15803d",
@@ -33,12 +34,14 @@ export function CalculatorReport({
   scoredAssets,
   budgetResult,
   generatedAt,
+  layerSummaries,
 }: {
   myEstimate: ConfigurationEstimate;
   referenceEstimates: Array<ReturnType<typeof estimateConfiguration>>;
   scoredAssets: ScoredAsset[];
   budgetResult: ReturnType<typeof fitToBudget>;
   generatedAt?: Date;
+  layerSummaries?: LayerSummary[];
 }) {
   const columns = [...referenceEstimates, myEstimate];
   const minTotal = Math.min(...columns.map((c) => c.totalMln));
@@ -138,6 +141,42 @@ export function CalculatorReport({
           </tfoot>
         </table>
       </section>
+
+      {layerSummaries?.length ? (
+        <section className="report-section">
+          <h2>1.1. Эшелоны карты</h2>
+          <table className="report-table report-table-tight">
+            <thead>
+              <tr>
+                <th>Эшелон</th>
+                <th className="num">Удалённость</th>
+                <th className="num">Ширина</th>
+                <th className="num">Объекты</th>
+                <th className="num">Единицы</th>
+                <th className="num">Покрытие</th>
+                <th className="num">Конфликты</th>
+                <th className="num">Стоимость</th>
+              </tr>
+            </thead>
+            <tbody>
+              {layerSummaries.map((layer) => (
+                <tr key={layer.layerId}>
+                  <td className="echelon-cell">
+                    {layer.layerCode} · {layer.layerName}
+                  </td>
+                  <td className="num">{layer.innerRadiusM.toLocaleString("ru-RU")} м</td>
+                  <td className="num">{layer.widthM.toLocaleString("ru-RU")} м</td>
+                  <td className="num">{layer.objectCount}</td>
+                  <td className="num">{layer.unitCount}</td>
+                  <td className="num">{layer.coverageScore}</td>
+                  <td className="num">{layer.conflictCount > 0 ? layer.conflictCount : "—"}</td>
+                  <td className="num strong">{layer.totalMln > 0 ? formatMln(layer.totalMln) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
 
       <section className="report-section">
         <h2>2. Сравнение конфигураций</h2>

@@ -51,6 +51,7 @@ type GisBoardProps = {
   placementHint: string;
   onSelectLayer: (layerId: string) => void;
   onSelectSlot: (slot: EchelonMapSlot) => void;
+  onSelectPlacement: (placementId: string) => void;
   onSelectTool: (groupId: string) => void;
   onPlaceActiveTool?: (coordinate: { lng: number; lat: number }) => void;
 };
@@ -144,6 +145,7 @@ export function GisBoard({
   placementHint,
   onSelectLayer,
   onSelectSlot,
+  onSelectPlacement,
   onSelectTool,
   onPlaceActiveTool,
 }: GisBoardProps) {
@@ -394,11 +396,13 @@ export function GisBoard({
             height: 128,
             anchorY: 64,
           }),
-          getSize: (item) => (item.placement.layerId === selectedLayerId ? 50 : 36),
+          getSize: (item) => (item.placement.isSelected ? 58 : item.placement.layerId === selectedLayerId ? 50 : 36),
           sizeUnits: "pixels",
           billboard: true,
           pickable: true,
           onClick: ({ object }) => {
+            if (!object) return;
+            onSelectPlacement(object.placement.sourcePlacementId);
             const slot = object?.placement.slotId
               ? echelonModel.slots.find((item) => item.id === object.placement.slotId)
               : null;
@@ -412,11 +416,18 @@ export function GisBoard({
           id: "echelon-placement-objects",
           data: echelonModel.placements,
           getPosition: (item) => item.position,
-          getRadius: (item) => (item.layerId === selectedLayerId ? 1700 : 1150),
+          getRadius: (item) => (item.isSelected ? 2200 : item.layerId === selectedLayerId ? 1700 : 1150),
           radiusMinPixels: 5,
-          radiusMaxPixels: 14,
-          getFillColor: (item) => (item.catalogGroupId ? [255, 255, 255, 0] : item.color),
-          getLineColor: (item) => (item.layerId === selectedLayerId ? [15, 23, 42, 255] : [255, 255, 255, 220]),
+          radiusMaxPixels: 18,
+          getFillColor: (item) => (item.catalogGroupId ? [255, 255, 255, 0] : item.isConflict ? [245, 158, 11, 235] : item.color),
+          getLineColor: (item) =>
+            item.isConflict
+              ? [180, 83, 9, 255]
+              : item.isSelected
+                ? [37, 99, 235, 255]
+                : item.layerId === selectedLayerId
+                  ? [15, 23, 42, 255]
+                  : [255, 255, 255, 220],
           lineWidthMinPixels: 1,
           stroked: true,
           pickable: true,
@@ -427,10 +438,15 @@ export function GisBoard({
               onSelectSlot(slot);
               return;
             }
+            onSelectPlacement(object.sourcePlacementId);
             onSelectLayer(object.layerId);
           },
           onHover: ({ object }) =>
-            setHoverLabel(object ? `${object.label} · ${visibleMapLayers.find((layer) => layer.id === object.layerId)?.shortName}` : null),
+            setHoverLabel(
+              object
+                ? `${object.label} · ${visibleMapLayers.find((layer) => layer.id === object.layerId)?.shortName}${object.isConflict ? " · конфликт" : ""}`
+                : null,
+            ),
         }),
         new TextLayer<EchelonMapPlacement>({
           id: "echelon-placement-labels",
@@ -491,6 +507,7 @@ export function GisBoard({
       layerCoverage,
       onSelectFacility,
       onSelectLayer,
+      onSelectPlacement,
       onSelectSlot,
       previewLayer,
       visibleMapLayers,
