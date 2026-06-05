@@ -26,7 +26,7 @@ if (!alpha) {
 }
 
 const nearDistanceM = measureGeoDistanceM(alpha.center, { lon: 60.595, lat: 56.839 });
-const farDistanceM = measureGeoDistanceM(alpha.center, { lon: 60.33, lat: 56.95 });
+const farDistanceM = measureGeoDistanceM(alpha.center, { lon: 59.4, lat: 57.1 });
 
 const l1 = orderedLayers[0];
 const l9 = orderedLayers[8];
