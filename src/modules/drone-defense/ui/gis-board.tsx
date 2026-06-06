@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import { H3HexagonLayer } from "@deck.gl/geo-layers";
 import { IconLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
-import { Layer } from "@deck.gl/core";
+import { Layer, WebMercatorViewport } from "@deck.gl/core";
 import MaplibreMap from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { StyleSpecification } from "maplibre-gl";
@@ -54,7 +54,12 @@ type GisBoardProps = {
   onSelectPlacement: (placementId: string) => void;
   onSelectTool: (groupId: string) => void;
   onPlaceActiveTool?: (coordinate: { lng: number; lat: number }) => void;
+  onDropAsset?: (assetId: string, coordinate: { lng: number; lat: number }) => void;
+  pointerDraggedAssetId?: string | null;
+  onPointerDropAsset?: (assetId: string, coordinate: { lng: number; lat: number }) => void;
 };
+
+const defenseAssetDragMimeType = "application/x-fortis-defense-asset";
 
 const mapStyle: StyleSpecification = {
   version: 8,
@@ -148,9 +153,13 @@ export function GisBoard({
   onSelectPlacement,
   onSelectTool,
   onPlaceActiveTool,
+  onDropAsset,
+  pointerDraggedAssetId,
+  onPointerDropAsset,
 }: GisBoardProps) {
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [viewState, setViewState] = useState<LayerFocusViewState>(fallbackViewState);
+  const boardRef = useRef<HTMLElement | null>(null);
   const viewStateRef = useRef<LayerFocusViewState>(fallbackViewState);
   const animationFrameRef = useRef<number | null>(null);
   const isAnimatingFocusRef = useRef(false);
@@ -233,6 +242,38 @@ export function GisBoard({
       isAnimatingFocusRef.current = false;
     };
   }, [focusedViewState]);
+
+  useEffect(() => {
+    if (!pointerDraggedAssetId || !onPointerDropAsset) return;
+    const dropDraggedAsset = (event: PointerEvent | MouseEvent | DragEvent) => {
+      const boardElement = boardRef.current;
+      if (!boardElement) return;
+      const rect = boardElement.getBoundingClientRect();
+      if (
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom
+      ) {
+        return;
+      }
+      const viewport = new WebMercatorViewport({
+        ...viewStateRef.current,
+        width: rect.width,
+        height: rect.height,
+      });
+      const [lng, lat] = viewport.unproject([event.clientX - rect.left, event.clientY - rect.top]);
+      onPointerDropAsset(pointerDraggedAssetId, { lng, lat });
+    };
+    window.addEventListener("pointerup", dropDraggedAsset, true);
+    window.addEventListener("mouseup", dropDraggedAsset, true);
+    window.addEventListener("dragend", dropDraggedAsset, true);
+    return () => {
+      window.removeEventListener("pointerup", dropDraggedAsset, true);
+      window.removeEventListener("mouseup", dropDraggedAsset, true);
+      window.removeEventListener("dragend", dropDraggedAsset, true);
+    };
+  }, [onPointerDropAsset, pointerDraggedAssetId]);
 
   const zoomReadout = viewState.zoom;
   const iconPlacements = useMemo(
@@ -520,7 +561,26 @@ export function GisBoard({
 
   return (
     <section
+      ref={boardRef}
       className={`relative h-[calc(100vh-11.5rem)] min-h-[540px] overflow-hidden rounded-lg border border-slate-200 ${className}`}
+      onDragOver={(event) => {
+        if (!event.dataTransfer.types.includes(defenseAssetDragMimeType)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+      }}
+      onDrop={(event) => {
+        const assetId = event.dataTransfer.getData(defenseAssetDragMimeType);
+        if (!assetId || !onDropAsset) return;
+        event.preventDefault();
+        const rect = event.currentTarget.getBoundingClientRect();
+        const viewport = new WebMercatorViewport({
+          ...viewStateRef.current,
+          width: rect.width,
+          height: rect.height,
+        });
+        const [lng, lat] = viewport.unproject([event.clientX - rect.left, event.clientY - rect.top]);
+        onDropAsset(assetId, { lng, lat });
+      }}
     >
       <DeckGL
         viewState={viewState}
@@ -611,18 +671,6 @@ export function GisBoard({
             {placementHint}
           </p>
         </div>
-      </div>
-
-      <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
-        <button className="h-10 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-md shadow-blue-600/25" type="button">
-          Опубликовать
-        </button>
-        <button className="grid h-10 w-10 place-items-center rounded-lg bg-white/95 text-slate-500 shadow-md shadow-slate-900/10" type="button" title="На весь экран">
-          ⛶
-        </button>
-        <button className="grid h-10 w-10 place-items-center rounded-lg bg-white/95 text-slate-500 shadow-md shadow-slate-900/10" type="button" title="Информация">
-          i
-        </button>
       </div>
 
       <div className="absolute bottom-5 right-4 z-10 flex flex-col overflow-hidden rounded-lg bg-white/95 text-slate-500 shadow-md shadow-slate-900/10">

@@ -1,0 +1,570 @@
+[     334ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[     373ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[     533ms] [WARNING] Image with src "/drone-defense/echelons/l1/regional-mchs-center.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1076ms] [WARNING] deck: Missing character: З (1047) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1077ms] [WARNING] deck: Missing character: а (1072) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1077ms] [WARNING] deck: Missing character: в (1074) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1077ms] [WARNING] deck: Missing character: о (1086) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1077ms] [WARNING] deck: Missing character: д (1076) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1077ms] [WARNING] deck: Missing character: А (1040) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1077ms] [WARNING] deck: Missing character: л (1083) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1077ms] [WARNING] deck: Missing character: ь (1100) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1078ms] [WARNING] deck: Missing character: ф (1092) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[   93014ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[   93049ms] [LOG] [Fast Refresh] done in 48ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  104893ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  104928ms] [LOG] [Fast Refresh] done in 38ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  118136ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  118178ms] [LOG] [Fast Refresh] done in 60ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  136170ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  136239ms] [LOG] [Fast Refresh] done in 114ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  185237ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  185258ms] [LOG] [Fast Refresh] done in 123ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  297508ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  297756ms] [LOG] [Fast Refresh] done in 62ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  335361ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  335396ms] [LOG] [Fast Refresh] done in 78ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  394858ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  394898ms] [LOG] [Fast Refresh] done in 67ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  537569ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  537629ms] [LOG] [Fast Refresh] done in 96ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  548342ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  548426ms] [LOG] [Fast Refresh] done in 107ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  561469ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  561532ms] [LOG] [Fast Refresh] done in 95ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  789888ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  790037ms] [LOG] [Fast Refresh] done in 27ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  841429ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  841464ms] [LOG] [Fast Refresh] done in 27ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  842248ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[  842387ms] [LOG] [Fast Refresh] done in 241ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 2875900ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 2875942ms] [LOG] [Fast Refresh] done in 39ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3054045ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3356542ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=VVdccnoYuFNERxNW2KdKM' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 3357545ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=VVdccnoYuFNERxNW2KdKM' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 3359267ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3361373ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3361404ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3361674ms] [WARNING] Image with src "/drone-defense/echelons/l1/regional-mchs-center.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3361730ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3361870ms] [LOG] [Fast Refresh] done in 249ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362782ms] [WARNING] deck: Missing character: З (1047) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362782ms] [WARNING] deck: Missing character: а (1072) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362783ms] [WARNING] deck: Missing character: в (1074) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362783ms] [WARNING] deck: Missing character: о (1086) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362783ms] [WARNING] deck: Missing character: д (1076) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362783ms] [WARNING] deck: Missing character: А (1040) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362784ms] [WARNING] deck: Missing character: л (1083) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362784ms] [WARNING] deck: Missing character: ь (1100) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3362784ms] [WARNING] deck: Missing character: ф (1092) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3512056ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3692191ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3692378ms] ReferenceError: handleDragStart is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js?id=%255Bproject%255D%252FDesktop%252FFrontend%252Fawesome-project%252Fsrc%252Fmodules%252Fdrone-defense%252Fui%252Fdefense-tool-icon.tsx+%255Bapp-client%255D+%2528ecmascript%2529:28:22)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10263:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10179:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9230:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:299:13)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:886:13
+[ 3692460ms] [LOG] [Fast Refresh] done in 230ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3692568ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3692591ms] [LOG] [Fast Refresh] done in 123ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3728788ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3728791ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3728831ms] [ERROR] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3729220ms] ReferenceError: handleDragStart is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js?id=%255Bproject%255D%252FDesktop%252FFrontend%252Fawesome-project%252Fsrc%252Fmodules%252Fdrone-defense%252Fui%252Fdefense-tool-icon.tsx+%255Bapp-client%255D+%2528ecmascript%2529:28:22)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10263:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10179:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9230:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:299:13)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:886:13
+[ 3729075ms] [LOG] [Fast Refresh] done in 54ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3729471ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3729494ms] [LOG] [Fast Refresh] done in 125ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3729751ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/prototype/:0
+[ 3730265ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3730290ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3730342ms] [ERROR] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3730552ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3730579ms] [LOG] [Fast Refresh] done in 128ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3730753ms] ReferenceError: handleDragStart is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js:2909:22)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:2647:64)
+[ 3733962ms] [WARNING] The resource http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_0kupf24._.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/prototype/:0
+[ 3747193ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:30:10
+the name `useRef` is defined multiple times
+  28 | };
+  29 |
+> 30 | import { useRef } from "react";
+     |          ^^^^^^
+  31 |
+  32 | export function DefenseToolIcon({
+  33 |   name,
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3747231ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:30:10
+the name `useRef` is defined multiple times
+  28 | };
+  29 |
+> 30 | import { useRef } from "react";
+     |          ^^^^^^
+  31 |
+  32 | export function DefenseToolIcon({
+  33 |   name,
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3747301ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3750200ms] [WARNING] The resource http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_0kupf24._.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/prototype/:0
+[ 3774029ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:31:10
+the name `useRef` is defined multiple times
+  29 | };
+  30 |
+> 31 | import { useRef } from "react";
+     |          ^^^^^^
+  32 |
+  33 | export function DefenseToolIcon({
+  34 |   name,
+
+Ecmascript file had an error
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3774060ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3780135ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3780253ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:45:12
+Expected ';', '}' or <eof>
+  43 |   installedCount,
+  44 |   disabledReason,
+> 45 |   canRemove: canRemoveOverride,
+     |            ^
+  46 |   isPlaceholder = false,
+  47 |   isSelected = false,
+  48 |   onSelect,
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3839130ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3839152ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:45:12
+Expected ';', '}' or <eof>
+  43 |   installedCount,
+  44 |   disabledReason,
+> 45 |   canRemove: canRemoveOverride,
+     |            ^
+  46 |   isPlaceholder = false,
+  47 |   isSelected = false,
+  48 |   onSelect,
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3839279ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:45:12
+Expected ';', '}' or <eof>
+  43 |   installedCount,
+  44 |   disabledReason,
+> 45 |   canRemove: canRemoveOverride,
+     |            ^
+  46 |   isPlaceholder = false,
+  47 |   isSelected = false,
+  48 |   onSelect,
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3839330ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3841242ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:45:12
+Expected ';', '}' or <eof>
+  43 |   installedCount,
+  44 |   disabledReason,
+> 45 |   canRemove: canRemoveOverride,
+     |            ^
+  46 |   isPlaceholder = false,
+  47 |   isSelected = false,
+  48 |   onSelect,
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3841280ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 3841324ms] [ERROR] ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx:45:12
+Expected ';', '}' or <eof>
+  43 |   installedCount,
+  44 |   disabledReason,
+> 45 |   canRemove: canRemoveOverride,
+     |            ^
+  46 |   isPlaceholder = false,
+  47 |   isSelected = false,
+  48 |   onSelect,
+
+Parsing ecmascript source code failed
+
+Import traces:
+  Client Component Browser:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component Browser]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tool-icon.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/defense-tools-panel.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Client Component SSR]
+    ./Desktop/Frontend/awesome-project/src/modules/drone-defense/ui/drone-defense-prototype.tsx [Server Component]
+    ./Desktop/Frontend/awesome-project/src/app/(defense-studio)/prototype/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 3841393ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4105396ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4105748ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4105756ms] [LOG] [Fast Refresh] done in 452ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4106780ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4106835ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4107556ms] [WARNING] Image with src "/drone-defense/echelons/l1/regional-mchs-center.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108476ms] [WARNING] deck: Missing character: З (1047) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108476ms] [WARNING] deck: Missing character: а (1072) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108476ms] [WARNING] deck: Missing character: в (1074) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108476ms] [WARNING] deck: Missing character: о (1086) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108477ms] [WARNING] deck: Missing character: д (1076) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108477ms] [WARNING] deck: Missing character: А (1040) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108477ms] [WARNING] deck: Missing character: л (1083) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108477ms] [WARNING] deck: Missing character: ь (1100) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4108477ms] [WARNING] deck: Missing character: ф (1092) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4132515ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4133516ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4134518ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4135521ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4136523ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4141527ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4146531ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4151532ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4156563ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4161596ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4166610ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=PvVVybw03Ht6atlRf9f-2' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/0syc_next_dist_client_0.up467._.js:13330
+[ 4172760ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4175427ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4175487ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178265ms] [WARNING] deck: Missing character: З (1047) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178265ms] [WARNING] deck: Missing character: а (1072) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178266ms] [WARNING] deck: Missing character: в (1074) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178266ms] [WARNING] deck: Missing character: о (1086) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178266ms] [WARNING] deck: Missing character: д (1076) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178266ms] [WARNING] deck: Missing character: А (1040) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178266ms] [WARNING] deck: Missing character: л (1083) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178266ms] [WARNING] deck: Missing character: ь (1100) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4178266ms] [WARNING] deck: Missing character: ф (1092) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4262236ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4262278ms] [LOG] [Fast Refresh] done in 142ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4262895ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4262916ms] [LOG] [Fast Refresh] done in 122ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4264483ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4264520ms] [LOG] [Fast Refresh] done in 139ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4337821ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4340424ms] [LOG] [Fast Refresh] done in 2440ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4558580ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4558591ms] [LOG] [Fast Refresh] done in 112ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4712743ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4712818ms] [LOG] [Fast Refresh] done in 176ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4786526ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4787172ms] [LOG] [Fast Refresh] done in 653ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4801990ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4802095ms] [LOG] [Fast Refresh] done in 205ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4855544ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 4858084ms] [LOG] [Fast Refresh] done in 1026ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5067642ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5067699ms] [LOG] [Fast Refresh] done in 158ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5190524ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5190808ms] [LOG] [Fast Refresh] done in 126ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5214992ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5215417ms] ReferenceError: useEffect is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js?id=%255Bproject%255D%252FDesktop%252FFrontend%252Fawesome-project%252Fsrc%252Fmodules%252Fdrone-defense%252Fui%252Fdefense-tool-icon.tsx+%255Bapp-client%255D+%2528ecmascript%2529:31:5)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10263:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10179:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9230:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:299:13)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:886:13
+[ 5215430ms] [LOG] [Fast Refresh] done in 391ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5215572ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5215629ms] [LOG] [Fast Refresh] done in 158ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5229815ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5230160ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5230171ms] [ERROR] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 5232417ms] [LOG] [Fast Refresh] done in 445ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5234723ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5234765ms] [LOG] [Fast Refresh] done in 144ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5235398ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5235412ms] [LOG] [Fast Refresh] done in 116ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5237121ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5237164ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240251ms] [WARNING] deck: Missing character: З (1047) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240252ms] [WARNING] deck: Missing character: а (1072) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240253ms] [WARNING] deck: Missing character: в (1074) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240253ms] [WARNING] deck: Missing character: о (1086) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240254ms] [WARNING] deck: Missing character: д (1076) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240255ms] [WARNING] deck: Missing character: А (1040) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240255ms] [WARNING] deck: Missing character: л (1083) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240256ms] [WARNING] deck: Missing character: ь (1100) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5240256ms] [WARNING] deck: Missing character: ф (1092) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5247985ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5248080ms] [LOG] [Fast Refresh] done in 100ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5390631ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5390714ms] [LOG] [Fast Refresh] done in 83ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5444440ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5444494ms] ReferenceError: useCallback is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js?id=%255Bproject%255D%252FDesktop%252FFrontend%252Fawesome-project%252Fsrc%252Fmodules%252Fdrone-defense%252Fui%252Fdefense-tool-icon.tsx+%255Bapp-client%255D+%2528ecmascript%2529:30:27)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10263:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10179:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9230:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:299:13)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:886:13
+[ 5444492ms] [LOG] [Fast Refresh] done in 76ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5454965ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5454969ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5454998ms] [ERROR] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 5455309ms] ReferenceError: handleDragStart is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js?id=%255Bproject%255D%252FDesktop%252FFrontend%252Fawesome-project%252Fsrc%252Fmodules%252Fdrone-defense%252Fui%252Fdefense-tool-icon.tsx+%255Bapp-client%255D+%2528ecmascript%2529:34:22)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performSyncWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10263:9)
+    at flushSyncWorkAcrossRoots_impl (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10179:316)
+    at flushSyncWork$1 (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9230:86)
+    at Object.scheduleRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:299:13)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:391:33
+    at Set.forEach (<anonymous>)
+    at Object.performReactRefresh (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:384:38)
+    at applyUpdate (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:878:31)
+    at http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:886:13
+[ 5455099ms] [LOG] [Fast Refresh] done in 73ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5455400ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5455414ms] [LOG] [Fast Refresh] done in 115ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5455516ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5455540ms] [LOG] [Fast Refresh] done in 125ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5456155ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/prototype/:0
+[ 5456610ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5456749ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5456822ms] [ERROR] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 5457701ms] ReferenceError: handleDragStart is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js:2927:22)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:2647:64)
+[ 5460986ms] [WARNING] The resource http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_0kupf24._.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/prototype/:0
+[ 5502175ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5502185ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5502292ms] [LOG] [Fast Refresh] done in 111ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5502450ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5502749ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/prototype/:0
+[ 5503279ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5503315ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5503362ms] [ERROR] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:3318
+[ 5503804ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5503842ms] [LOG] [Fast Refresh] done in 139ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5504374ms] ReferenceError: useState is not defined
+    at DefenseToolIcon (http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_src_09kd413._.js:2921:41)
+    at Object.react_stack_bottom_frame (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:15037:24)
+    at renderWithHooks (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:4620:24)
+    at updateFunctionComponent (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6081:21)
+    at beginWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:6691:24)
+    at runWithFiberInDEV (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:965:74)
+    at performUnitOfWork (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9555:97)
+    at workLoopSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9449:40)
+    at renderRootSync (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9433:13)
+    at performWorkOnRoot (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:9098:47)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_react-dom_0fye-3a._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3000/_next/static/chunks/0syc_next_dist_compiled_0ct2uvk._.js:2647:64)
+[ 5508045ms] [WARNING] The resource http://localhost:3000/_next/static/chunks/Desktop_Frontend_awesome-project_0kupf24._.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3000/prototype/:0
+[ 5521292ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5521294ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5521296ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5521312ms] [LOG] [Fast Refresh] done in 73ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5521885ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5521921ms] [LOG] [Fast Refresh] done in 139ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5522640ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5522678ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5523748ms] [WARNING] Image with src "/drone-defense/echelons/l1/regional-mchs-center.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525259ms] [WARNING] deck: Missing character: З (1047) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525260ms] [WARNING] deck: Missing character: а (1072) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525260ms] [WARNING] deck: Missing character: в (1074) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525260ms] [WARNING] deck: Missing character: о (1086) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525260ms] [WARNING] deck: Missing character: д (1076) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525260ms] [WARNING] deck: Missing character: А (1040) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525260ms] [WARNING] deck: Missing character: л (1083) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525260ms] [WARNING] deck: Missing character: ь (1100) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5525261ms] [WARNING] deck: Missing character: ф (1092) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5577019ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[ 5577227ms] [LOG] [Fast Refresh] done in 156ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477

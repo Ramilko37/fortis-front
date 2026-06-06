@@ -6,6 +6,7 @@ import { DefenseToolIcon } from "@/modules/drone-defense/ui/defense-tool-icon";
 import type { AssetCatalogItem } from "@/shared/lib/defense-project";
 import type { DefenseProject } from "@/shared/types/defense-project";
 import type { Placement } from "@/shared/types/drone-defense";
+import type { DragEvent, MouseEvent, PointerEvent } from "react";
 
 type DefenseToolsPanelProps = {
   assets: AssetCatalogItem[];
@@ -15,6 +16,10 @@ type DefenseToolsPanelProps = {
   selectedObjectAssetId?: string;
   onSelectTool: (asset: AssetCatalogItem) => void;
   onAddTool: (asset: AssetCatalogItem, slot: EchelonMapSlot | null) => void;
+  onOpenCoordinates: (asset: AssetCatalogItem) => void;
+  onDragAsset: (asset: AssetCatalogItem, event: DragEvent<HTMLDivElement>) => void;
+  onPointerDragAsset: (asset: AssetCatalogItem, event: PointerEvent<HTMLDivElement>) => void;
+  onMouseDragAsset: (asset: AssetCatalogItem, event: MouseEvent<HTMLDivElement>) => void;
   onRemoveTool: (asset: AssetCatalogItem) => void;
 };
 
@@ -26,18 +31,22 @@ export function DefenseToolsPanel({
   selectedObjectAssetId,
   onSelectTool,
   onAddTool,
+  onOpenCoordinates,
+  onDragAsset,
+  onPointerDragAsset,
+  onMouseDragAsset,
   onRemoveTool,
 }: DefenseToolsPanelProps) {
   if (assets.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-sm text-slate-500">
-        Нет средств защиты по текущему фильтру
+        Нет средств защиты
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-2">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-2">
       {assets.map((assetItem) => {
         const projectAsset = projectAssets.find((asset) => asset.id === assetItem.assetId);
         const primaryGroupId = projectAsset?.mapCatalogGroupIds?.[0];
@@ -45,12 +54,7 @@ export function DefenseToolsPanel({
         const assetPlacements = placements.filter((item) => item.id === assetItem.assetId || item.catalogGroupId === primaryGroupId);
         const placement = assetPlacements[0] ?? null;
         const installedCount = assetItem.placedCount;
-        const disabledReason =
-          !assetItem.canPlaceInActiveLayer
-            ? assetItem.compatibilityLabel
-            : assetItem.placementType === "non-physical"
-              ? undefined
-              : undefined;
+        const disabledReason = undefined;
 
         const imageUrl = buildAsset?.imageUrl ?? assetItem.imageUrl;
 
@@ -62,17 +66,18 @@ export function DefenseToolsPanel({
             rangeLabel={assetItem.rangeLabel}
             priceLabel={assetItem.priceLabel}
             coverageLabel={assetItem.coverageLabel}
-            compatibilityLabel={assetItem.compatibilityLabel}
-            compatibilityStatus={assetItem.compatibilityStatus}
             imageUrl={imageUrl}
             installedCount={installedCount}
-            maxCount={assetItem.maxQuantity}
             disabledReason={disabledReason}
             canRemove={assetItem.assetId === selectedObjectAssetId}
             isPlaceholder={buildAsset?.isPlaceholder ?? !primaryGroupId}
             isSelected={selectedToolId === assetItem.assetId}
             onSelect={() => onSelectTool(assetItem)}
             onAdd={() => onAddTool(assetItem, null)}
+            onOpenCoordinates={() => onOpenCoordinates(assetItem)}
+            onDragAsset={(event) => onDragAsset(assetItem, event)}
+            onPointerDragAsset={(event) => onPointerDragAsset(assetItem, event)}
+            onMouseDragAsset={(event) => onMouseDragAsset(assetItem, event)}
             onRemove={() => onRemoveTool(assetItem)}
           />
         );

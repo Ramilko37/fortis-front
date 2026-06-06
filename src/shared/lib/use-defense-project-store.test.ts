@@ -66,6 +66,22 @@ assert(
   "deletePlacedObject must remove deleted object from calculation lines",
 );
 
+useDefenseProjectStore.getState().selectLayer(l2.id);
+const coordinatePlacement = useDefenseProjectStore.getState().placeObject(
+  "mobile-radar",
+  l2.id,
+  { lat: 55.44, lng: 37.1, altitude: 120 },
+  { notes: "координатный ввод" },
+);
+assert(coordinatePlacement.isValid, "coordinate placement through store must validate inside the selected layer");
+const coordinateObject = useDefenseProjectStore.getState().project.placedObjects.at(-1);
+assert(coordinateObject?.coordinates.altitude === 120, "store coordinate placement must persist altitude");
+assert(coordinateObject?.notes === "координатный ввод", "store coordinate placement must persist notes");
+const outsidePlacementCount = useDefenseProjectStore.getState().project.placedObjects.length;
+const outsidePlacement = useDefenseProjectStore.getState().placeObject("mobile-radar", l2.id, { lat: 55.2, lng: 37.1 });
+assert(outsidePlacement.isValid, "store coordinate placement must allow points outside echelon geometry");
+assert(useDefenseProjectStore.getState().project.placedObjects.length === outsidePlacementCount + 1, "outside coordinate placement must still add an object");
+
 useDefenseProjectStore.getState().applyBudgetSelection([{ assetId: "mobile-radar", included: true }]);
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "budget selection must create visible draft objects");
 assert(useDefenseProjectStore.getState().project.placedObjects[0].quantity === 1, "budget draft object must keep selected quantity");
@@ -168,11 +184,11 @@ assert(
 const l3ForTransfer = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "L3");
 assert(l3ForTransfer, "store project must include L3 before transfer check");
 const conflictObject = useDefenseProjectStore.getState().project.placedObjects[0];
-const invalidTransfer = useDefenseProjectStore.getState().transferObjectToLayer(conflictObject.id, l3ForTransfer.id);
-assert(!invalidTransfer.isValid, "transferObjectToLayer must reject coordinates outside target layer");
+const crossGeometryTransfer = useDefenseProjectStore.getState().transferObjectToLayer(conflictObject.id, l3ForTransfer.id);
+assert(crossGeometryTransfer.isValid, "transferObjectToLayer must allow coordinates outside target layer");
 assert(
-  useDefenseProjectStore.getState().project.placedObjects[0].layerId === conflictObject.layerId,
-  "rejected transferObjectToLayer must keep original layer",
+  useDefenseProjectStore.getState().project.placedObjects[0].layerId === l3ForTransfer.id,
+  "cross-geometry transferObjectToLayer must update layer",
 );
 
 const l2AfterEdit = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "L2");

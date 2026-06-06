@@ -64,7 +64,12 @@ type DefenseProjectState = {
   selectAsset: (assetId: string) => void;
   selectObject: (objectId: string) => void;
   setAssetQuantity: (assetId: string, quantity: number) => void;
-  placeObject: (assetId: string, layerId: string, coordinates: Coordinates) => PlacementValidationResult;
+  placeObject: (
+    assetId: string,
+    layerId: string,
+    coordinates: Coordinates,
+    patch?: Partial<PlacedDefenseObject>,
+  ) => PlacementValidationResult;
   moveObject: (objectId: string, coordinates: Coordinates) => PlacementValidationResult;
   transferObjectToLayer: (objectId: string, layerId: string) => PlacementValidationResult;
   updatePlacedObject: (objectId: string, patch: Partial<PlacedDefenseObject>) => void;
@@ -266,10 +271,10 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       applyProject(project, set);
     },
     setAssetQuantity: (assetId, quantity) => applyProject(setAssetQuantityInProject(get().project, assetId, quantity), set),
-    placeObject: (assetId, layerId, coordinates) => {
+    placeObject: (assetId, layerId, coordinates, patch) => {
       const validation = validateObjectPlacement(get().project, assetId, layerId, coordinates);
       if (!validation.isValid) return validation;
-      const project = placeObjectInProject(get().project, assetId, layerId, coordinates);
+      const project = placeObjectInProject(get().project, assetId, layerId, coordinates, patch);
       applyProject(project, set);
       return validation;
     },

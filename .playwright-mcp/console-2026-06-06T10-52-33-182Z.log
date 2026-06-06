@@ -1,0 +1,15 @@
+[     342ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[     469ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[     617ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[     629ms] [WARNING] Image with src "/drone-defense/echelons/l1/regional-mchs-center.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[     776ms] [LOG] [Fast Refresh] done in 277ms @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1392ms] [WARNING] deck: Missing character: З (1047) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1392ms] [WARNING] deck: Missing character: а (1072) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1393ms] [WARNING] deck: Missing character: в (1074) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1393ms] [WARNING] deck: Missing character: о (1086) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1393ms] [WARNING] deck: Missing character: д (1076) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1393ms] [WARNING] deck: Missing character: А (1040) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1393ms] [WARNING] deck: Missing character: л (1083) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1393ms] [WARNING] deck: Missing character: ь (1100) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477
+[    1393ms] [WARNING] deck: Missing character: ф (1092) @ http://localhost:3000/_next/static/chunks/0syc_next_dist_0kz08pk._.js:2477

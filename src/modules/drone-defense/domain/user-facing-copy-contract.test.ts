@@ -55,6 +55,7 @@ const checkedFiles = [
   "src/modules/drone-defense/domain/echelon-build-assets.ts",
   "src/modules/drone-defense/ui/defense-tools-panel.tsx",
   "src/modules/drone-defense/ui/defense-tool-icon.tsx",
+  "src/modules/drone-defense/ui/coordinate-placement-panel.tsx",
   "src/modules/drone-defense/ui/gis-board.tsx",
   "src/modules/drone-defense/ui/properties-panel.tsx",
   "src/modules/drone-defense/ui/assets-panel.tsx",
@@ -71,10 +72,46 @@ const defenseToolIconSource = readFileSync("src/modules/drone-defense/ui/defense
 if (!defenseToolIconSource.includes(">Разместить<")) {
   throw new Error("DefenseToolIcon must expose a visible Разместить action, not only an icon title");
 }
+if (!defenseToolIconSource.includes(">Ввести координаты<")) {
+  throw new Error("DefenseToolIcon must expose a visible Ввести координаты action");
+}
+
+const coordinatePlacementPanelSource = readFileSync("src/modules/drone-defense/ui/coordinate-placement-panel.tsx", "utf8");
+for (const expectedCopy of ["Средство", "Эшелон", "Широта", "Долгота", "Высота, м", "Комментарий", "Проверить точку", "Разместить"]) {
+  if (!coordinatePlacementPanelSource.includes(expectedCopy)) {
+    throw new Error(`CoordinatePlacementPanel must expose "${expectedCopy}"`);
+  }
+}
 
 const defenseToolsPanelSource = readFileSync("src/modules/drone-defense/ui/defense-tools-panel.tsx", "utf8");
 if (defenseToolsPanelSource.includes("slots[index]") || defenseToolsPanelSource.includes("onAddTool(assetItem, slot)")) {
   throw new Error("DefenseToolsPanel library cards must not bind common assets to positional slots by array index");
+}
+if (
+  !defenseToolsPanelSource.includes("onDragAsset") ||
+  !defenseToolsPanelSource.includes("onPointerDragAsset") ||
+  !defenseToolsPanelSource.includes("onMouseDragAsset")
+) {
+  throw new Error("DefenseToolsPanel must expose drag-start for direct map placement");
+}
+
+const gisBoardSource = readFileSync("src/modules/drone-defense/ui/gis-board.tsx", "utf8");
+if (
+  !gisBoardSource.includes("application/x-fortis-defense-asset") ||
+  !gisBoardSource.includes("onDropAsset") ||
+  !gisBoardSource.includes("onPointerDropAsset")
+) {
+  throw new Error("GisBoard must accept dragged defense asset drops on the map");
+}
+
+const prototypeSource = readFileSync("src/modules/drone-defense/ui/drone-defense-prototype.tsx", "utf8");
+for (const forbiddenCopy of ["Реком.", "Рекомендовано", "не рекомендовано", "Недоступно"]) {
+  if (prototypeSource.includes(forbiddenCopy) || defenseToolIconSource.includes(forbiddenCopy)) {
+    throw new Error(`Defense Studio must not expose recommendation copy: ${forbiddenCopy}`);
+  }
+}
+if (prototypeSource.includes("catalogFilter") || prototypeSource.includes("catalogFilterCategories")) {
+  throw new Error("Defense Studio library must not expose category/recommendation filter controls");
 }
 
 console.log("user-facing-copy-contract.test.ts: Defense Studio copy hides legacy slot/asset terms");

@@ -1,0 +1,851 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - link "arrow-left" [ref=e6] [cursor=pointer]:
+        - /url: /dashboard/
+        - img "arrow-left" [ref=e7]:
+          - img [ref=e8]
+      - navigation [ref=e10]:
+        - link "environment Карта" [ref=e11] [cursor=pointer]:
+          - /url: /prototype/
+          - img "environment" [ref=e13]:
+            - img [ref=e14]
+          - generic [ref=e16]: Карта
+        - link "calculator Расчёт" [ref=e17] [cursor=pointer]:
+          - /url: /calculator/
+          - img "calculator" [ref=e19]:
+            - img [ref=e20]
+          - generic [ref=e22]: Расчёт
+        - link "radar-chart 3D" [ref=e23] [cursor=pointer]:
+          - /url: /prototype/
+          - img "radar-chart" [ref=e25]:
+            - img [ref=e26]
+          - generic [ref=e28]: 3D
+      - generic [ref=e29]:
+        - button "save" [ref=e30] [cursor=pointer]:
+          - img "save" [ref=e31]:
+            - img [ref=e32]
+        - button "export" [ref=e34] [cursor=pointer]:
+          - img "export" [ref=e35]:
+            - img [ref=e36]
+    - main [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - generic [ref=e43]:
+            - img "appstore" [ref=e45]:
+              - img [ref=e46]
+            - generic [ref=e48]:
+              - heading "Моя карта" [level=1] [ref=e49]
+              - paragraph [ref=e50]: Defense Configuration Studio
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e53]:
+                - generic [ref=e54]:
+                  - paragraph [ref=e55]: Библиотека СЗ
+                  - heading "L2 · Обнаружение" [level=2] [ref=e56]
+                  - paragraph [ref=e57]: 30 км-60 км
+                - button "Свернуть" [ref=e58] [cursor=pointer]
+              - textbox "Найти средство..." [ref=e59]
+            - generic [ref=e61]:
+              - 'generic "Региональные центры МЧС: можно разместить" [ref=e62]':
+                - 'button "ГОТОВО Размещено: 0 Региональные центры МЧС Раннее предупреждение не требует размещения Без покрытия на карте 8 млн ₽/шт" [ref=e63] [cursor=pointer]':
+                  - generic [ref=e64]:
+                    - generic [ref=e65]: ГОТОВО
+                    - generic [ref=e67]: "Размещено: 0"
+                  - generic [ref=e68]:
+                    - generic [ref=e69]: Региональные центры МЧС
+                    - generic [ref=e70]: Раннее предупреждение
+                    - generic [ref=e71]:
+                      - generic [ref=e72]: не требует размещения
+                      - generic [ref=e73]: Без покрытия на карте
+                      - generic [ref=e74]: 8 млн ₽/шт
+                - generic [ref=e75]:
+                  - button "minus" [disabled] [ref=e76]:
+                    - img "minus" [ref=e77]:
+                      - img [ref=e78]
+                  - button "plus Разместить" [ref=e80] [cursor=pointer]:
+                    - img "plus" [ref=e81]:
+                      - img [ref=e82]
+                    - generic [ref=e85]: Разместить
+                - button "Ввести координаты" [ref=e86] [cursor=pointer]
+              - 'generic "Военная комендатура: можно разместить" [ref=e87]':
+                - 'button "ГОТОВО Размещено: 0 Военная комендатура Раннее предупреждение не требует размещения Без покрытия на карте 12 млн ₽/шт" [ref=e88] [cursor=pointer]':
+                  - generic [ref=e89]:
+                    - generic [ref=e90]: ГОТОВО
+                    - generic [ref=e92]: "Размещено: 0"
+                  - generic [ref=e93]:
+                    - generic [ref=e94]: Военная комендатура
+                    - generic [ref=e95]: Раннее предупреждение
+                    - generic [ref=e96]:
+                      - generic [ref=e97]: не требует размещения
+                      - generic [ref=e98]: Без покрытия на карте
+                      - generic [ref=e99]: 12 млн ₽/шт
+                - generic [ref=e100]:
+                  - button "minus" [disabled] [ref=e101]:
+                    - img "minus" [ref=e102]:
+                      - img [ref=e103]
+                  - button "plus Разместить" [ref=e105] [cursor=pointer]:
+                    - img "plus" [ref=e106]:
+                      - img [ref=e107]
+                    - generic [ref=e110]: Разместить
+                - button "Ввести координаты" [ref=e111] [cursor=pointer]
+              - 'generic "Оперативный штаб региона / ФСБ-куратор: можно разместить" [ref=e112]':
+                - 'button "ГОТОВО Размещено: 0 Оперативный штаб региона / ФСБ-куратор Раннее предупреждение не требует размещения Без покрытия на карте 15 млн ₽/шт" [ref=e113] [cursor=pointer]':
+                  - generic [ref=e114]:
+                    - generic [ref=e115]: ГОТОВО
+                    - generic [ref=e117]: "Размещено: 0"
+                  - generic [ref=e118]:
+                    - generic [ref=e119]: Оперативный штаб региона / ФСБ-куратор
+                    - generic [ref=e120]: Раннее предупреждение
+                    - generic [ref=e121]:
+                      - generic [ref=e122]: не требует размещения
+                      - generic [ref=e123]: Без покрытия на карте
+                      - generic [ref=e124]: 15 млн ₽/шт
+                - generic [ref=e125]:
+                  - button "minus" [disabled] [ref=e126]:
+                    - img "minus" [ref=e127]:
+                      - img [ref=e128]
+                  - button "plus Разместить" [ref=e130] [cursor=pointer]:
+                    - img "plus" [ref=e131]:
+                      - img [ref=e132]
+                    - generic [ref=e135]: Разместить
+                - button "Ввести координаты" [ref=e136] [cursor=pointer]
+              - 'generic "Сетка соседних предприятий: можно разместить" [ref=e137]':
+                - 'button "ГОТОВО Размещено: 0 Сетка соседних предприятий Раннее предупреждение не требует размещения Без покрытия на карте 6 млн ₽/шт" [ref=e138] [cursor=pointer]':
+                  - generic [ref=e139]:
+                    - generic [ref=e140]: ГОТОВО
+                    - generic [ref=e142]: "Размещено: 0"
+                  - generic [ref=e143]:
+                    - generic [ref=e144]: Сетка соседних предприятий
+                    - generic [ref=e145]: Раннее предупреждение
+                    - generic [ref=e146]:
+                      - generic [ref=e147]: не требует размещения
+                      - generic [ref=e148]: Без покрытия на карте
+                      - generic [ref=e149]: 6 млн ₽/шт
+                - generic [ref=e150]:
+                  - button "minus" [disabled] [ref=e151]:
+                    - img "minus" [ref=e152]:
+                      - img [ref=e153]
+                  - button "plus Разместить" [ref=e155] [cursor=pointer]:
+                    - img "plus" [ref=e156]:
+                      - img [ref=e157]
+                    - generic [ref=e160]: Разместить
+                - button "Ввести координаты" [ref=e161] [cursor=pointer]
+              - 'generic "OSINT-мониторинг: можно разместить" [ref=e162]':
+                - 'button "ГОТОВО Размещено: 0 OSINT-мониторинг Раннее предупреждение не требует размещения Без покрытия на карте 4 млн ₽/шт" [ref=e163] [cursor=pointer]':
+                  - generic [ref=e164]:
+                    - generic [ref=e165]: ГОТОВО
+                    - generic [ref=e167]: "Размещено: 0"
+                  - generic [ref=e168]:
+                    - generic [ref=e169]: OSINT-мониторинг
+                    - generic [ref=e170]: Раннее предупреждение
+                    - generic [ref=e171]:
+                      - generic [ref=e172]: не требует размещения
+                      - generic [ref=e173]: Без покрытия на карте
+                      - generic [ref=e174]: 4 млн ₽/шт
+                - generic [ref=e175]:
+                  - button "minus" [disabled] [ref=e176]:
+                    - img "minus" [ref=e177]:
+                      - img [ref=e178]
+                  - button "plus Разместить" [ref=e180] [cursor=pointer]:
+                    - img "plus" [ref=e181]:
+                      - img [ref=e182]
+                    - generic [ref=e185]: Разместить
+                - button "Ввести координаты" [ref=e186] [cursor=pointer]
+              - 'generic "Оптико-электронные системы: можно разместить" [ref=e187]':
+                - 'button "ГОТОВО Размещено: 0 Оптико-электронные системы Обнаружение до 1,8 км Круговое покрытие: радиус 1,8 км 12 млн ₽/шт" [ref=e188] [cursor=pointer]':
+                  - generic [ref=e189]:
+                    - generic [ref=e190]: ГОТОВО
+                    - generic [ref=e192]: "Размещено: 0"
+                  - generic [ref=e193]:
+                    - generic [ref=e194]: Оптико-электронные системы
+                    - generic [ref=e195]: Обнаружение
+                    - generic [ref=e196]:
+                      - generic [ref=e197]: до 1,8 км
+                      - generic [ref=e198]: "Круговое покрытие: радиус 1,8 км"
+                      - generic [ref=e199]: 12 млн ₽/шт
+                - generic [ref=e200]:
+                  - button "minus" [disabled] [ref=e201]:
+                    - img "minus" [ref=e202]:
+                      - img [ref=e203]
+                  - button "plus Разместить" [ref=e205] [cursor=pointer]:
+                    - img "plus" [ref=e206]:
+                      - img [ref=e207]
+                    - generic [ref=e210]: Разместить
+                - button "Ввести координаты" [ref=e211] [cursor=pointer]
+              - 'generic "Тепловизионные системы: можно разместить" [ref=e212]':
+                - 'button "ГОТОВО Размещено: 0 Тепловизионные системы Обнаружение до 1,6 км Круговое покрытие: радиус 1,6 км 10 млн ₽/шт" [ref=e213] [cursor=pointer]':
+                  - generic [ref=e214]:
+                    - generic [ref=e215]: ГОТОВО
+                    - generic [ref=e217]: "Размещено: 0"
+                  - generic [ref=e218]:
+                    - generic [ref=e219]: Тепловизионные системы
+                    - generic [ref=e220]: Обнаружение
+                    - generic [ref=e221]:
+                      - generic [ref=e222]: до 1,6 км
+                      - generic [ref=e223]: "Круговое покрытие: радиус 1,6 км"
+                      - generic [ref=e224]: 10 млн ₽/шт
+                - generic [ref=e225]:
+                  - button "minus" [disabled] [ref=e226]:
+                    - img "minus" [ref=e227]:
+                      - img [ref=e228]
+                  - button "plus Разместить" [ref=e230] [cursor=pointer]:
+                    - img "plus" [ref=e231]:
+                      - img [ref=e232]
+                    - generic [ref=e235]: Разместить
+                - button "Ввести координаты" [ref=e236] [cursor=pointer]
+              - 'generic "Акустические массивы: можно разместить" [ref=e237]':
+                - 'button "ГОТОВО Размещено: 0 Акустические массивы Обнаружение до 1,4 км Круговое покрытие: радиус 1,4 км 6 млн ₽/шт" [ref=e238] [cursor=pointer]':
+                  - generic [ref=e239]:
+                    - generic [ref=e240]: ГОТОВО
+                    - generic [ref=e242]: "Размещено: 0"
+                  - generic [ref=e243]:
+                    - generic [ref=e244]: Акустические массивы
+                    - generic [ref=e245]: Обнаружение
+                    - generic [ref=e246]:
+                      - generic [ref=e247]: до 1,4 км
+                      - generic [ref=e248]: "Круговое покрытие: радиус 1,4 км"
+                      - generic [ref=e249]: 6 млн ₽/шт
+                - generic [ref=e250]:
+                  - button "minus" [disabled] [ref=e251]:
+                    - img "minus" [ref=e252]:
+                      - img [ref=e253]
+                  - button "plus Разместить" [ref=e255] [cursor=pointer]:
+                    - img "plus" [ref=e256]:
+                      - img [ref=e257]
+                    - generic [ref=e260]: Разместить
+                - button "Ввести координаты" [ref=e261] [cursor=pointer]
+              - 'generic "Пассивные радиочастотные детекторы: можно разместить" [ref=e262]':
+                - 'button "ГОТОВО Размещено: 0 Пассивные радиочастотные детекторы Обнаружение до 1,6 км Круговое покрытие: радиус 1,6 км 9 млн ₽/шт" [ref=e263] [cursor=pointer]':
+                  - generic [ref=e264]:
+                    - generic [ref=e265]: ГОТОВО
+                    - generic [ref=e267]: "Размещено: 0"
+                  - generic [ref=e268]:
+                    - generic [ref=e269]: Пассивные радиочастотные детекторы
+                    - generic [ref=e270]: Обнаружение
+                    - generic [ref=e271]:
+                      - generic [ref=e272]: до 1,6 км
+                      - generic [ref=e273]: "Круговое покрытие: радиус 1,6 км"
+                      - generic [ref=e274]: 9 млн ₽/шт
+                - generic [ref=e275]:
+                  - button "minus" [disabled] [ref=e276]:
+                    - img "minus" [ref=e277]:
+                      - img [ref=e278]
+                  - button "plus Разместить" [ref=e280] [cursor=pointer]:
+                    - img "plus" [ref=e281]:
+                      - img [ref=e282]
+                    - generic [ref=e285]: Разместить
+                - button "Ввести координаты" [ref=e286] [cursor=pointer]
+              - 'generic "ПО классификации целей: можно разместить" [ref=e287]':
+                - 'button "ГОТОВО Размещено: 0 ПО классификации целей Классификация до 2 км Круговое покрытие: радиус 2 км 5 млн ₽/шт" [ref=e288] [cursor=pointer]':
+                  - generic [ref=e289]:
+                    - generic [ref=e290]: ГОТОВО
+                    - generic [ref=e292]: "Размещено: 0"
+                  - generic [ref=e293]:
+                    - generic [ref=e294]: ПО классификации целей
+                    - generic [ref=e295]: Классификация
+                    - generic [ref=e296]:
+                      - generic [ref=e297]: до 2 км
+                      - generic [ref=e298]: "Круговое покрытие: радиус 2 км"
+                      - generic [ref=e299]: 5 млн ₽/шт
+                - generic [ref=e300]:
+                  - button "minus" [disabled] [ref=e301]:
+                    - img "minus" [ref=e302]:
+                      - img [ref=e303]
+                  - button "plus Разместить" [ref=e305] [cursor=pointer]:
+                    - img "plus" [ref=e306]:
+                      - img [ref=e307]
+                    - generic [ref=e310]: Разместить
+                - button "Ввести координаты" [ref=e311] [cursor=pointer]
+              - 'generic "GPS-спуферы: можно разместить" [ref=e312]':
+                - 'button "ГОТОВО Размещено: 0 GPS-спуферы Подавление до 1,6 км Секторное покрытие: 1,6 км, 90° 9 млн ₽/шт" [ref=e313] [cursor=pointer]':
+                  - generic [ref=e314]:
+                    - generic [ref=e315]: ГОТОВО
+                    - generic [ref=e317]: "Размещено: 0"
+                  - generic [ref=e318]:
+                    - generic [ref=e319]: GPS-спуферы
+                    - generic [ref=e320]: Подавление
+                    - generic [ref=e321]:
+                      - generic [ref=e322]: до 1,6 км
+                      - generic [ref=e323]: "Секторное покрытие: 1,6 км, 90°"
+                      - generic [ref=e324]: 9 млн ₽/шт
+                - generic [ref=e325]:
+                  - button "minus" [disabled] [ref=e326]:
+                    - img "minus" [ref=e327]:
+                      - img [ref=e328]
+                  - button "plus Разместить" [ref=e330] [cursor=pointer]:
+                    - img "plus" [ref=e331]:
+                      - img [ref=e332]
+                    - generic [ref=e335]: Разместить
+                - button "Ввести координаты" [ref=e336] [cursor=pointer]
+              - 'generic "СВЧ-оружие: можно разместить" [ref=e337]':
+                - 'button "ГОТОВО Размещено: 0 СВЧ-оружие Подавление до 1,8 км Секторное покрытие: 1,8 км, 90° 120 млн ₽/шт" [ref=e338] [cursor=pointer]':
+                  - generic [ref=e339]:
+                    - generic [ref=e340]: ГОТОВО
+                    - generic [ref=e342]: "Размещено: 0"
+                  - generic [ref=e343]:
+                    - generic [ref=e344]: СВЧ-оружие
+                    - generic [ref=e345]: Подавление
+                    - generic [ref=e346]:
+                      - generic [ref=e347]: до 1,8 км
+                      - generic [ref=e348]: "Секторное покрытие: 1,8 км, 90°"
+                      - generic [ref=e349]: 120 млн ₽/шт
+                - generic [ref=e350]:
+                  - button "minus" [disabled] [ref=e351]:
+                    - img "minus" [ref=e352]:
+                      - img [ref=e353]
+                  - button "plus Разместить" [ref=e355] [cursor=pointer]:
+                    - img "plus" [ref=e356]:
+                      - img [ref=e357]
+                    - generic [ref=e360]: Разместить
+                - button "Ввести координаты" [ref=e361] [cursor=pointer]
+              - 'generic "МОГ: можно разместить" [ref=e362]':
+                - 'button "ГОТОВО Размещено: 0 МОГ Поражение до 1,5 км Круговое покрытие: радиус 1,5 км 35 млн ₽/шт" [ref=e363] [cursor=pointer]':
+                  - generic [ref=e364]:
+                    - generic [ref=e365]: ГОТОВО
+                    - generic [ref=e367]: "Размещено: 0"
+                  - generic [ref=e368]:
+                    - generic [ref=e369]: МОГ
+                    - generic [ref=e370]: Поражение
+                    - generic [ref=e371]:
+                      - generic [ref=e372]: до 1,5 км
+                      - generic [ref=e373]: "Круговое покрытие: радиус 1,5 км"
+                      - generic [ref=e374]: 35 млн ₽/шт
+                - generic [ref=e375]:
+                  - button "minus" [disabled] [ref=e376]:
+                    - img "minus" [ref=e377]:
+                      - img [ref=e378]
+                  - button "plus Разместить" [ref=e380] [cursor=pointer]:
+                    - img "plus" [ref=e381]:
+                      - img [ref=e382]
+                    - generic [ref=e385]: Разместить
+                - button "Ввести координаты" [ref=e386] [cursor=pointer]
+              - 'generic "БАРС: можно разместить" [ref=e387]':
+                - 'button "ГОТОВО Размещено: 0 БАРС Поражение до 1,6 км Круговое покрытие: радиус 1,6 км 28 млн ₽/шт" [ref=e388] [cursor=pointer]':
+                  - generic [ref=e389]:
+                    - generic [ref=e390]: ГОТОВО
+                    - generic [ref=e392]: "Размещено: 0"
+                  - generic [ref=e393]:
+                    - generic [ref=e394]: БАРС
+                    - generic [ref=e395]: Поражение
+                    - generic [ref=e396]:
+                      - generic [ref=e397]: до 1,6 км
+                      - generic [ref=e398]: "Круговое покрытие: радиус 1,6 км"
+                      - generic [ref=e399]: 28 млн ₽/шт
+                - generic [ref=e400]:
+                  - button "minus" [disabled] [ref=e401]:
+                    - img "minus" [ref=e402]:
+                      - img [ref=e403]
+                  - button "plus Разместить" [ref=e405] [cursor=pointer]:
+                    - img "plus" [ref=e406]:
+                      - img [ref=e407]
+                    - generic [ref=e410]: Разместить
+                - button "Ввести координаты" [ref=e411] [cursor=pointer]
+              - 'generic "ПЗРК: можно разместить" [ref=e412]':
+                - 'button "ГОТОВО Размещено: 0 ПЗРК Поражение до 1,8 км Круговое покрытие: радиус 1,8 км 18 млн ₽/шт" [ref=e413] [cursor=pointer]':
+                  - generic [ref=e414]:
+                    - generic [ref=e415]: ГОТОВО
+                    - generic [ref=e417]: "Размещено: 0"
+                  - generic [ref=e418]:
+                    - generic [ref=e419]: ПЗРК
+                    - generic [ref=e420]: Поражение
+                    - generic [ref=e421]:
+                      - generic [ref=e422]: до 1,8 км
+                      - generic [ref=e423]: "Круговое покрытие: радиус 1,8 км"
+                      - generic [ref=e424]: 18 млн ₽/шт
+                - generic [ref=e425]:
+                  - button "minus" [disabled] [ref=e426]:
+                    - img "minus" [ref=e427]:
+                      - img [ref=e428]
+                  - button "plus Разместить" [ref=e430] [cursor=pointer]:
+                    - img "plus" [ref=e431]:
+                      - img [ref=e432]
+                    - generic [ref=e435]: Разместить
+                - button "Ввести координаты" [ref=e436] [cursor=pointer]
+              - 'generic "Маскировочные сети и экраны: можно разместить" [ref=e437]':
+                - 'button "ГОТОВО Размещено: 0 Маскировочные сети и экраны Инфраструктура до 1,6 км Зональное покрытие: радиус 1,6 км 14 млн ₽/шт" [ref=e438] [cursor=pointer]':
+                  - generic [ref=e439]:
+                    - generic [ref=e440]: ГОТОВО
+                    - generic [ref=e442]: "Размещено: 0"
+                  - generic [ref=e443]:
+                    - generic [ref=e444]: Маскировочные сети и экраны
+                    - generic [ref=e445]: Инфраструктура
+                    - generic [ref=e446]:
+                      - generic [ref=e447]: до 1,6 км
+                      - generic [ref=e448]: "Зональное покрытие: радиус 1,6 км"
+                      - generic [ref=e449]: 14 млн ₽/шт
+                - generic [ref=e450]:
+                  - button "minus" [disabled] [ref=e451]:
+                    - img "minus" [ref=e452]:
+                      - img [ref=e453]
+                  - button "plus Разместить" [ref=e455] [cursor=pointer]:
+                    - img "plus" [ref=e456]:
+                      - img [ref=e457]
+                    - generic [ref=e460]: Разместить
+                - button "Ввести координаты" [ref=e461] [cursor=pointer]
+              - 'generic "Дымогенерация: можно разместить" [ref=e462]':
+                - 'button "ГОТОВО Размещено: 0 Дымогенерация Инфраструктура до 1,2 км Зональное покрытие: радиус 1,2 км 8 млн ₽/шт" [ref=e463] [cursor=pointer]':
+                  - generic [ref=e464]:
+                    - generic [ref=e465]: ГОТОВО
+                    - generic [ref=e467]: "Размещено: 0"
+                  - generic [ref=e468]:
+                    - generic [ref=e469]: Дымогенерация
+                    - generic [ref=e470]: Инфраструктура
+                    - generic [ref=e471]:
+                      - generic [ref=e472]: до 1,2 км
+                      - generic [ref=e473]: "Зональное покрытие: радиус 1,2 км"
+                      - generic [ref=e474]: 8 млн ₽/шт
+                - generic [ref=e475]:
+                  - button "minus" [disabled] [ref=e476]:
+                    - img "minus" [ref=e477]:
+                      - img [ref=e478]
+                  - button "plus Разместить" [ref=e480] [cursor=pointer]:
+                    - img "plus" [ref=e481]:
+                      - img [ref=e482]
+                    - generic [ref=e485]: Разместить
+                - button "Ввести координаты" [ref=e486] [cursor=pointer]
+              - 'generic "Ложные тепловые сигнатуры: можно разместить" [ref=e487]':
+                - 'button "ГОТОВО Размещено: 0 Ложные тепловые сигнатуры Инфраструктура до 1,4 км Зональное покрытие: радиус 1,4 км 6 млн ₽/шт" [ref=e488] [cursor=pointer]':
+                  - generic [ref=e489]:
+                    - generic [ref=e490]: ГОТОВО
+                    - generic [ref=e492]: "Размещено: 0"
+                  - generic [ref=e493]:
+                    - generic [ref=e494]: Ложные тепловые сигнатуры
+                    - generic [ref=e495]: Инфраструктура
+                    - generic [ref=e496]:
+                      - generic [ref=e497]: до 1,4 км
+                      - generic [ref=e498]: "Зональное покрытие: радиус 1,4 км"
+                      - generic [ref=e499]: 6 млн ₽/шт
+                - generic [ref=e500]:
+                  - button "minus" [disabled] [ref=e501]:
+                    - img "minus" [ref=e502]:
+                      - img [ref=e503]
+                  - button "plus Разместить" [ref=e505] [cursor=pointer]:
+                    - img "plus" [ref=e506]:
+                      - img [ref=e507]
+                    - generic [ref=e510]: Разместить
+                - button "Ввести координаты" [ref=e511] [cursor=pointer]
+              - 'generic "Макеты-обманки: можно разместить" [ref=e512]':
+                - 'button "ГОТОВО Размещено: 0 Макеты-обманки Инфраструктура до 1,2 км Зональное покрытие: радиус 1,2 км 5 млн ₽/шт" [ref=e513] [cursor=pointer]':
+                  - generic [ref=e514]:
+                    - generic [ref=e515]: ГОТОВО
+                    - generic [ref=e517]: "Размещено: 0"
+                  - generic [ref=e518]:
+                    - generic [ref=e519]: Макеты-обманки
+                    - generic [ref=e520]: Инфраструктура
+                    - generic [ref=e521]:
+                      - generic [ref=e522]: до 1,2 км
+                      - generic [ref=e523]: "Зональное покрытие: радиус 1,2 км"
+                      - generic [ref=e524]: 5 млн ₽/шт
+                - generic [ref=e525]:
+                  - button "minus" [disabled] [ref=e526]:
+                    - img "minus" [ref=e527]:
+                      - img [ref=e528]
+                  - button "plus Разместить" [ref=e530] [cursor=pointer]:
+                    - img "plus" [ref=e531]:
+                      - img [ref=e532]
+                    - generic [ref=e535]: Разместить
+                - button "Ввести координаты" [ref=e536] [cursor=pointer]
+              - 'generic "Снижение оптического и ИК-контраста: можно разместить" [ref=e537]':
+                - 'button "ГОТОВО Размещено: 0 Снижение оптического и ИК-контраста Инфраструктура до 1,4 км Зональное покрытие: радиус 1,4 км 10 млн ₽/шт" [ref=e538] [cursor=pointer]':
+                  - generic [ref=e539]:
+                    - generic [ref=e540]: ГОТОВО
+                    - generic [ref=e542]: "Размещено: 0"
+                  - generic [ref=e543]:
+                    - generic [ref=e544]: Снижение оптического и ИК-контраста
+                    - generic [ref=e545]: Инфраструктура
+                    - generic [ref=e546]:
+                      - generic [ref=e547]: до 1,4 км
+                      - generic [ref=e548]: "Зональное покрытие: радиус 1,4 км"
+                      - generic [ref=e549]: 10 млн ₽/шт
+                - generic [ref=e550]:
+                  - button "minus" [disabled] [ref=e551]:
+                    - img "minus" [ref=e552]:
+                      - img [ref=e553]
+                  - button "plus Разместить" [ref=e555] [cursor=pointer]:
+                    - img "plus" [ref=e556]:
+                      - img [ref=e557]
+                    - generic [ref=e560]: Разместить
+                - button "Ввести координаты" [ref=e561] [cursor=pointer]
+              - 'generic "Купола и аэростаты: можно разместить" [ref=e562]':
+                - 'button "ГОТОВО Размещено: 0 Купола и аэростаты Пассивная защита до 1,6 км Зональное покрытие: радиус 1,6 км 45 млн ₽/шт" [ref=e563] [cursor=pointer]':
+                  - generic [ref=e564]:
+                    - generic [ref=e565]: ГОТОВО
+                    - generic [ref=e567]: "Размещено: 0"
+                  - generic [ref=e568]:
+                    - generic [ref=e569]: Купола и аэростаты
+                    - generic [ref=e570]: Пассивная защита
+                    - generic [ref=e571]:
+                      - generic [ref=e572]: до 1,6 км
+                      - generic [ref=e573]: "Зональное покрытие: радиус 1,6 км"
+                      - generic [ref=e574]: 45 млн ₽/шт
+                - generic [ref=e575]:
+                  - button "minus" [disabled] [ref=e576]:
+                    - img "minus" [ref=e577]:
+                      - img [ref=e578]
+                  - button "plus Разместить" [ref=e580] [cursor=pointer]:
+                    - img "plus" [ref=e581]:
+                      - img [ref=e582]
+                    - generic [ref=e585]: Разместить
+                - button "Ввести координаты" [ref=e586] [cursor=pointer]
+              - 'generic "Мобильный РЛС: можно разместить" [ref=e587]':
+                - 'button "ГОТОВО Размещено: 0 Мобильный РЛС Обнаружение 5 км-75 км Круговое покрытие: радиус 75 км 20 млн ₽/шт" [ref=e588] [cursor=pointer]':
+                  - generic [ref=e589]:
+                    - generic [ref=e590]: ГОТОВО
+                    - generic [ref=e592]: "Размещено: 0"
+                  - generic [ref=e593]:
+                    - generic [ref=e594]: Мобильный РЛС
+                    - generic [ref=e595]: Обнаружение
+                    - generic [ref=e596]:
+                      - generic [ref=e597]: 5 км-75 км
+                      - generic [ref=e598]: "Круговое покрытие: радиус 75 км"
+                      - generic [ref=e599]: 20 млн ₽/шт
+                - generic [ref=e600]:
+                  - button "minus" [disabled] [ref=e601]:
+                    - img "minus" [ref=e602]:
+                      - img [ref=e603]
+                  - button "plus Разместить" [ref=e605] [cursor=pointer]:
+                    - img "plus" [ref=e606]:
+                      - img [ref=e607]
+                    - generic [ref=e610]: Разместить
+                - button "Ввести координаты" [ref=e611] [cursor=pointer]
+              - 'generic "РЭБ узкополосный (против GNSS): можно разместить" [ref=e612]':
+                - 'button "ГОТОВО Размещено: 0 РЭБ узкополосный (против GNSS) Подавление 2 км-10 км Секторное покрытие: 10 км, 90° 15 млн ₽/шт" [ref=e613] [cursor=pointer]':
+                  - generic [ref=e614]:
+                    - generic [ref=e615]: ГОТОВО
+                    - generic [ref=e617]: "Размещено: 0"
+                  - generic [ref=e618]:
+                    - generic [ref=e619]: РЭБ узкополосный (против GNSS)
+                    - generic [ref=e620]: Подавление
+                    - generic [ref=e621]:
+                      - generic [ref=e622]: 2 км-10 км
+                      - generic [ref=e623]: "Секторное покрытие: 10 км, 90°"
+                      - generic [ref=e624]: 15 млн ₽/шт
+                - generic [ref=e625]:
+                  - button "minus" [disabled] [ref=e626]:
+                    - img "minus" [ref=e627]:
+                      - img [ref=e628]
+                  - button "plus Разместить" [ref=e630] [cursor=pointer]:
+                    - img "plus" [ref=e631]:
+                      - img [ref=e632]
+                    - generic [ref=e635]: Разместить
+                - button "Ввести координаты" [ref=e636] [cursor=pointer]
+              - 'generic "РЭБ широкополосный (против радиоканалов): можно разместить" [ref=e637]':
+                - 'button "ГОТОВО Размещено: 0 РЭБ широкополосный (против радиоканалов) Подавление 2 км-10 км Секторное покрытие: 10 км, 90° 18 млн ₽/шт" [ref=e638] [cursor=pointer]':
+                  - generic [ref=e639]:
+                    - generic [ref=e640]: ГОТОВО
+                    - generic [ref=e642]: "Размещено: 0"
+                  - generic [ref=e643]:
+                    - generic [ref=e644]: РЭБ широкополосный (против радиоканалов)
+                    - generic [ref=e645]: Подавление
+                    - generic [ref=e646]:
+                      - generic [ref=e647]: 2 км-10 км
+                      - generic [ref=e648]: "Секторное покрытие: 10 км, 90°"
+                      - generic [ref=e649]: 18 млн ₽/шт
+                - generic [ref=e650]:
+                  - button "minus" [disabled] [ref=e651]:
+                    - img "minus" [ref=e652]:
+                      - img [ref=e653]
+                  - button "plus Разместить" [ref=e655] [cursor=pointer]:
+                    - img "plus" [ref=e656]:
+                      - img [ref=e657]
+                    - generic [ref=e660]: Разместить
+                - button "Ввести координаты" [ref=e661] [cursor=pointer]
+              - 'generic "Дроны-перехватчики: можно разместить" [ref=e662]':
+                - 'button "ГОТОВО Размещено: 0 Дроны-перехватчики Перехват 1 км-20 км Круговое покрытие: радиус 20 км 7 млн ₽/комплект" [ref=e663] [cursor=pointer]':
+                  - generic [ref=e664]:
+                    - generic [ref=e665]: ГОТОВО
+                    - generic [ref=e667]: "Размещено: 0"
+                  - generic [ref=e668]:
+                    - generic [ref=e669]: Дроны-перехватчики
+                    - generic [ref=e670]: Перехват
+                    - generic [ref=e671]:
+                      - generic [ref=e672]: 1 км-20 км
+                      - generic [ref=e673]: "Круговое покрытие: радиус 20 км"
+                      - generic [ref=e674]: 7 млн ₽/комплект
+                - generic [ref=e675]:
+                  - button "minus" [disabled] [ref=e676]:
+                    - img "minus" [ref=e677]:
+                      - img [ref=e678]
+                  - button "plus Разместить" [ref=e680] [cursor=pointer]:
+                    - img "plus" [ref=e681]:
+                      - img [ref=e682]
+                    - generic [ref=e685]: Разместить
+                - button "Ввести координаты" [ref=e686] [cursor=pointer]
+              - 'generic "Самолёты: можно разместить" [ref=e687]':
+                - 'button "ГОТОВО Размещено: 0 Самолёты Поражение 1 км-20 км Круговое покрытие: радиус 20 км 20 млн ₽/шт" [ref=e688] [cursor=pointer]':
+                  - generic [ref=e689]:
+                    - generic [ref=e690]: ГОТОВО
+                    - generic [ref=e692]: "Размещено: 0"
+                  - generic [ref=e693]:
+                    - generic [ref=e694]: Самолёты
+                    - generic [ref=e695]: Поражение
+                    - generic [ref=e696]:
+                      - generic [ref=e697]: 1 км-20 км
+                      - generic [ref=e698]: "Круговое покрытие: радиус 20 км"
+                      - generic [ref=e699]: 20 млн ₽/шт
+                - generic [ref=e700]:
+                  - button "minus" [disabled] [ref=e701]:
+                    - img "minus" [ref=e702]:
+                      - img [ref=e703]
+                  - button "plus Разместить" [ref=e705] [cursor=pointer]:
+                    - img "plus" [ref=e706]:
+                      - img [ref=e707]
+                    - generic [ref=e710]: Разместить
+                - button "Ввести координаты" [ref=e711] [cursor=pointer]
+              - 'generic "Турельный комплекс: можно разместить" [ref=e712]':
+                - 'button "ГОТОВО Размещено: 0 Турельный комплекс Поражение 1 км-20 км Круговое покрытие: радиус 20 км 7,9 млн ₽/шт" [ref=e713] [cursor=pointer]':
+                  - generic [ref=e714]:
+                    - generic [ref=e715]: ГОТОВО
+                    - generic [ref=e717]: "Размещено: 0"
+                  - generic [ref=e718]:
+                    - generic [ref=e719]: Турельный комплекс
+                    - generic [ref=e720]: Поражение
+                    - generic [ref=e721]:
+                      - generic [ref=e722]: 1 км-20 км
+                      - generic [ref=e723]: "Круговое покрытие: радиус 20 км"
+                      - generic [ref=e724]: 7,9 млн ₽/шт
+                - generic [ref=e725]:
+                  - button "minus" [disabled] [ref=e726]:
+                    - img "minus" [ref=e727]:
+                      - img [ref=e728]
+                  - button "plus Разместить" [ref=e730] [cursor=pointer]:
+                    - img "plus" [ref=e731]:
+                      - img [ref=e732]
+                    - generic [ref=e735]: Разместить
+                - button "Ввести координаты" [ref=e736] [cursor=pointer]
+              - 'generic "Бронеавтомобиль: можно разместить" [ref=e737]':
+                - 'button "ГОТОВО Размещено: 0 Бронеавтомобиль Поражение 1 км-20 км Круговое покрытие: радиус 20 км 28 млн ₽/шт" [ref=e738] [cursor=pointer]':
+                  - generic [ref=e739]:
+                    - generic [ref=e740]: ГОТОВО
+                    - generic [ref=e742]: "Размещено: 0"
+                  - generic [ref=e743]:
+                    - generic [ref=e744]: Бронеавтомобиль
+                    - generic [ref=e745]: Поражение
+                    - generic [ref=e746]:
+                      - generic [ref=e747]: 1 км-20 км
+                      - generic [ref=e748]: "Круговое покрытие: радиус 20 км"
+                      - generic [ref=e749]: 28 млн ₽/шт
+                - generic [ref=e750]:
+                  - button "minus" [disabled] [ref=e751]:
+                    - img "minus" [ref=e752]:
+                      - img [ref=e753]
+                  - button "plus Разместить" [ref=e755] [cursor=pointer]:
+                    - img "plus" [ref=e756]:
+                      - img [ref=e757]
+                    - generic [ref=e760]: Разместить
+                - button "Ввести координаты" [ref=e761] [cursor=pointer]
+              - 'generic "Лазер: можно разместить" [ref=e762]':
+                - 'button "ГОТОВО Размещено: 0 Лазер Поражение до 1,5 км Круговое покрытие: радиус 1,5 км 690 млн ₽/шт" [ref=e763] [cursor=pointer]':
+                  - generic [ref=e764]:
+                    - generic [ref=e765]: ГОТОВО
+                    - generic [ref=e767]: "Размещено: 0"
+                  - generic [ref=e768]:
+                    - generic [ref=e769]: Лазер
+                    - generic [ref=e770]: Поражение
+                    - generic [ref=e771]:
+                      - generic [ref=e772]: до 1,5 км
+                      - generic [ref=e773]: "Круговое покрытие: радиус 1,5 км"
+                      - generic [ref=e774]: 690 млн ₽/шт
+                - generic [ref=e775]:
+                  - button "minus" [disabled] [ref=e776]:
+                    - img "minus" [ref=e777]:
+                      - img [ref=e778]
+                  - button "plus Разместить" [ref=e780] [cursor=pointer]:
+                    - img "plus" [ref=e781]:
+                      - img [ref=e782]
+                    - generic [ref=e785]: Разместить
+                - button "Ввести координаты" [ref=e786] [cursor=pointer]
+              - 'generic "Ствольная ПВО: можно разместить" [ref=e787]':
+                - 'button "ГОТОВО Размещено: 0 Ствольная ПВО Поражение до 1,5 км Круговое покрытие: радиус 1,5 км 290 млн ₽/шт" [ref=e788] [cursor=pointer]':
+                  - generic [ref=e789]:
+                    - generic [ref=e790]: ГОТОВО
+                    - generic [ref=e792]: "Размещено: 0"
+                  - generic [ref=e793]:
+                    - generic [ref=e794]: Ствольная ПВО
+                    - generic [ref=e795]: Поражение
+                    - generic [ref=e796]:
+                      - generic [ref=e797]: до 1,5 км
+                      - generic [ref=e798]: "Круговое покрытие: радиус 1,5 км"
+                      - generic [ref=e799]: 290 млн ₽/шт
+                - generic [ref=e800]:
+                  - button "minus" [disabled] [ref=e801]:
+                    - img "minus" [ref=e802]:
+                      - img [ref=e803]
+                  - button "plus Разместить" [ref=e805] [cursor=pointer]:
+                    - img "plus" [ref=e806]:
+                      - img [ref=e807]
+                    - generic [ref=e810]: Разместить
+                - button "Ввести координаты" [ref=e811] [cursor=pointer]
+              - 'generic "ЗРПК «Панцирь»: можно разместить" [ref=e812]':
+                - 'button "ГОТОВО Размещено: 0 ЗРПК «Панцирь» Поражение до 1,5 км Круговое покрытие: радиус 1,5 км 850 млн ₽/шт" [ref=e813] [cursor=pointer]':
+                  - generic [ref=e814]:
+                    - generic [ref=e815]: ГОТОВО
+                    - generic [ref=e817]: "Размещено: 0"
+                  - generic [ref=e818]:
+                    - generic [ref=e819]: ЗРПК «Панцирь»
+                    - generic [ref=e820]: Поражение
+                    - generic [ref=e821]:
+                      - generic [ref=e822]: до 1,5 км
+                      - generic [ref=e823]: "Круговое покрытие: радиус 1,5 км"
+                      - generic [ref=e824]: 850 млн ₽/шт
+                - generic [ref=e825]:
+                  - button "minus" [disabled] [ref=e826]:
+                    - img "minus" [ref=e827]:
+                      - img [ref=e828]
+                  - button "plus Разместить" [ref=e830] [cursor=pointer]:
+                    - img "plus" [ref=e831]:
+                      - img [ref=e832]
+                    - generic [ref=e835]: Разместить
+                - button "Ввести координаты" [ref=e836] [cursor=pointer]
+              - 'generic "Тросы, сетки, укрепление критических узлов и т.п.: можно разместить" [ref=e837]':
+                - 'button "ГОТОВО Размещено: 0 Тросы, сетки, укрепление критических узлов и т.п. Пассивная защита 500 м-2 км Зональное покрытие: радиус 2 км 174 млн ₽/комплект" [ref=e838] [cursor=pointer]':
+                  - generic [ref=e839]:
+                    - generic [ref=e840]: ГОТОВО
+                    - generic [ref=e842]: "Размещено: 0"
+                  - generic [ref=e843]:
+                    - generic [ref=e844]: Тросы, сетки, укрепление критических узлов и т.п.
+                    - generic [ref=e845]: Пассивная защита
+                    - generic [ref=e846]:
+                      - generic [ref=e847]: 500 м-2 км
+                      - generic [ref=e848]: "Зональное покрытие: радиус 2 км"
+                      - generic [ref=e849]: 174 млн ₽/комплект
+                - generic [ref=e850]:
+                  - button "minus" [disabled] [ref=e851]:
+                    - img "minus" [ref=e852]:
+                      - img [ref=e853]
+                  - button "plus Разместить" [ref=e855] [cursor=pointer]:
+                    - img "plus" [ref=e856]:
+                      - img [ref=e857]
+                    - generic [ref=e860]: Разместить
+                - button "Ввести координаты" [ref=e861] [cursor=pointer]
+              - 'generic "КПП и защита персонала (бомбоубежища и т.п.): можно разместить" [ref=e862]':
+                - 'button "ГОТОВО Размещено: 0 КПП и защита персонала (бомбоубежища и т.п.) Инженерная защита до 5,2 км Зональное покрытие: радиус 5,2 км 122 млн ₽/комплект" [ref=e863] [cursor=pointer]':
+                  - generic [ref=e864]:
+                    - generic [ref=e865]: ГОТОВО
+                    - generic [ref=e867]: "Размещено: 0"
+                  - generic [ref=e868]:
+                    - generic [ref=e869]: КПП и защита персонала (бомбоубежища и т.п.)
+                    - generic [ref=e870]: Инженерная защита
+                    - generic [ref=e871]:
+                      - generic [ref=e872]: до 5,2 км
+                      - generic [ref=e873]: "Зональное покрытие: радиус 5,2 км"
+                      - generic [ref=e874]: 122 млн ₽/комплект
+                - generic [ref=e875]:
+                  - button "minus" [disabled] [ref=e876]:
+                    - img "minus" [ref=e877]:
+                      - img [ref=e878]
+                  - button "plus Разместить" [ref=e880] [cursor=pointer]:
+                    - img "plus" [ref=e881]:
+                      - img [ref=e882]
+                    - generic [ref=e885]: Разместить
+                - button "Ввести координаты" [ref=e886] [cursor=pointer]
+              - 'generic "Командный пункт: можно разместить" [ref=e887]':
+                - 'button "ГОТОВО Размещено: 0 Командный пункт Командный центр не требует размещения Без покрытия на карте 25 млн ₽/шт" [ref=e888] [cursor=pointer]':
+                  - generic [ref=e889]:
+                    - generic [ref=e890]: ГОТОВО
+                    - generic [ref=e892]: "Размещено: 0"
+                  - generic [ref=e893]:
+                    - generic [ref=e894]: Командный пункт
+                    - generic [ref=e895]: Командный центр
+                    - generic [ref=e896]:
+                      - generic [ref=e897]: не требует размещения
+                      - generic [ref=e898]: Без покрытия на карте
+                      - generic [ref=e899]: 25 млн ₽/шт
+                - generic [ref=e900]:
+                  - button "minus" [disabled] [ref=e901]:
+                    - img "minus" [ref=e902]:
+                      - img [ref=e903]
+                  - button "plus Разместить" [ref=e905] [cursor=pointer]:
+                    - img "plus" [ref=e906]:
+                      - img [ref=e907]
+                    - generic [ref=e910]: Разместить
+                - button "Ввести координаты" [ref=e911] [cursor=pointer]
+        - main [ref=e912]:
+          - generic [ref=e913]:
+            - generic [ref=e917]:
+              - button "⌕" [ref=e918] [cursor=pointer]
+              - generic [ref=e919]:
+                - paragraph [ref=e920]: Facility
+                - paragraph [ref=e921]: Эшелон L2 · выберите средство и кликните по карте
+            - generic [ref=e922]:
+              - button "+" [ref=e923] [cursor=pointer]
+              - button "7.2" [ref=e924] [cursor=pointer]
+              - button "−" [ref=e925] [cursor=pointer]
+            - generic [ref=e926]: 1000 км
+          - generic [ref=e927]:
+            - generic [ref=e928]:
+              - generic [ref=e929]:
+                - paragraph [ref=e930]: Эшелоны проекта
+                - paragraph [ref=e931]: Кольца вокруг объекта · 9/20
+              - generic [ref=e932]:
+                - generic [ref=e933]:
+                  - button "Просмотр" [ref=e934] [cursor=pointer]
+                  - button "Редактирование" [ref=e935] [cursor=pointer]
+                - button "Свернуть" [ref=e936] [cursor=pointer]
+            - generic [ref=e937]:
+              - generic [ref=e938]:
+                - button "L1 · Внешнее предупреждение 60 км + 60 км" [ref=e939] [cursor=pointer]:
+                  - generic [ref=e941]: L1 · Внешнее предупреждение
+                  - paragraph [ref=e943]: 60 км + 60 км
+                - generic [ref=e944]:
+                  - generic [ref=e945]: 0 объектов
+                  - generic [ref=e946]: 0 млн
+              - generic [ref=e947]:
+                - button "L2 · Обнаружение 30 км + 30 км" [ref=e948] [cursor=pointer]:
+                  - generic [ref=e950]: L2 · Обнаружение
+                  - paragraph [ref=e952]: 30 км + 30 км
+                - generic [ref=e953]:
+                  - generic [ref=e954]: 0 объектов
+                  - generic [ref=e955]: 0 млн
+              - generic [ref=e956]:
+                - button "L3 · Идентификация 15 км + 15 км" [ref=e957] [cursor=pointer]:
+                  - generic [ref=e959]: L3 · Идентификация
+                  - paragraph [ref=e961]: 15 км + 15 км
+                - generic [ref=e962]:
+                  - generic [ref=e963]: 0 объектов
+                  - generic [ref=e964]: 0 млн
+              - generic [ref=e965]:
+                - button "L4 · Подавление 8 км + 7 км" [ref=e966] [cursor=pointer]:
+                  - generic [ref=e968]: L4 · Подавление
+                  - paragraph [ref=e970]: 8 км + 7 км
+                - generic [ref=e971]:
+                  - generic [ref=e972]: 0 объектов
+                  - generic [ref=e973]: 0 млн
+              - generic [ref=e974]:
+                - button "L5 · Средний рубеж 4 км + 4 км" [ref=e975] [cursor=pointer]:
+                  - generic [ref=e977]: L5 · Средний рубеж
+                  - paragraph [ref=e979]: 4 км + 4 км
+                - generic [ref=e980]:
+                  - generic [ref=e981]: 0 объектов
+                  - generic [ref=e982]: 0 млн
+              - generic [ref=e983]:
+                - button "L6 · Последний рубеж 1,5 км + 2,5 км" [ref=e984] [cursor=pointer]:
+                  - generic [ref=e986]: L6 · Последний рубеж
+                  - paragraph [ref=e988]: 1,5 км + 2,5 км
+                - generic [ref=e989]:
+                  - generic [ref=e990]: 0 объектов
+                  - generic [ref=e991]: 0 млн
+              - generic [ref=e992]:
+                - button "L7 · Срыв точности 500 м + 1 км" [ref=e993] [cursor=pointer]:
+                  - generic [ref=e995]: L7 · Срыв точности
+                  - paragraph [ref=e997]: 500 м + 1 км
+                - generic [ref=e998]:
+                  - generic [ref=e999]: 0 объектов
+                  - generic [ref=e1000]: 0 млн
+              - generic [ref=e1001]:
+                - button "L8 · Пассивная защита 100 м + 400 м" [ref=e1002] [cursor=pointer]:
+                  - generic [ref=e1004]: L8 · Пассивная защита
+                  - paragraph [ref=e1006]: 100 м + 400 м
+                - generic [ref=e1007]:
+                  - generic [ref=e1008]: 0 объектов
+                  - generic [ref=e1009]: 0 млн
+              - generic [ref=e1010]:
+                - button "L9 · Hardening 0 м + 100 м" [ref=e1011] [cursor=pointer]:
+                  - generic [ref=e1013]: L9 · Hardening
+                  - paragraph [ref=e1015]: 0 м + 100 м
+                - generic [ref=e1016]:
+                  - generic [ref=e1017]: 0 объектов
+                  - generic [ref=e1018]: 0 млн
+  - button "Open Next.js Dev Tools" [ref=e1024] [cursor=pointer]:
+    - img [ref=e1025]

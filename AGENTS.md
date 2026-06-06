@@ -82,3 +82,51 @@ src/modules/drone-defense/
 
 > `infra/` is empty for now — the prototype has no backend calls yet.
 
+---
+
+# neuraldeep.api — Model Rate Limits
+
+**Mandatory for any agent, integration, script, CI job, or automation that uses models routed through `neuraldeep.api`.**
+
+Models under `neuraldeep.api` enforce **~5 requests per minute** (resets every minute). Every HTTP call to the model endpoint counts separately: chat completion, streaming chunk requests, status polls, retries, etc. A single agent turn can run for minutes internally; your outbound API calls still consume the budget.
+
+This section does **not** replace provider-specific docs — it is the project rule for staying within the neuraldeep.api quota.
+
+## Required patterns
+
+**Reuse conversation context — do not open a new session per step.**
+
+```
+❌ new request → poll → poll → new request → poll …
+✅ one session → stream/wait → follow-up on same context → wait
+```
+
+- Send follow-up prompts on an existing agent/session when possible; avoid redundant cold starts.
+- Prefer **one streaming connection** or a single long-lived wait over manual polling loops.
+- If polling is unavoidable: **≥30–60 s** between status checks until the run is terminal.
+
+**Client-side throttling is mandatory.** Target **≤4 req/min** to stay under the limit:
+
+- Serialize requests through a token-bucket or queue (one worker per API key / credential).
+- Never run parallel jobs/workers against the same neuraldeep.api credential.
+- On `429`: honor `Retry-After`, then exponential backoff (1s → 2s → 4s → 8s). Do not blind-retry — duplicate requests can spawn duplicate agent runs.
+
+**Cache aggressively.**
+
+- Cache static lookups (repos, model lists, config) for hours; do not re-fetch before every call.
+- Persist terminal results locally; do not re-fetch completed responses.
+
+## Forbidden
+
+- Polling more often than every 30 seconds.
+- Opening a new session when a follow-up on an existing one would work.
+- Burst retries immediately after `429`.
+- Multiple concurrent integrations sharing one neuraldeep.api credential without a shared rate limiter.
+
+## Queue architecture (when throughput > 5 RPM is needed)
+
+```
+Trigger (webhook / CI) → queue → single worker (≤4 req/min) → neuraldeep.api
+```
+
+Do not fan out parallel agent launches against the same credential.

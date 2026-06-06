@@ -194,47 +194,11 @@ function assetCompatibility(
   asset: DefenseAssetLibraryItem,
   activeLayerCode: string | undefined,
 ): Pick<AssetCatalogItem, "compatibilityStatus" | "compatibilityLabel" | "canPlaceInActiveLayer" | "isRecommendedForActiveLayer"> {
-  if (!activeLayerCode) {
-    return {
-      compatibilityStatus: "compatible",
-      compatibilityLabel: "Выберите эшелон",
-      canPlaceInActiveLayer: true,
-      isRecommendedForActiveLayer: false,
-    };
-  }
-
-  if (asset.incompatibleLayerCodes?.includes(activeLayerCode)) {
-    return {
-      compatibilityStatus: "incompatible",
-      compatibilityLabel: `Недоступно для ${activeLayerCode}`,
-      canPlaceInActiveLayer: false,
-      isRecommendedForActiveLayer: false,
-    };
-  }
-
-  if (asset.recommendedLayerCodes?.includes(activeLayerCode)) {
-    return {
-      compatibilityStatus: "recommended",
-      compatibilityLabel: `Рекомендовано для ${activeLayerCode}`,
-      canPlaceInActiveLayer: true,
-      isRecommendedForActiveLayer: true,
-    };
-  }
-
-  if (asset.compatibleLayerCodes?.includes(activeLayerCode)) {
-    return {
-      compatibilityStatus: "compatible",
-      compatibilityLabel: `Совместимо с ${activeLayerCode}`,
-      canPlaceInActiveLayer: true,
-      isRecommendedForActiveLayer: false,
-    };
-  }
-
   return {
-    compatibilityStatus: "warning",
-    compatibilityLabel: `Можно разместить в ${activeLayerCode}, но не рекомендовано`,
+    compatibilityStatus: "compatible",
+    compatibilityLabel: "",
     canPlaceInActiveLayer: true,
-    isRecommendedForActiveLayer: false,
+    isRecommendedForActiveLayer: Boolean(activeLayerCode && asset.recommendedLayerCodes?.includes(activeLayerCode)),
   };
 }
 
@@ -558,28 +522,18 @@ export function validateObjectPlacement(
   if (layer.isLocked) return { isValid: false, level: "error", message: "Эшелон заблокирован для размещения." };
   const asset = project.assetLibrary.find((item) => item.id === assetId);
   if (!asset) return { isValid: false, level: "error", message: "Средство защиты не найдено" };
+  if (asset.placementType === "non-physical") return { isValid: true, level: "success" };
 
-  const compatibility = assetCompatibility(asset, layer.code);
-  if (!compatibility.canPlaceInActiveLayer) {
-    return { isValid: false, level: "error", message: compatibility.compatibilityLabel };
-  }
-
-  if (asset.placementType !== "non-physical" && !isPointInsideLayerGeometry(layer, coordinates)) {
+  const inside = isPointInsideLayerGeometry(layer, coordinates);
+  if (!inside) {
     return {
       isValid: false,
       level: "error",
-      message: "Нельзя разместить объект вне границ выбранного эшелона.",
+      message: "Координаты размещения должны находиться в пределах выбранного эшелона.",
     };
   }
 
-  const warning =
-    compatibility.compatibilityStatus === "warning"
-      ? "Это средство можно разместить в выбранном эшелоне, но оно не является рекомендованным для данной зоны."
-      : undefined;
-
-  return warning
-    ? { isValid: true, level: "warning", message: warning }
-    : { isValid: true, level: "success" };
+  return { isValid: true, level: "success" };
 }
 
 export function createPlacedObject(

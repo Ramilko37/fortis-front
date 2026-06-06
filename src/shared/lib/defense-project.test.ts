@@ -58,15 +58,15 @@ assert(l2, "default project must include L2");
 assert(l2.geometry.type === "ring" && l2.geometry.minRadiusM === 30000 && l2.geometry.maxRadiusM === 60000, "L2 must use configured inner and outer ring radii");
 
 const l2CatalogItems = getAssetCatalogItems(project, "L2", project.placedObjects);
-assert(l2CatalogItems.some((item) => item.assetId === "mobile-radar"), "shared asset catalog must include L2 recommended assets");
+assert(l2CatalogItems.some((item) => item.assetId === "mobile-radar"), "shared asset catalog must include all defense assets");
 assert(l2CatalogItems.some((item) => item.assetId === "laser"), "shared asset catalog must include assets from other echelons");
 assert(
-  l2CatalogItems.find((item) => item.assetId === "mobile-radar")?.isRecommendedForActiveLayer,
-  "shared asset catalog must mark assets recommended for the active layer",
+  l2CatalogItems.every((item) => item.canPlaceInActiveLayer),
+  "shared asset catalog must allow every asset in the active layer",
 );
 assert(
-  !l2CatalogItems.find((item) => item.assetId === "laser")?.isRecommendedForActiveLayer,
-  "shared asset catalog must not treat other-layer recommendations as restrictions",
+  l2CatalogItems.every((item) => !item.compatibilityLabel && item.compatibilityStatus === "compatible"),
+  "shared asset catalog must not expose user-facing recommendation or compatibility labels",
 );
 assert(
   project.assetLibrary.find((asset) => asset.id === "mobile-radar")?.recommendedLayerCodes?.includes("L3"),
@@ -78,18 +78,18 @@ assert(
 );
 const radarInL3 = getAssetCatalogItems(project, "L3", project.placedObjects).find((item) => item.assetId === "mobile-radar");
 assert(
-  radarInL3?.compatibilityStatus === "recommended" && radarInL3.compatibilityLabel.includes("Рекомендовано"),
-  "active-layer catalog must mark multi-layer recommendations as recommended",
+  radarInL3?.compatibilityStatus === "compatible" && radarInL3.canPlaceInActiveLayer,
+  "active-layer catalog must allow formerly recommended assets without recommendation copy",
 );
 const ewOnL2 = l2CatalogItems.find((item) => item.assetId === "ew-narrowband");
 assert(
-  ewOnL2?.compatibilityStatus === "warning" && ewOnL2.compatibilityLabel.includes("не рекомендовано"),
-  "active-layer catalog must keep warning-compatible assets visible",
+  ewOnL2?.compatibilityStatus === "compatible" && ewOnL2.canPlaceInActiveLayer,
+  "active-layer catalog must allow formerly warning-compatible assets",
 );
 const laserOnL2 = l2CatalogItems.find((item) => item.assetId === "laser");
 assert(
-  laserOnL2?.compatibilityStatus === "incompatible" && !laserOnL2.canPlaceInActiveLayer,
-  "active-layer catalog must mark explicitly incompatible assets as blocked",
+  laserOnL2?.compatibilityStatus === "compatible" && laserOnL2.canPlaceInActiveLayer,
+  "active-layer catalog must allow formerly incompatible assets",
 );
 assert(
   typeof radarInL3?.categoryLabel === "string" &&
@@ -108,10 +108,10 @@ const okValidation = validateObjectPlacement(project, "mobile-radar", l2.id, ins
 assert(okValidation.isValid, "mobile-radar should be placeable inside L2");
 
 const tooCloseValidation = validateObjectPlacement(project, "mobile-radar", l2.id, insideTooClose);
-assert(!tooCloseValidation.isValid && tooCloseValidation.level === "error", "physical assets must be rejected inside the ring inner radius");
+assert(tooCloseValidation.isValid, "placement must not reject points inside the ring inner radius");
 
 const badValidation = validateObjectPlacement(project, "mobile-radar", l2.id, outside);
-assert(!badValidation.isValid && badValidation.level === "error", "physical assets must be rejected outside active layer");
+assert(badValidation.isValid, "placement must not reject points outside active layer geometry");
 
 const customLayer = createRingLayer(project, {
   name: "Пользовательский рубеж",
@@ -183,6 +183,9 @@ assert(withRadar.placedObjects[0].quantity === 1, "manual placement must create 
 assert(withRadar.placedObjects[0].status === "planned", "manual placement must default to planned status");
 assert(withRadar.placedObjects[0].createdAt && withRadar.placedObjects[0].updatedAt, "manual placement must persist timestamps");
 assert(withRadar.placedObjects[0].hasGeometryConflict === false, "manual placement must snapshot geometry conflict status");
+const coordinatePlaced = placeObjectInProject(project, "mobile-radar", l2.id, { ...inside, altitude: 120 }, { notes: "координатный ввод" });
+assert(coordinatePlaced.placedObjects[0].coordinates.altitude === 120, "coordinate placement must persist altitude");
+assert(coordinatePlaced.placedObjects[0].notes === "координатный ввод", "coordinate placement must persist notes");
 const catalogAfterPlacement = getAssetCatalogItems(withRadar, "L2", withRadar.placedObjects);
 assert(
   catalogAfterPlacement.find((item) => item.assetId === "mobile-radar")?.placedCount === 1,
@@ -289,11 +292,11 @@ assert(transferOk.project.selectedObjectId === transferProject.placedObjects[0].
 
 const l3 = project.layers.find((layer) => layer.code === "L3");
 assert(l3, "default project must include L3");
-const transferRejected = transferPlacedObjectToLayerInProject(withSecondRadar, withSecondRadar.placedObjects[0].id, l3.id);
-assert(!transferRejected.validation.isValid, "transfer outside target layer geometry must be rejected");
+const transferAcrossGeometry = transferPlacedObjectToLayerInProject(withSecondRadar, withSecondRadar.placedObjects[0].id, l3.id);
+assert(transferAcrossGeometry.validation.isValid, "transfer outside target layer geometry must be allowed");
 assert(
-  transferRejected.project.placedObjects[0].layerId === withSecondRadar.placedObjects[0].layerId,
-  "rejected transfer must keep original layerId",
+  transferAcrossGeometry.project.placedObjects[0].layerId === l3.id,
+  "transfer outside target layer geometry must still update layerId",
 );
 
 const duplicate = duplicatePlacedObjectInProject(withRadar, withRadar.placedObjects[0].id);
