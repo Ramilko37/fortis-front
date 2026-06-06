@@ -973,7 +973,6 @@ export function DroneDefensePrototype() {
                   <DefenseToolsPanel
                     assets={filteredCatalogItems}
                     projectAssets={project.assetLibrary}
-                    slots={selectedLayerLocked ? [] : selectedLayerSlots}
                     placements={mapConfiguration.placements}
                     selectedToolId={activeToolId}
                     selectedObjectAssetId={selectedPlacedObject?.assetId}

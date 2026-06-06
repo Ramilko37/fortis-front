@@ -949,6 +949,28 @@ function assetToCalculatorAssetId(asset: DefenseAssetLibraryItem): string {
   return asset.calculatorAssetId ?? asset.id;
 }
 
+function normalizeProjectAssetLibrary(assetLibrary: DefenseProject["assetLibrary"]): DefenseProject["assetLibrary"] {
+  const importedById = new Map((assetLibrary ?? []).map((asset) => [asset.id, asset]));
+  const canonicalIds = new Set(defenseAssetLibrary.map((asset) => asset.id));
+  const canonicalAssets = defenseAssetLibrary.map((asset) => ({
+    ...(importedById.get(asset.id) ?? {}),
+    ...asset,
+  }));
+  const customAssets = (assetLibrary ?? [])
+    .filter((asset) => !canonicalIds.has(asset.id))
+    .map((asset) => ({
+      ...asset,
+      coverageType: asset.coverageType ?? "none",
+      currency: asset.currency ?? "RUB",
+      roles: asset.roles ?? [],
+      pricePerUnitMln: asset.pricePerUnitMln ?? null,
+      unitLabel: asset.unitLabel ?? "шт",
+      deploymentType: asset.deploymentType ?? "external",
+      placementType: asset.placementType ?? "non-physical",
+    }));
+  return [...canonicalAssets, ...customAssets];
+}
+
 export function projectToCalculatorConfiguration(project: DefenseProject): ProjectCalculatorConfiguration {
   const quantities = new Map<string, number>();
   project.placedObjects.forEach((object) => {
@@ -989,6 +1011,7 @@ export function importDefenseProjectJson(raw: string): DefenseProject {
   }
   return syncPlacedObjectConflictFlags({
     ...parsed,
+    assetLibrary: normalizeProjectAssetLibrary(parsed.assetLibrary),
     layers: parsed.layers.map((layer) => ({ ...layer, isVisible: isLayerVisible(layer) })),
   });
 }

@@ -10,7 +10,6 @@ import type { Placement } from "@/shared/types/drone-defense";
 type DefenseToolsPanelProps = {
   assets: AssetCatalogItem[];
   projectAssets: DefenseProject["assetLibrary"];
-  slots: EchelonMapSlot[];
   placements: Placement[];
   selectedToolId: string | null;
   selectedObjectAssetId?: string;
@@ -22,7 +21,6 @@ type DefenseToolsPanelProps = {
 export function DefenseToolsPanel({
   assets,
   projectAssets,
-  slots,
   placements,
   selectedToolId,
   selectedObjectAssetId,
@@ -40,11 +38,10 @@ export function DefenseToolsPanel({
 
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-2">
-      {assets.map((assetItem, index) => {
+      {assets.map((assetItem) => {
         const projectAsset = projectAssets.find((asset) => asset.id === assetItem.assetId);
         const primaryGroupId = projectAsset?.mapCatalogGroupIds?.[0];
         const buildAsset = primaryGroupId ? getBuildAssetForCatalogGroup(primaryGroupId) : null;
-        const slot = slots[index] ?? null;
         const assetPlacements = placements.filter((item) => item.id === assetItem.assetId || item.catalogGroupId === primaryGroupId);
         const placement = assetPlacements[0] ?? null;
         const installedCount = assetItem.placedCount;
@@ -53,9 +50,7 @@ export function DefenseToolsPanel({
             ? assetItem.compatibilityLabel
             : assetItem.placementType === "non-physical"
               ? undefined
-              : slot?.status === "occupied" && !placement
-                ? "Позиция уже занята другим средством"
-                : undefined;
+              : undefined;
 
         const imageUrl = buildAsset?.imageUrl ?? assetItem.imageUrl;
 
@@ -77,7 +72,7 @@ export function DefenseToolsPanel({
             isPlaceholder={buildAsset?.isPlaceholder ?? !primaryGroupId}
             isSelected={selectedToolId === assetItem.assetId}
             onSelect={() => onSelectTool(assetItem)}
-            onAdd={() => onAddTool(assetItem, slot)}
+            onAdd={() => onAddTool(assetItem, null)}
             onRemove={() => onRemoveTool(assetItem)}
           />
         );

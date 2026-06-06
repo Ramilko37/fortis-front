@@ -317,6 +317,22 @@ assert(
   importedLegacySnapshot.placedObjects[0].hasGeometryConflict === false,
   "project JSON import must backfill missing conflict snapshots",
 );
+const legacyExportWithoutAssetDisplayFields = JSON.stringify({
+  ...withRadar,
+  assetLibrary: withRadar.assetLibrary.map(
+    ({ coverageType: _coverageType, compatibleLayerCodes: _compatibleLayerCodes, ...asset }) =>
+      asset.id === "l1-osint" ? { ...asset, coverageRadius: 1200 } : asset,
+  ),
+});
+const importedLegacyAssets = importDefenseProjectJson(legacyExportWithoutAssetDisplayFields);
+assert(
+  importedLegacyAssets.assetLibrary.every((asset) => asset.coverageType),
+  "project JSON import must backfill canonical asset display fields",
+);
+assert(
+  importedLegacyAssets.assetLibrary.every((asset) => asset.coverageType !== "none" || asset.coverageRadius === undefined),
+  "project JSON import must prefer canonical coverage data over stale stored asset fields",
+);
 
 let legacy = createEmptyConfiguration();
 legacy = setDefenseItemQuantityInConfiguration(legacy, "mobile-radar", 2);
