@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppstoreOutlined } from "@ant-design/icons";
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
-import { buildEchelonMapModel, type EchelonMapSlot } from "@/modules/drone-defense/domain/echelon-map-model";
+import { buildEchelonMapModel } from "@/modules/drone-defense/domain/echelon-map-model";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
 import { CoordinatePlacementPanel, type CoordinatePlacementInput } from "@/modules/drone-defense/ui/coordinate-placement-panel";
 import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
@@ -457,43 +457,10 @@ export function DroneDefensePrototype() {
     }
     setActiveToolId(asset.assetId);
     selectAsset(asset.assetId);
-    if (asset.placementType === "non-physical") {
-      setCoordinatePlacementAssetId(null);
-      setLastPlacementMessage(`${asset.title}: добавляется без карты`);
-      return;
-    }
     setCoordinatePlacementAssetId(asset.assetId);
     setCoordinatePlacementValidation(null);
     setIsCatalogTrayOpen(true);
     setLastPlacementMessage(`${selectedLayer.code} · ${asset.title}: введите координаты точки`);
-  };
-
-  const addToolToSlot = (asset: ReturnType<typeof getAssetCatalogItems>[number], slot: EchelonMapSlot | null) => {
-    if (!selectedLayer) return;
-    setActiveToolId(asset.assetId);
-    selectAsset(asset.assetId);
-
-    const targetLayer = slot ? project.layers.find((layer) => layer.id === slot.layerId) ?? selectedLayer : selectedLayer;
-    if (slot) {
-      selectLayer(slot.layerId);
-      setSelectedSlotId(slot.id);
-    }
-
-    if (!slot && asset.placementType !== "non-physical") {
-      setLastPlacementMessage(`${asset.title}: выберите точку на карте внутри эшелона ${targetLayer.code}`);
-      return;
-    }
-
-    const coordinates = slot
-      ? { lat: slot.position[1], lng: slot.position[0] }
-      : project.baseObject.center;
-    const validation = placeObject(asset.assetId, targetLayer.id, coordinates);
-    setLastPlacementMessage(
-      validation.message ??
-        (validation.isValid
-          ? `${asset.title} размещено в эшелоне ${targetLayer.code}`
-          : "Не удалось разместить объект"),
-    );
   };
 
   const placeActiveToolAtCoordinate = ({ lng, lat }: { lng: number; lat: number }) => {
@@ -710,7 +677,6 @@ export function DroneDefensePrototype() {
                 selectedToolId={activeToolId}
                 selectedObjectAssetId={selectedPlacedObject?.assetId}
                 onSelectTool={handleSelectTool}
-                onAddTool={addToolToSlot}
                 onOpenCoordinates={openCoordinatePlacement}
                 onDragAsset={startAssetDrag}
                 onPointerDragAsset={startAssetPointerDrag}

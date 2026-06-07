@@ -74,9 +74,14 @@ for (const forbiddenCopy of ["РАЗМЕЩЕНО", "Размещено:", ">Ра
     throw new Error(`DefenseToolIcon must not expose legacy compact-card copy: ${forbiddenCopy}`);
   }
 }
-for (const expectedCopy of ["На карте", "Включено", "Без карты", "Добавить", "Нарисовать", "Перетащите"]) {
+for (const expectedCopy of ["На карте", "Нарисовать", "Перетащите"]) {
   if (!defenseToolIconSource.includes(expectedCopy)) {
     throw new Error(`DefenseToolIcon must expose compact-card copy: ${expectedCopy}`);
+  }
+}
+for (const forbiddenCopy of ["Включено", "Без карты", "Добавить"]) {
+  if (defenseToolIconSource.includes(forbiddenCopy)) {
+    throw new Error(`DefenseToolIcon must not expose add-only compact-card copy: ${forbiddenCopy}`);
   }
 }
 

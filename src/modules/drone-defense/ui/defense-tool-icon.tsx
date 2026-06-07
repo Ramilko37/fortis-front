@@ -1,6 +1,6 @@
 "use client";
 
-import { AimOutlined, DragOutlined, EnvironmentOutlined, PlusOutlined } from "@ant-design/icons";
+import { AimOutlined, DragOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import type { DefenseAssetLibraryItem } from "@/shared/types/defense-project";
@@ -30,7 +30,6 @@ export type DefenseToolIconProps = {
   isPlaceholder?: boolean;
   isSelected?: boolean;
   onSelect: () => void;
-  onAdd: () => void;
   onOpenCoordinates: () => void;
   onDragAsset: (event: ReactDragEvent<HTMLDivElement>) => void;
   onPointerDragAsset: (event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -53,26 +52,22 @@ export function DefenseToolIcon({
   isPlaceholder = false,
   isSelected = false,
   onSelect,
-  onAdd,
   onOpenCoordinates,
   onDragAsset,
   onPointerDragAsset,
   onMouseDragAsset,
 }: DefenseToolIconProps & { assetId: string }) {
   const canAdd = !disabledReason;
-  const isNonPhysical = placementType === "non-physical";
   const isZoneObject = placementType === "zone-object";
-  const canDrag = !isNonPhysical && canAdd;
-  const title = disabledReason ?? `${name}: ${rangeLabel}. ${isNonPhysical ? "Добавить без карты" : "Перетащите на карту внутри выбранного эшелона"}`;
-  const counterText = isNonPhysical
-    ? `Включено: ${installedCount} ед.`
-    : isZoneObject
+  const canDrag = canAdd;
+  const title = disabledReason ?? `${name}: ${rangeLabel}. Перетащите на карту внутри выбранного эшелона`;
+  const counterText = isZoneObject
       ? `Участков: ${installedCount}`
       : maxQuantity > 0
         ? `На карте: ${installedCount}/${maxQuantity}`
         : `На карте: ${installedCount}`;
-  const placementBadge = isNonPhysical ? "Без карты" : isZoneObject ? "Зона" : "Карта";
-  const actionText = isNonPhysical ? "Добавить" : isZoneObject ? "Нарисовать" : "Перетащите";
+  const placementBadge = isZoneObject ? "Зона" : "Карта";
+  const actionText = isZoneObject ? "Нарисовать" : "Перетащите";
 
   const rootRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
@@ -131,7 +126,7 @@ export function DefenseToolIcon({
     Boolean(
         target.closest("input,select,textarea,a") ||
         target.closest(
-          'button[title="Добавить"],button[title="Ввести координаты"]',
+          'button[title="Ввести координаты"]',
         ),
     );
 
@@ -187,7 +182,7 @@ export function DefenseToolIcon({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      aria-label={`${name}. ${counterText}. ${isNonPhysical ? "Добавить" : "Перетащите на карту"}`}
+      aria-label={`${name}. ${counterText}. Перетащите на карту`}
       title={title}
       draggable={canDrag}
       onDragStart={(event) => {
@@ -231,13 +226,13 @@ export function DefenseToolIcon({
           <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
             installedCount > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
           }`}>
-            {isNonPhysical ? `${installedCount} ед.` : isZoneObject ? `${installedCount} уч.` : maxQuantity > 0 ? `${installedCount}/${maxQuantity}` : `${installedCount}`}
+            {isZoneObject ? `${installedCount} уч.` : maxQuantity > 0 ? `${installedCount}/${maxQuantity}` : `${installedCount}`}
           </span>
         </div>
         <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] leading-tight text-slate-500">
           <span className="truncate">{categoryLabel}</span>
           <span aria-hidden="true">·</span>
-          <span className="truncate">{isNonPhysical ? "Без покрытия" : coverageLabel}</span>
+          <span className="truncate">{coverageLabel}</span>
         </div>
         <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] leading-tight text-slate-500">
           <span className="truncate">{priceLabel}</span>
@@ -248,39 +243,22 @@ export function DefenseToolIcon({
           <span className={`min-w-0 truncate text-[11px] font-semibold ${
             disabledReason ? "text-rose-600" : "text-blue-600"
           }`}>
-            {disabledReason ?? (isNonPhysical ? counterText : actionText)}
+            {disabledReason ?? actionText}
           </span>
           <div className="flex shrink-0 items-center gap-1">
-            {!isNonPhysical ? (
-              <button
-                type="button"
-                className="grid h-6 w-6 cursor-pointer place-items-center rounded-md bg-slate-100 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
-                disabled={!canAdd}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onOpenCoordinates();
-                }}
-                title="Ввести координаты"
-                aria-label="Ввести координаты"
-              >
-                {isZoneObject ? <AimOutlined /> : <EnvironmentOutlined />}
-              </button>
-            ) : null}
-            {isNonPhysical ? (
-              <button
-                type="button"
-                className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-md bg-blue-600 px-2 text-[11px] font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                disabled={!canAdd}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onAdd();
-                }}
-                title="Добавить"
-              >
-                <PlusOutlined />
-                <span>Добавить</span>
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="grid h-6 w-6 cursor-pointer place-items-center rounded-md bg-slate-100 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
+              disabled={!canAdd}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenCoordinates();
+              }}
+              title="Ввести координаты"
+              aria-label="Ввести координаты"
+            >
+              {isZoneObject ? <AimOutlined /> : <EnvironmentOutlined />}
+            </button>
           </div>
         </div>
       </div>

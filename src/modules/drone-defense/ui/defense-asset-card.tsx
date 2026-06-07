@@ -3,7 +3,7 @@
 import { DragOutlined } from "@ant-design/icons";
 import styles from "./drone-defense-prototype.module.css";
 
-export type PlacementMode = "point" | "line" | "polygon" | "none";
+export type PlacementMode = "point" | "line" | "polygon";
 
 export interface DefenseAssetCardProps {
   /** Уникальный идентификатор средства */
@@ -34,8 +34,6 @@ export interface DefenseAssetCardProps {
   onOpenDetails: () => void;
   /** Вызывается при начале drag-and-drop для point/polygon/line режимов */
   onDragStart?: () => void;
-  /** Вызывается при клике на кнопку «Добавить» для none-режима */
-  onAddClick?: () => void;
 }
 
 /** Конвертируем радиус в отображение */
@@ -51,7 +49,7 @@ function formatCounter(
   placed: number,
   max: number,
 ): string {
-  if (mode === "none") return `${placed} ед.`;
+  void mode;
   if (max > 0) return `${placed}/${max}`;
   return `${placed}`;
 }
@@ -63,8 +61,6 @@ function formatHint(mode: PlacementMode): string {
     case "line":
     case "polygon":
       return "Нарисовать";
-    default:
-      return "Добавить";
   }
 }
 
@@ -84,10 +80,9 @@ export function DefenseAssetCard({
   compatibleWithEchelon,
   onOpenDetails,
   onDragStart,
-  onAddClick,
 }: DefenseAssetCardProps) {
   void compatibleWithEchelon;
-  const isDraggable = placementMode !== "none";
+  const isDraggable = true;
 
   // Классы состояния
   const statusClasses = [
@@ -118,10 +113,12 @@ export function DefenseAssetCard({
       role="button"
       tabIndex={0}
       aria-label={`${label}: ${counterText}`}
-      onClick={!isDraggable ? onOpenDetails : undefined}
+      draggable
+      onDragStart={() => onDragStart?.()}
+      onClick={onOpenDetails}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          if (!isDraggable) onOpenDetails();
+          onOpenDetails();
         }
       }}
       data-testid={`defense-asset-card-${id}`}
@@ -157,21 +154,6 @@ export function DefenseAssetCard({
           <span className={styles.hintText}>{hint}</span>
         </div>
       </div>
-
-      {/* Кнопка «Добавить» для non-draggable активов */}
-      {!isDraggable && (
-        <button
-          className={styles.addButton}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddClick?.();
-          }}
-          aria-label="Добавить актив"
-        >
-          + Добавить
-        </button>
-      )}
     </div>
   );
 }

@@ -15,6 +15,8 @@ assert(!defenseProjectSource.includes("Не подходит для"), "Catalog 
 assert(defenseProjectSource.includes("export function calculateLayerConflicts") && defenseProjectSource.includes("return [];"), "Conflict engine must be disabled");
 assert(!defenseProjectSource.includes("Координаты размещения должны находиться"), "Coordinate placement must not reject points outside echelon geometry");
 assert(!toolIconSource.includes("isLimited"), "Defense tool cards must not enforce max quantity limits");
+assert(!toolIconSource.includes("isNonPhysical"), "Defense tool cards must not split non-physical assets into add-only cards");
+assert(toolIconSource.includes("const canDrag = canAdd"), "Defense tool cards must make every enabled asset draggable");
 assert(!toolsPanelSource.includes("disabledReason = assetItem.canPlaceInActiveLayer"), "Tools panel must not disable cards by compatibility");
 assert(!prototypeSource.includes("asset.placementType === \"zone-object\""), "Map placement must not block zone-object assets");
 assert(!mapAdapterSource.includes("calculateLayerConflicts"), "Map adapter must not mark conflict states");

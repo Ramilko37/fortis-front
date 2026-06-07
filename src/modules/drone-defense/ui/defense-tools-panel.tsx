@@ -1,7 +1,6 @@
 "use client";
 
 import { getBuildAssetForCatalogGroup } from "@/modules/drone-defense/domain/echelon-build-assets";
-import type { EchelonMapSlot } from "@/modules/drone-defense/domain/echelon-map-model";
 import { DefenseToolIcon } from "@/modules/drone-defense/ui/defense-tool-icon";
 import type { AssetCatalogItem } from "@/shared/lib/defense-project";
 import type { DefenseProject } from "@/shared/types/defense-project";
@@ -17,7 +16,6 @@ type DefenseToolsPanelProps = {
   selectedToolId: string | null;
   selectedObjectAssetId?: string;
   onSelectTool: (asset: AssetCatalogItem) => void;
-  onAddTool: (asset: AssetCatalogItem, slot: EchelonMapSlot | null) => void;
   onOpenCoordinates: (asset: AssetCatalogItem) => void;
   onDragAsset: (asset: AssetCatalogItem, event: ReactDragEvent<HTMLDivElement>) => void;
   onPointerDragAsset: (asset: AssetCatalogItem, event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -31,7 +29,6 @@ export function DefenseToolsPanel({
   selectedToolId,
   selectedObjectAssetId,
   onSelectTool,
-  onAddTool,
   onOpenCoordinates,
   onDragAsset,
   onPointerDragAsset,
@@ -75,7 +72,6 @@ export function DefenseToolsPanel({
             isPlaceholder={buildAsset?.isPlaceholder ?? !primaryGroupId}
             isSelected={selectedToolId === assetItem.assetId}
             onSelect={() => onSelectTool(assetItem)}
-            onAdd={() => onAddTool(assetItem, null)}
             onOpenCoordinates={() => onOpenCoordinates(assetItem)}
             onDragAsset={(event) => onDragAsset(assetItem, event)}
             onPointerDragAsset={(event) => onPointerDragAsset(assetItem, event)}

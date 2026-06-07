@@ -11,12 +11,16 @@ for (const forbiddenCopy of ["РАЗМЕЩЕНО", "Размещено:", "не 
   assert(!toolIconSource.includes(forbiddenCopy), `Compact library card must not render legacy copy: ${forbiddenCopy}`);
 }
 
-for (const expectedCopy of ["На карте", "Включено", "Без карты", "Добавить", "Нарисовать", "Перетащите"]) {
+for (const expectedCopy of ["На карте", "Нарисовать", "Перетащите"]) {
   assert(toolIconSource.includes(expectedCopy), `Compact library card must expose "${expectedCopy}" state/copy`);
 }
 
-assert(toolIconSource.includes("placementType"), "DefenseToolIcon must receive placementType to split map, zone, and non-physical cards");
-assert(toolIconSource.includes("canDrag"), "DefenseToolIcon must gate drag behavior instead of making every card draggable");
+for (const forbiddenCopy of ["Включено", "Без карты", "Добавить"]) {
+  assert(!toolIconSource.includes(forbiddenCopy), `Compact library card must not expose split add-only copy: ${forbiddenCopy}`);
+}
+
+assert(toolIconSource.includes("placementType"), "DefenseToolIcon must receive placementType to split map and zone card labels");
+assert(toolIconSource.includes("const canDrag = canAdd"), "DefenseToolIcon must make every enabled card draggable");
 assert(!toolIconSource.includes("aspect-square w-full"), "Compact library card must not use the large square image preview");
 assert(!toolIconSource.includes("MinusOutlined"), "Library card must not expose the large remove action");
 

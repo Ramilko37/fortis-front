@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  DragOutlined,
-  BuildOutlined,
   BorderOuterOutlined,
   ApartmentOutlined,
   DeploymentUnitOutlined,
@@ -48,8 +46,6 @@ export function AssetsPanel({
   onCancelPlacement: () => void;
 }) {
   const catalog = useDefenseStudioStore((state) => state.catalog);
-  const upsertLocalPlacement = useDefenseStudioStore((state) => state.upsertLocalPlacement);
-  const facilityId = useDefenseStudioStore((state) => state.facilityId);
   const scenarioId = useDefenseStudioStore((state) => state.scenarioId);
   const localPlacements = useDefenseStudioStore((state) => state.localPlacementsByScenario[scenarioId] ?? []);
 
@@ -100,23 +96,6 @@ export function AssetsPanel({
               onOpenDetails={() => console.log("Open details for", asset.id)}
               onDragStart={() => {
                 onSelectAsset(asset.kind);
-              }}
-              onAddClick={() => {
-                // Создаем размещение при клике на кнопку "Добавить"
-                const newPlacement = {
-                  id: `${facilityId}-${scenarioId}-${asset.id}-${Date.now()}`,
-                  assetId: asset.id,
-                  facilityId,
-                  scenarioId,
-                  qty: 1,
-                  readiness: 0.72,
-                  layerGapBoost: 1.04,
-                  criticalityBoost: 1.05,
-                  feasibility: 0.8,
-                  environmentModifier: 0.92,
-                  sceneRef: { x: 0, z: 0 }, // Дефолтная позиция
-                };
-                upsertLocalPlacement(newPlacement);
               }}
             />
           );

@@ -169,7 +169,7 @@ function assetRangeLabel(asset: DefenseAssetLibraryItem) {
   const max = formatAssetDistance(asset.maxEffectiveDistance ?? asset.coverageRadius);
   if (min && max) return `${min}-${max}`;
   if (max) return `до ${max}`;
-  if (asset.placementType === "non-physical") return "Без карты";
+  if (asset.placementType === "non-physical") return "точка на карте";
   return "зона задаётся на карте";
 }
 
