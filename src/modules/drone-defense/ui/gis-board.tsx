@@ -441,20 +441,18 @@ export function GisBoard({
         }),
         new ScatterplotLayer<EchelonMapPlacement>({
           id: "echelon-placement-objects",
-          data: echelonModel.placements.filter((item) => item.isSelected || item.isConflict),
+          data: echelonModel.placements.filter((item) => item.isSelected),
           getPosition: (item) => item.position,
           getRadius: (item) => (item.isSelected ? 2200 : item.layerId === selectedLayerId ? 1700 : 1150),
           radiusMinPixels: 5,
           radiusMaxPixels: 18,
-          getFillColor: (item) => (item.catalogGroupId ? [255, 255, 255, 0] : item.isConflict ? [245, 158, 11, 235] : item.color),
+          getFillColor: (item) => (item.catalogGroupId ? [255, 255, 255, 0] : item.color),
           getLineColor: (item) =>
-            item.isConflict
-              ? [180, 83, 9, 255]
-              : item.isSelected
-                ? [37, 99, 235, 255]
-                : item.layerId === selectedLayerId
-                  ? [15, 23, 42, 255]
-                  : [255, 255, 255, 220],
+            item.isSelected
+              ? [37, 99, 235, 255]
+              : item.layerId === selectedLayerId
+                ? [15, 23, 42, 255]
+                : [255, 255, 255, 220],
           lineWidthMinPixels: 1,
           stroked: true,
           pickable: true,
@@ -471,7 +469,7 @@ export function GisBoard({
           onHover: ({ object }) =>
             setHoverLabel(
               object
-                ? `${object.label} · ${visibleMapLayers.find((layer) => layer.id === object.layerId)?.shortName}${object.isConflict ? " · конфликт" : ""}`
+                ? `${object.label} · ${visibleMapLayers.find((layer) => layer.id === object.layerId)?.shortName}`
                 : null,
             ),
         }),
@@ -614,7 +612,7 @@ export function GisBoard({
               }}
               onHover={(nextPlacement) => {
                 setHoveredPlacementId(nextPlacement?.id ?? null);
-                setHoverLabel(nextPlacement ? `${nextPlacement.label}${nextPlacement.isConflict ? " · конфликт" : ""}` : null);
+                setHoverLabel(nextPlacement ? nextPlacement.label : null);
               }}
             />
           );

@@ -85,25 +85,24 @@ assertEquals(placed.layerId, ringLayer.id, "LayerId mismatch");
 
 console.log(`[✓] Object placed at center: ${placed.id}`);
 
-// 3. Conflict check
+// 3. Placement diagnostics
 const conflicts = calculateLayerConflicts(projectWithObject);
 assert(conflicts.length === 0, `Expected 0 conflicts, got ${conflicts.length}`);
-console.log(`[✓] No geometry conflicts: ${conflicts.length}\n`);
+console.log(`[✓] No placement diagnostics: ${conflicts.length}\n`);
 
-// 4. Place outside ring — should still succeed (validation allows it, conflicts flag it later)
+// 4. Place outside ring — should still succeed without diagnostics
 const farCoords: Coordinates = {
   lat: center.lat + 0.5,
   lng: center.lng + 0.5,
 };
 
 const v2 = validateObjectPlacement(project, project.assetLibrary[0].id, ringLayer.id, farCoords);
-// Basic validation doesn't reject — conflict detection runs after placement
 if (!v2.isValid) {
-  console.log(`[~] Far point validation rejected: ${v2.message} (expected if layer bounds enforced)`);
+  console.log(`[~] Far point validation rejected: ${v2.message}`);
 } else {
   const p2 = placeObjectInProject(project, project.assetLibrary[0].id, ringLayer.id, farCoords);
   const conflictsFar = calculateLayerConflicts(p2);
-  console.log(`[✓] Far point placed; conflicts: ${conflictsFar.length}`);
+  console.log(`[✓] Far point placed; diagnostics: ${conflictsFar.length}`);
 }
 
 console.log("\n=== all tests passed ===");

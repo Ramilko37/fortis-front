@@ -86,32 +86,22 @@ export function DefenseAssetCard({
   onDragStart,
   onAddClick,
 }: DefenseAssetCardProps) {
+  void compatibleWithEchelon;
   const isDraggable = placementMode !== "none";
-  const isLimited = maxQuantity > 0 && placedCount >= maxQuantity;
-  const isIncompatible = !compatibleWithEchelon;
-  const isDisabled = isLimited || isIncompatible;
 
   // Классы состояния
   const statusClasses = [
     styles.assetCard,
     styles[tone],
-    isDisabled ? styles.disabled : "",
-    isIncompatible ? styles.incompatible : "",
   ]
     .filter(Boolean)
     .join(" ");
 
-  // Показываем drag handle только если средство можно перетащить и не достигнут лимит
-  const showDragHandle = isDraggable && !isDisabled;
+  // Показываем drag handle для всех размещаемых на карте средств
+  const showDragHandle = isDraggable;
 
   // Текст-подсказка внизу карточки
-  const hint = isIncompatible
-    ? `Не подходит`
-    : isLimited
-    ? "Лимит"
-    : isDraggable
-    ? "Перетащите"
-    : "Добавить";
+  const hint = formatHint(placementMode);
 
   // Строка покрытия
   const coverageText = formatCoverage(coverageType, coverageRadiusM);
@@ -177,7 +167,6 @@ export function DefenseAssetCard({
             e.stopPropagation();
             onAddClick?.();
           }}
-          disabled={isDisabled}
           aria-label="Добавить актив"
         >
           + Добавить

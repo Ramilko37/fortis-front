@@ -88,7 +88,6 @@ export function getAssetMarkerIcon(placement: EchelonMapPlacement): ReactNode {
 }
 
 export function getMarkerState(placement: EchelonMapPlacement, isHovered: boolean): MapMarkerState {
-  if (placement.isConflict) return "conflict";
   if (placement.isSelected) return "selected";
   if (isHovered) return "hover";
   return "default";
@@ -130,9 +129,8 @@ export function MapObjectMarker({
   const state = getMarkerState(placement, isHovered);
   const categoryColor = getAssetCategoryColor(placement);
   const showLabel = shouldShowLabel({ zoom, isSelected: Boolean(placement.isSelected), isHovered });
-  const isAttentionState = state === "conflict" || state === "warning";
   const markerSize = placement.isSelected ? 46 : isHovered ? 40 : 36;
-  const markerBadge = placement.qty > 1 || isAttentionState ? (isAttentionState ? "!" : placement.qty) : null;
+  const markerBadge = placement.qty > 1 ? placement.qty : null;
   const markerStyle = {
     "--marker-color": categoryColor,
     left: x,
@@ -147,10 +145,10 @@ export function MapObjectMarker({
       type="button"
       className={`pointer-events-auto absolute z-20 grid place-items-center rounded-[11px] border-2 bg-slate-950/90 text-[17px] text-white shadow-lg shadow-slate-950/30 outline-none transition duration-150 hover:scale-[1.08] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
         placement.isSelected ? "ring-2 ring-white/90" : ""
-      } ${placement.isConflict ? "border-red-500" : "border-[var(--marker-color)]"}`}
+      } border-[var(--marker-color)]`}
       style={markerStyle}
-      aria-label={`${placement.label}, ${layerLabel ?? placement.layerId}, ${placement.qty} ед.${placement.isConflict ? ", конфликт" : ""}`}
-      title={`${placement.label}${layerLabel ? ` · ${layerLabel}` : ""}${placement.isConflict ? " · конфликт" : ""}`}
+      aria-label={`${placement.label}, ${layerLabel ?? placement.layerId}, ${placement.qty} ед.`}
+      title={`${placement.label}${layerLabel ? ` · ${layerLabel}` : ""}`}
       data-testid={`map-object-marker-${placement.sourcePlacementId}`}
       data-marker-state={state}
       data-marker-category={placement.markerCategory ?? layerCategoryFallback[placement.layerId] ?? "infrastructure"}
@@ -165,9 +163,7 @@ export function MapObjectMarker({
         {getAssetMarkerIcon(placement)}
       </span>
       <span
-        className={`absolute -bottom-0.5 -left-0.5 h-2 w-2 rounded-full border border-slate-950 ${
-          placement.isConflict ? "bg-red-400" : "bg-[var(--marker-color)]"
-        }`}
+        className="absolute -bottom-0.5 -left-0.5 h-2 w-2 rounded-full border border-slate-950 bg-[var(--marker-color)]"
         aria-hidden="true"
       />
       {markerBadge ? (

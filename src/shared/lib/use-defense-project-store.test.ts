@@ -4,7 +4,6 @@ import {
   FORTIS_DEFENSE_PROJECT_STORAGE_KEY,
   useDefenseProjectStore,
 } from "@/shared/lib/use-defense-project-store";
-import { calculateLayerConflicts } from "@/shared/lib/defense-project";
 import { projectToCalculatorConfiguration } from "@/shared/lib/defense-project";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -132,12 +131,17 @@ const lockedLayer = useDefenseProjectStore.getState().project.layers.find((layer
 assert(lockedLayer?.isLocked, "setLayerLocked must persist locked layer state");
 
 const lockedPlacement = useDefenseProjectStore.getState().placeObject("mobile-radar", createdLayer.id, { lat: 55.18, lng: 37.1 });
-assert(!lockedPlacement.isValid, "placeObject must reject locked layers");
+assert(lockedPlacement.isValid, "placeObject must allow locked layers");
+assert(
+  useDefenseProjectStore.getState().project.placedObjects.some((object) => object.layerId === createdLayer.id),
+  "locked layer placement must still add an object",
+);
 
 const deletedLayer = useDefenseProjectStore.getState().deleteLayer(createdLayer.id);
 assert(!deletedLayer.ok && deletedLayer.reason === "layer-locked", "deleteLayer must reject locked custom layers");
 
 useDefenseProjectStore.getState().setLayerLocked(createdLayer.id, false);
+useDefenseProjectStore.getState().deletePlacedObject(useDefenseProjectStore.getState().project.placedObjects.find((object) => object.layerId === createdLayer.id)?.id ?? "");
 const unlockedDeletion = useDefenseProjectStore.getState().deleteLayer(createdLayer.id);
 assert(unlockedDeletion.ok, "deleteLayer must delete unlocked empty custom layers");
 assert(!useDefenseProjectStore.getState().project.layers.some((layer) => layer.id === createdLayer.id), "deleted empty layer must be removed from project");
@@ -177,14 +181,14 @@ const editResult = useDefenseProjectStore.getState().updateLayerGeometry(l2ForEd
 assert(editResult.ok, "updateLayerGeometry must save valid edited geometry");
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "updateLayerGeometry must not delete placed objects");
 assert(
-  calculateLayerConflicts(useDefenseProjectStore.getState().project, l2ForEdit.id).length === 1,
-  "updateLayerGeometry may leave existing objects as conflicts",
+  useDefenseProjectStore.getState().project.placedObjects.every((object) => !object.hasGeometryConflict && !object.hasCoverageConflict && !object.hasTerrainConflict),
+  "updateLayerGeometry must not mark existing objects as conflicts",
 );
 
 const l3ForTransfer = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "L3");
 assert(l3ForTransfer, "store project must include L3 before transfer check");
-const conflictObject = useDefenseProjectStore.getState().project.placedObjects[0];
-const crossGeometryTransfer = useDefenseProjectStore.getState().transferObjectToLayer(conflictObject.id, l3ForTransfer.id);
+const transferObject = useDefenseProjectStore.getState().project.placedObjects[0];
+const crossGeometryTransfer = useDefenseProjectStore.getState().transferObjectToLayer(transferObject.id, l3ForTransfer.id);
 assert(crossGeometryTransfer.isValid, "transferObjectToLayer must allow coordinates outside target layer");
 assert(
   useDefenseProjectStore.getState().project.placedObjects[0].layerId === l3ForTransfer.id,
@@ -201,8 +205,8 @@ useDefenseProjectStore.getState().createLayerFromDraft({
 });
 const mirrorTransferLayer = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "LZ");
 assert(mirrorTransferLayer, "mirror transfer layer must be created");
-useDefenseProjectStore.getState().updatePlacedObject(conflictObject.id, { coordinates: { lat: 55.44, lng: 37.1 } });
-const validTransfer = useDefenseProjectStore.getState().transferObjectToLayer(conflictObject.id, mirrorTransferLayer.id);
+useDefenseProjectStore.getState().updatePlacedObject(transferObject.id, { coordinates: { lat: 55.44, lng: 37.1 } });
+const validTransfer = useDefenseProjectStore.getState().transferObjectToLayer(transferObject.id, mirrorTransferLayer.id);
 assert(validTransfer.isValid, "transferObjectToLayer must accept coordinates inside target layer");
 assert(
   useDefenseProjectStore.getState().project.placedObjects[0].layerId === mirrorTransferLayer.id,

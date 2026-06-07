@@ -11,7 +11,6 @@ import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
 import {
   type AssetCatalogItem,
-  calculateLayerConflicts,
   calculateLayerSummaries,
   findLayerInsertOptions,
   getAssetCatalogItems,
@@ -220,7 +219,6 @@ export function DroneDefensePrototype() {
     [project.layers],
   );
   const layerSummaries = useMemo(() => calculateLayerSummaries(project), [project]);
-  const layerConflicts = useMemo(() => calculateLayerConflicts(project), [project]);
   const assetCatalogItems = useMemo(
     () => getAssetCatalogItems(project, selectedLayer?.code, project.placedObjects),
     [project, selectedLayer?.code],
@@ -260,14 +258,6 @@ export function DroneDefensePrototype() {
       wizardLayer,
       layerWizardState.mode === "edit" ? layerWizardState.layerId : undefined,
     );
-  }, [layerWizardState, project, wizardLayer]);
-  const wizardConflictCount = useMemo(() => {
-    if (!layerWizardState || layerWizardState.mode !== "edit" || !wizardLayer || !layerWizardState.layerId) return 0;
-    const editedProject = {
-      ...project,
-      layers: project.layers.map((layer) => (layer.id === layerWizardState.layerId ? wizardLayer : layer)),
-    };
-    return calculateLayerConflicts(editedProject, layerWizardState.layerId).length;
   }, [layerWizardState, project, wizardLayer]);
   const previewMapLayer = useMemo(() => {
     if (!wizardLayer) return null;
@@ -326,7 +316,6 @@ export function DroneDefensePrototype() {
     () => project.assetLibrary.find((asset) => asset.id === coordinatePlacementAssetId) ?? null,
     [project.assetLibrary, coordinatePlacementAssetId],
   );
-  const selectedLayerSummary = layerSummaries.find((summary) => summary.layerId === selectedLayerId);
   const canCreateLayer = project.layers.length < MAX_DEFENSE_PROJECT_LAYERS;
   const canDeleteSelectedLayer = project.layers.length > 1 && selectedLayerObjects.length === 0;
   const isLayerEditMode = layerPanelMode === "edit";
@@ -398,11 +387,7 @@ export function DroneDefensePrototype() {
       setLastPlacementMessage(result.validation.message ?? "Не удалось сохранить эшелон");
       return;
     }
-    setLastPlacementMessage(
-      wizardConflictCount > 0
-        ? `Размеры сохранены. ${wizardConflictCount} объект(ов) вне нового кольца.`
-        : "Размеры эшелона сохранены",
-    );
+    setLastPlacementMessage("Размеры эшелона сохранены");
     setLayerWizardState(null);
   };
 
@@ -472,19 +457,9 @@ export function DroneDefensePrototype() {
     }
     setActiveToolId(asset.assetId);
     selectAsset(asset.assetId);
-    if (selectedLayer.isLocked) {
-      setCoordinatePlacementAssetId(null);
-      setLastPlacementMessage("Эшелон заблокирован для размещения.");
-      return;
-    }
     if (asset.placementType === "non-physical") {
       setCoordinatePlacementAssetId(null);
       setLastPlacementMessage(`${asset.title}: добавляется без карты`);
-      return;
-    }
-    if (asset.placementType === "zone-object") {
-      setCoordinatePlacementAssetId(null);
-      setLastPlacementMessage(`${selectedLayer.code} · ${asset.title}: нарисуйте линию или зону на карте`);
       return;
     }
     setCoordinatePlacementAssetId(asset.assetId);
@@ -504,15 +479,6 @@ export function DroneDefensePrototype() {
       setSelectedSlotId(slot.id);
     }
 
-    if (targetLayer.isLocked) {
-      setLastPlacementMessage("Эшелон заблокирован для размещения.");
-      return;
-    }
-
-    if (asset.placementType === "zone-object") {
-      setLastPlacementMessage(`${asset.title}: нарисуйте линию или зону в эшелоне ${targetLayer.code}`);
-      return;
-    }
     if (!slot && asset.placementType !== "non-physical") {
       setLastPlacementMessage(`${asset.title}: выберите точку на карте внутри эшелона ${targetLayer.code}`);
       return;
@@ -532,20 +498,12 @@ export function DroneDefensePrototype() {
 
   const placeActiveToolAtCoordinate = ({ lng, lat }: { lng: number; lat: number }) => {
     if (!activeToolId || !selectedLayer) return;
-    if (selectedLayer.isLocked) {
-      setLastPlacementMessage("Эшелон заблокирован для размещения.");
-      return;
-    }
     const asset = project.assetLibrary.find((item) => item.id === activeToolId);
     if (!asset) {
       setLastPlacementMessage("Средство защиты не найдено в библиотеке");
       return;
     }
     selectAsset(asset.id);
-    if (asset.placementType === "zone-object") {
-      setLastPlacementMessage(`${asset.name}: нарисуйте линию или зону в эшелоне ${selectedLayer.code}`);
-      return;
-    }
     const validation = placeObject(asset.id, selectedLayer.id, { lat, lng });
     setLastPlacementMessage(
       validation.message ??
@@ -565,11 +523,6 @@ export function DroneDefensePrototype() {
     }
     setActiveToolId(asset.id);
     selectAsset(asset.id);
-    if (asset.placementType === "zone-object") {
-      setPointerDraggedAssetId(null);
-      setLastPlacementMessage(`${asset.name}: нарисуйте линию или зону в эшелоне ${selectedLayer.code}`);
-      return;
-    }
     const validation = placeObject(asset.id, selectedLayer.id, { lat, lng });
     setPointerDraggedAssetId(null);
     setLastPlacementMessage(
@@ -589,11 +542,7 @@ export function DroneDefensePrototype() {
     selectAsset(asset.assetId);
     setCoordinatePlacementAssetId(null);
     setCoordinatePlacementValidation(null);
-    setLastPlacementMessage(
-      asset.placementType === "zone-object"
-        ? `${asset.title}: перетащите на карту, затем нарисуйте зону`
-        : `${asset.title}: перетащите карточку на карту`,
-    );
+    setLastPlacementMessage(`${asset.title}: перетащите карточку на карту`);
   };
 
   const startAssetPointerDrag = (asset: AssetCatalogItem, event: ReactPointerEvent<HTMLDivElement>) => {
@@ -603,11 +552,7 @@ export function DroneDefensePrototype() {
     selectAsset(asset.assetId);
     setCoordinatePlacementAssetId(null);
     setCoordinatePlacementValidation(null);
-    setLastPlacementMessage(
-      asset.placementType === "zone-object"
-        ? `${asset.title}: перетащите на карту, затем нарисуйте зону`
-        : `${asset.title}: перетащите карточку на карту`,
-    );
+    setLastPlacementMessage(`${asset.title}: перетащите карточку на карту`);
   };
 
   const startAssetMouseDrag = (asset: AssetCatalogItem, event: ReactMouseEvent<HTMLDivElement>) => {
@@ -617,11 +562,7 @@ export function DroneDefensePrototype() {
     selectAsset(asset.assetId);
     setCoordinatePlacementAssetId(null);
     setCoordinatePlacementValidation(null);
-    setLastPlacementMessage(
-      asset.placementType === "zone-object"
-        ? `${asset.title}: перетащите на карту, затем нарисуйте зону`
-        : `${asset.title}: перетащите карточку на карту`,
-    );
+    setLastPlacementMessage(`${asset.title}: перетащите карточку на карту`);
   };
 
   useEffect(() => {
@@ -983,11 +924,6 @@ export function DroneDefensePrototype() {
                             </span>
                             {layer.isLocked ? <span className="rounded bg-slate-900 px-1.5 py-0.5 text-white">locked</span> : null}
                             {layer.isVisible === false ? <span className="rounded bg-slate-200 px-1.5 py-0.5 text-slate-600">hidden</span> : null}
-                            {summary && summary.conflictCount > 0 ? (
-                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">
-                                {summary.conflictCount} conflict
-                              </span>
-                            ) : null}
                             {isSelected && isLayerEditMode ? (
                               <span className="ml-auto flex items-center gap-1">
                                 <button
@@ -1020,11 +956,6 @@ export function DroneDefensePrototype() {
                     })}
                   </div>
 
-                  {selectedLayerSummary && selectedLayerSummary.conflictCount > 0 ? (
-                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                      {selectedLayerSummary.conflictCount} объект(ов) вне новых границ эшелона. Они сохранены, но помечены конфликтом.
-                    </div>
-                  ) : null}
                     </>
                   )}
                 </div>
@@ -1066,7 +997,6 @@ export function DroneDefensePrototype() {
             insertOptions={insertOptions}
             validationMessage={wizardValidation?.message}
             isValid={Boolean(wizardValidation?.isValid)}
-            conflictCount={wizardConflictCount}
             onSelectInsertPosition={selectWizardInsertPosition}
             onDraftChange={(patch) =>
               setLayerWizardState((current) =>
@@ -1092,7 +1022,6 @@ type LayerGeometryWizardProps = {
   insertOptions: LayerInsertOption[];
   validationMessage?: string;
   isValid: boolean;
-  conflictCount: number;
   onSelectInsertPosition: (positionKey: string) => void;
   onDraftChange: (patch: Partial<LayerWizardDraft>) => void;
   onCancel: () => void;
@@ -1113,7 +1042,6 @@ function LayerGeometryWizard({
   insertOptions,
   validationMessage,
   isValid,
-  conflictCount,
   onSelectInsertPosition,
   onDraftChange,
   onCancel,
@@ -1272,11 +1200,6 @@ function LayerGeometryWizard({
             {validationMessage ? (
               <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
                 {validationMessage}
-              </div>
-            ) : null}
-            {state.mode === "edit" && conflictCount > 0 && isValid ? (
-              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-                После сохранения {conflictCount} объект(ов) окажутся вне кольца. Сохранение разрешено.
               </div>
             ) : null}
           </div>

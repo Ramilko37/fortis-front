@@ -13,7 +13,8 @@ assert(markerSource.includes("ASSET_CATEGORY_COLORS"), "MapObjectMarker must def
 assert(markerSource.includes("MapMarkerState"), "MapObjectMarker must support marker states");
 assert(markerSource.includes("getAssetMarkerIcon"), "MapObjectMarker must map assets to pictograms");
 assert(markerSource.includes("shouldShowLabel"), "MapObjectMarker must hide labels except selected, hovered, or close zoom");
-assert(markerSource.includes("markerBadge"), "MapObjectMarker must render quantity/conflict badges");
+assert(markerSource.includes("markerBadge"), "MapObjectMarker must render quantity badges");
+assert(!markerSource.includes("placement.isConflict ?"), "MapObjectMarker must not render conflict-specific states");
 assert(markerSource.includes("aria-label"), "MapObjectMarker must expose accessible labels");
 
 console.log("tactical-map-markers-contract.test.mjs: tactical map marker contract passed");

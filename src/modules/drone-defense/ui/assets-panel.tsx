@@ -80,8 +80,7 @@ export function AssetsPanel({
       <div className={styles.assetList}>
         {catalog.assets.map((asset) => {
           const placedCount = placedCounts[asset.id] || 0;
-          // Для демо ставим лимит 5, если не указано иное
-          const maxQuantity = 5; 
+          const maxQuantity = 0;
           
           return (
             <DefenseAssetCard

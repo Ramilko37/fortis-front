@@ -53,7 +53,7 @@ export function DefenseToolsPanel({
         const primaryGroupId = projectAsset?.mapCatalogGroupIds?.[0];
         const buildAsset = primaryGroupId ? getBuildAssetForCatalogGroup(primaryGroupId) : null;
         const installedCount = assetItem.placedCount;
-        const disabledReason = assetItem.canPlaceInActiveLayer ? undefined : assetItem.compatibilityLabel;
+        const disabledReason = undefined;
 
         const imageUrl = buildAsset?.imageUrl ?? assetItem.imageUrl;
 

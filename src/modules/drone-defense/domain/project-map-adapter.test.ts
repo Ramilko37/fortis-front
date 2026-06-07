@@ -41,18 +41,18 @@ assert(aggregatePlacements.length === 1, "aggregate draft object must produce on
 assert(aggregatePlacements[0].qty === 4, "aggregate map placement qty must reflect object quantity");
 assert(aggregatePlacements[0].readiness === 0.9, "active map placement must expose active readiness");
 
-const conflictProject = {
+const reshapedProject = {
   ...placedProject,
   layers: placedProject.layers.map((layer) =>
     layer.id === l2.id ? updateLayerGeometryFromRadii(layer, { innerRadiusM: 50000, widthM: 5000 }) : layer,
   ),
 };
-const conflictPlacements = placedObjectsToMapPlacements({
-  project: conflictProject,
+const reshapedPlacements = placedObjectsToMapPlacements({
+  project: reshapedProject,
   facilityId: "facility-alpha",
   scenarioId: "baseline",
 });
-assert(conflictPlacements[0].isConflict, "map placement must expose conflict state for objects outside layer geometry");
+assert(!reshapedPlacements[0].isConflict, "map placement must not expose conflict state for objects outside layer geometry");
 
 const aircraftProject = placeObjectInProject(project, "aircraft", l5.id, { lat: 55.15, lng: 37.1 });
 const fallbackPlacements = placedObjectsToMapPlacements({

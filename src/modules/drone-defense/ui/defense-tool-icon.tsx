@@ -62,14 +62,15 @@ export function DefenseToolIcon({
   const canAdd = !disabledReason;
   const isNonPhysical = placementType === "non-physical";
   const isZoneObject = placementType === "zone-object";
-  const isLimited = maxQuantity > 0 && installedCount >= maxQuantity;
-  const canDrag = !isNonPhysical && canAdd && !isLimited;
+  const canDrag = !isNonPhysical && canAdd;
   const title = disabledReason ?? `${name}: ${rangeLabel}. ${isNonPhysical ? "Добавить без карты" : "Перетащите на карту внутри выбранного эшелона"}`;
   const counterText = isNonPhysical
     ? `Включено: ${installedCount} ед.`
     : isZoneObject
       ? `Участков: ${installedCount}`
-      : `${isLimited ? "Лимит" : "На карте"}: ${installedCount}/${maxQuantity}`;
+      : maxQuantity > 0
+        ? `На карте: ${installedCount}/${maxQuantity}`
+        : `На карте: ${installedCount}`;
   const placementBadge = isNonPhysical ? "Без карты" : isZoneObject ? "Зона" : "Карта";
   const actionText = isNonPhysical ? "Добавить" : isZoneObject ? "Нарисовать" : "Перетащите";
 
@@ -228,9 +229,9 @@ export function DefenseToolIcon({
         <div className="flex min-w-0 items-start justify-between gap-2">
           <span className="min-w-0 truncate text-xs font-semibold leading-snug text-slate-950">{name}</span>
           <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-            isLimited ? "bg-amber-100 text-amber-700" : installedCount > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+            installedCount > 0 ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
           }`}>
-            {isNonPhysical ? `${installedCount} ед.` : isZoneObject ? `${installedCount} уч.` : `${installedCount}/${maxQuantity}`}
+            {isNonPhysical ? `${installedCount} ед.` : isZoneObject ? `${installedCount} уч.` : maxQuantity > 0 ? `${installedCount}/${maxQuantity}` : `${installedCount}`}
           </span>
         </div>
         <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] leading-tight text-slate-500">
@@ -245,16 +246,16 @@ export function DefenseToolIcon({
         </div>
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className={`min-w-0 truncate text-[11px] font-semibold ${
-            disabledReason ? "text-rose-600" : isLimited ? "text-amber-600" : "text-blue-600"
+            disabledReason ? "text-rose-600" : "text-blue-600"
           }`}>
-            {disabledReason ?? (isNonPhysical || isLimited ? counterText : actionText)}
+            {disabledReason ?? (isNonPhysical ? counterText : actionText)}
           </span>
           <div className="flex shrink-0 items-center gap-1">
             {!isNonPhysical ? (
               <button
                 type="button"
                 className="grid h-6 w-6 cursor-pointer place-items-center rounded-md bg-slate-100 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35"
-                disabled={!canAdd || isLimited}
+                disabled={!canAdd}
                 onClick={(event) => {
                   event.stopPropagation();
                   onOpenCoordinates();
@@ -269,7 +270,7 @@ export function DefenseToolIcon({
               <button
                 type="button"
                 className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-md bg-blue-600 px-2 text-[11px] font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                disabled={!canAdd || isLimited}
+                disabled={!canAdd}
                 onClick={(event) => {
                   event.stopPropagation();
                   onAdd();

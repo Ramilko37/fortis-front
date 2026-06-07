@@ -1,5 +1,4 @@
 import { defenseAssetLibrary } from "@/shared/config/defense-asset-library";
-import { getDefenseItemById } from "@/shared/config/defense-catalog";
 import { defaultDefenseProjectLayers, defaultProtectedObject } from "@/shared/config/default-defense-layers";
 import type {
   Coordinates,
@@ -195,20 +194,10 @@ function assetCompatibility(
   activeLayerCode: string | undefined,
 ): Pick<AssetCatalogItem, "compatibilityStatus" | "compatibilityLabel" | "canPlaceInActiveLayer" | "isRecommendedForActiveLayer"> {
   const isRecommendedForActiveLayer = Boolean(activeLayerCode && asset.recommendedLayerCodes?.includes(activeLayerCode));
-  const isExplicitlyIncompatible = Boolean(activeLayerCode && asset.incompatibleLayerCodes?.includes(activeLayerCode));
-  const isCompatible = !activeLayerCode || asset.placementType === "non-physical" || Boolean(asset.compatibleLayerCodes?.includes(activeLayerCode));
-  if (isExplicitlyIncompatible || !isCompatible) {
-    return {
-      compatibilityStatus: "incompatible",
-      compatibilityLabel: activeLayerCode ? `Не подходит для ${activeLayerCode}` : "Не подходит",
-      canPlaceInActiveLayer: false,
-      isRecommendedForActiveLayer,
-    };
-  }
 
   return {
     compatibilityStatus: isRecommendedForActiveLayer ? "recommended" : "compatible",
-    compatibilityLabel: isRecommendedForActiveLayer ? `Подходит для ${activeLayerCode}` : "",
+    compatibilityLabel: "",
     canPlaceInActiveLayer: true,
     isRecommendedForActiveLayer,
   };
@@ -220,7 +209,6 @@ export function getAssetCatalogItems(
   placedObjects: PlacedDefenseObject[] = project.placedObjects,
 ): AssetCatalogItem[] {
   return project.assetLibrary.map((asset) => {
-    const legacyItem = getDefenseItemById(asset.id);
     const placedCount = placedObjects
       .filter((object) => object.assetId === asset.id)
       .reduce((acc, object) => acc + object.quantity, 0);
@@ -243,7 +231,7 @@ export function getAssetCatalogItems(
       imageUrl: asset.iconUrl ?? fallbackAssetImageByCategory[asset.category],
       ...compatibility,
       placedCount,
-      maxQuantity: legacyItem?.maxQuantity ?? 1,
+      maxQuantity: 0,
       placementType: asset.placementType,
       tags: asset.tags ?? [],
     };
@@ -526,24 +514,14 @@ export function validateObjectPlacement(
   layerId: string | undefined,
   coordinates: Coordinates,
 ): PlacementValidationResult {
+  void coordinates;
   if (!layerId) return { isValid: false, level: "error", message: "Выберите эшелон" };
   if (!assetId) return { isValid: false, level: "error", message: "Выберите средство защиты" };
 
   const layer = project.layers.find((item) => item.id === layerId);
   if (!layer) return { isValid: false, level: "error", message: "Эшелон не найден" };
-  if (layer.isLocked) return { isValid: false, level: "error", message: "Эшелон заблокирован для размещения." };
   const asset = project.assetLibrary.find((item) => item.id === assetId);
   if (!asset) return { isValid: false, level: "error", message: "Средство защиты не найдено" };
-  if (asset.placementType === "non-physical") return { isValid: true, level: "success" };
-
-  const inside = isPointInsideLayerGeometry(layer, coordinates);
-  if (!inside) {
-    return {
-      isValid: false,
-      level: "error",
-      message: "Координаты размещения должны находиться в пределах выбранного эшелона.",
-    };
-  }
 
   return { isValid: true, level: "success" };
 }
@@ -570,9 +548,9 @@ export function createPlacedObject(
     customPricePerUnitMln: patch.customPricePerUnitMln,
     customCoverageRadius: patch.customCoverageRadius,
     customCoverageAngle: patch.customCoverageAngle,
-    hasGeometryConflict: patch.hasGeometryConflict,
-    hasCoverageConflict: patch.hasCoverageConflict,
-    hasTerrainConflict: patch.hasTerrainConflict,
+    hasGeometryConflict: false,
+    hasCoverageConflict: false,
+    hasTerrainConflict: false,
     notes: patch.notes,
     createdAt: patch.createdAt ?? timestamp,
     updatedAt: timestamp,
@@ -779,12 +757,10 @@ export function getPlacedObjectConflictFlags(
   project: DefenseProject,
   object: PlacedDefenseObject,
 ): PlacedObjectConflictFlags {
-  const layer = project.layers.find((item) => item.id === object.layerId);
-  const asset = project.assetLibrary.find((item) => item.id === object.assetId);
-  const hasGeometryConflict =
-    Boolean(layer && asset && asset.placementType !== "non-physical" && !isPointInsideLayerGeometry(layer, object.coordinates));
+  void project;
+  void object;
   return {
-    hasGeometryConflict,
+    hasGeometryConflict: false,
     hasCoverageConflict: false,
     hasTerrainConflict: false,
   };
@@ -874,13 +850,9 @@ export function calculateCostByLayer(project: DefenseProject): LayerCost[] {
 }
 
 export function calculateLayerConflicts(project: DefenseProject, layerId?: string): PlacedDefenseObject[] {
-  return project.placedObjects.filter((object) => {
-    if (layerId && object.layerId !== layerId) return false;
-    const layer = project.layers.find((item) => item.id === object.layerId);
-    const asset = project.assetLibrary.find((item) => item.id === object.assetId);
-    if (!layer || !asset || asset.placementType === "non-physical") return false;
-    return !isPointInsideLayerGeometry(layer, object.coordinates);
-  });
+  void project;
+  void layerId;
+  return [];
 }
 
 export function calculateLayerSummaries(project: DefenseProject): LayerSummary[] {

@@ -1,5 +1,4 @@
 import { getDefenseItemById } from "@/shared/config/defense-catalog";
-import { calculateLayerConflicts } from "@/shared/lib/defense-project";
 import type { DefenseProject } from "@/shared/types/defense-project";
 import type { DefenseLayerId, DefenseScenarioId, Placement } from "@/shared/types/drone-defense";
 
@@ -14,7 +13,6 @@ export function placedObjectsToMapPlacements({
   facilityId,
   scenarioId,
 }: PlacedObjectsToMapPlacementsArgs): Placement[] {
-  const conflictObjectIds = new Set(calculateLayerConflicts(project).map((object) => object.id));
   return project.placedObjects.flatMap((object) => {
     const projectAsset = project.assetLibrary.find((asset) => asset.id === object.assetId);
     const catalogItem = getDefenseItemById(object.assetId);
@@ -43,7 +41,7 @@ export function placedObjectsToMapPlacements({
         feasibility: 0.82,
         environmentModifier: 0.92,
         isSelected: object.id === project.selectedObjectId,
-        isConflict: conflictObjectIds.has(object.id),
+        isConflict: false,
       },
     ];
   });
