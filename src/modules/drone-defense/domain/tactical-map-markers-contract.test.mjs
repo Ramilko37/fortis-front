@@ -1,0 +1,19 @@
+import { readFileSync } from "node:fs";
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+const gisBoardSource = readFileSync("src/modules/drone-defense/ui/gis-board.tsx", "utf8");
+const markerSource = readFileSync("src/modules/drone-defense/ui/map-object-marker.tsx", "utf8");
+
+assert(!gisBoardSource.includes("new IconLayer<BuiltPlacementIcon>"), "Default map object markers must not use bitmap IconLayer previews");
+assert(gisBoardSource.includes("<MapObjectMarker"), "GisBoard must render tactical MapObjectMarker overlay markers");
+assert(markerSource.includes("ASSET_CATEGORY_COLORS"), "MapObjectMarker must define category colors");
+assert(markerSource.includes("MapMarkerState"), "MapObjectMarker must support marker states");
+assert(markerSource.includes("getAssetMarkerIcon"), "MapObjectMarker must map assets to pictograms");
+assert(markerSource.includes("shouldShowLabel"), "MapObjectMarker must hide labels except selected, hovered, or close zoom");
+assert(markerSource.includes("markerBadge"), "MapObjectMarker must render quantity/conflict badges");
+assert(markerSource.includes("aria-label"), "MapObjectMarker must expose accessible labels");
+
+console.log("tactical-map-markers-contract.test.mjs: tactical map marker contract passed");

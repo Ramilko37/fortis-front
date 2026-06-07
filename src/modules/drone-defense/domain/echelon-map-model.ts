@@ -35,6 +35,8 @@ export type EchelonMapPlacement = {
   isConflict?: boolean;
   slotId?: string;
   catalogGroupId?: string;
+  iconUrl?: string;
+  markerCategory?: string;
   qty: number;
 };
 
@@ -331,6 +333,8 @@ export function buildEchelonMapModel({
           isConflict: placement.isConflict,
           slotId: placement.slotId,
           catalogGroupId: placement.catalogGroupId,
+          iconUrl: placement.iconUrl,
+          markerCategory: placement.markerCategory,
           qty: placement.qty,
         };
       })

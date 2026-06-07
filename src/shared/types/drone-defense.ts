@@ -101,6 +101,8 @@ export type Placement = {
   layerId?: DefenseLayerId;
   catalogGroupId?: string;
   catalogGroupName?: string;
+  iconUrl?: string;
+  markerCategory?: string;
   slotId?: string;
   mapRef?: GeoPoint;
   qty: number;

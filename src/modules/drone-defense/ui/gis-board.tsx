@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import DeckGL from "@deck.gl/react";
 import { H3HexagonLayer } from "@deck.gl/geo-layers";
-import { IconLayer, PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
+import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { Layer, WebMercatorViewport } from "@deck.gl/core";
 import MaplibreMap from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -17,10 +17,8 @@ import {
   type EchelonZone,
   type LayerFocusViewState,
 } from "@/modules/drone-defense/domain/echelon-map-model";
-import {
-  getBuildAssetForCatalogGroup,
-  type BuildAssetIcon,
-} from "@/modules/drone-defense/domain/echelon-build-assets";
+import type { BuildAssetIcon } from "@/modules/drone-defense/domain/echelon-build-assets";
+import { MapObjectMarker } from "@/modules/drone-defense/ui/map-object-marker";
 import { withBasePath } from "@/shared/lib/base-path";
 import type {
   Configuration,
@@ -122,11 +120,6 @@ type SlotBuildIcon = {
   placement: EchelonMapPlacement | null;
 };
 
-type BuiltPlacementIcon = {
-  placement: EchelonMapPlacement;
-  asset: BuildAssetIcon;
-};
-
 type MapToolMarker = SlotBuildIcon & {
   x: number;
   y: number;
@@ -158,6 +151,8 @@ export function GisBoard({
   onPointerDropAsset,
 }: GisBoardProps) {
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
+  const [hoveredPlacementId, setHoveredPlacementId] = useState<string | null>(null);
+  const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
   const [viewState, setViewState] = useState<LayerFocusViewState>(fallbackViewState);
   const boardRef = useRef<HTMLElement | null>(null);
   const viewStateRef = useRef<LayerFocusViewState>(fallbackViewState);
@@ -275,18 +270,35 @@ export function GisBoard({
     };
   }, [onPointerDropAsset, pointerDraggedAssetId]);
 
+  useEffect(() => {
+    const boardElement = boardRef.current;
+    if (!boardElement) return;
+
+    const updateBoardSize = () => {
+      const rect = boardElement.getBoundingClientRect();
+      setBoardSize({ width: rect.width, height: rect.height });
+    };
+
+    updateBoardSize();
+    const resizeObserver = new ResizeObserver(updateBoardSize);
+    resizeObserver.observe(boardElement);
+    return () => resizeObserver.disconnect();
+  }, []);
+
   const zoomReadout = viewState.zoom;
-  const iconPlacements = useMemo(
-    () =>
-      echelonModel.placements
-        .filter((placement) => placement.layerId !== selectedLayerId)
-        .map((placement) => ({
-          placement,
-          asset: placement.catalogGroupId ? getBuildAssetForCatalogGroup(placement.catalogGroupId) : null,
-        }))
-        .filter((item): item is BuiltPlacementIcon => Boolean(item.asset)),
-    [echelonModel.placements, selectedLayerId],
-  );
+  const markerOverlayPlacements = useMemo(() => {
+    if (!boardSize.width || !boardSize.height) return [];
+    const viewport = new WebMercatorViewport({
+      ...viewState,
+      width: boardSize.width,
+      height: boardSize.height,
+    });
+
+    return echelonModel.placements.map((placement) => {
+      const [x, y] = viewport.project(placement.position);
+      return { placement, x, y };
+    });
+  }, [boardSize.height, boardSize.width, echelonModel.placements, viewState]);
 
   const mapToolMarkers: MapToolMarker[] = [];
 
@@ -427,35 +439,9 @@ export function GisBoard({
           lineWidthMinPixels: 1,
           onHover: ({ object }) => setHoverLabel(object ? `H3 ${object.id}` : null),
         }),
-        new IconLayer<BuiltPlacementIcon>({
-          id: "echelon-built-asset-icons",
-          data: iconPlacements,
-          getPosition: (item) => item.placement.position,
-          getIcon: (item) => ({
-            url: withBasePath(item.asset.imageUrl),
-            width: 128,
-            height: 128,
-            anchorY: 64,
-          }),
-          getSize: (item) => (item.placement.isSelected ? 58 : item.placement.layerId === selectedLayerId ? 50 : 36),
-          sizeUnits: "pixels",
-          billboard: true,
-          pickable: true,
-          onClick: ({ object }) => {
-            if (!object) return;
-            onSelectPlacement(object.placement.sourcePlacementId);
-            const slot = object?.placement.slotId
-              ? echelonModel.slots.find((item) => item.id === object.placement.slotId)
-              : null;
-            if (slot) {
-              onSelectSlot(slot);
-            }
-          },
-          onHover: ({ object }) => setHoverLabel(object ? object.placement.label : null),
-        }),
         new ScatterplotLayer<EchelonMapPlacement>({
           id: "echelon-placement-objects",
-          data: echelonModel.placements,
+          data: echelonModel.placements.filter((item) => item.isSelected || item.isConflict),
           getPosition: (item) => item.position,
           getRadius: (item) => (item.isSelected ? 2200 : item.layerId === selectedLayerId ? 1700 : 1150),
           radiusMinPixels: 5,
@@ -544,7 +530,6 @@ export function GisBoard({
       echelonModel,
       filteredHexes,
       filteredRoutes,
-      iconPlacements,
       layerCoverage,
       onSelectFacility,
       onSelectLayer,
@@ -608,6 +593,33 @@ export function GisBoard({
       </DeckGL>
 
       <div className="pointer-events-none absolute inset-0 z-10">
+        {markerOverlayPlacements.map(({ placement, x, y }) => {
+          const layerLabel = visibleMapLayers.find((layer) => layer.id === placement.layerId)?.shortName;
+          return (
+            <MapObjectMarker
+              key={placement.id}
+              placement={placement}
+              x={x}
+              y={y}
+              zoom={viewState.zoom}
+              layerLabel={layerLabel}
+              isHovered={hoveredPlacementId === placement.id}
+              onSelect={(nextPlacement) => {
+                const slot = nextPlacement.slotId ? echelonModel.slots.find((item) => item.id === nextPlacement.slotId) : null;
+                if (slot) {
+                  onSelectSlot(slot);
+                }
+                onSelectPlacement(nextPlacement.sourcePlacementId);
+                onSelectLayer(nextPlacement.layerId);
+              }}
+              onHover={(nextPlacement) => {
+                setHoveredPlacementId(nextPlacement?.id ?? null);
+                setHoverLabel(nextPlacement ? `${nextPlacement.label}${nextPlacement.isConflict ? " · конфликт" : ""}` : null);
+              }}
+            />
+          );
+        })}
+
         {mapToolMarkers.map((marker) => {
           const isBuilt = Boolean(marker.placement);
           const isSelected = activeToolId === marker.group.id || selectedSlotId === marker.slot.id;

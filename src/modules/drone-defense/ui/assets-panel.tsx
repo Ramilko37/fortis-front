@@ -39,9 +39,11 @@ function getAssetIcon(kind: DefenseAssetKind) {
 }
 
 export function AssetsPanel({
+  onSelectAsset,
   placingKind,
   onCancelPlacement,
 }: {
+  onSelectAsset: (kind: DefenseAssetKind) => void;
   placingKind: DefenseAssetKind | null;
   onCancelPlacement: () => void;
 }) {
@@ -49,7 +51,7 @@ export function AssetsPanel({
   const upsertLocalPlacement = useDefenseStudioStore((state) => state.upsertLocalPlacement);
   const facilityId = useDefenseStudioStore((state) => state.facilityId);
   const scenarioId = useDefenseStudioStore((state) => state.scenarioId);
-  const localPlacements = useDefenseStudioStore((state) => state.localPlacementsByScenario[scenarioId] ?? [];
+  const localPlacements = useDefenseStudioStore((state) => state.localPlacementsByScenario[scenarioId] ?? []);
 
   // Группируем ассеты по kind для подсчета количества размещенных
   const placedCounts = localPlacements.reduce((acc, p) => {
@@ -98,8 +100,7 @@ export function AssetsPanel({
               compatibleWithEchelon={true} // TODO: проверять совместимость с эшелоном
               onOpenDetails={() => console.log("Open details for", asset.id)}
               onDragStart={() => {
-                // Логика начала драга может требовать создания временного объекта
-                // или просто установки состояния в стор
+                onSelectAsset(asset.kind);
               }}
               onAddClick={() => {
                 // Создаем размещение при клике на кнопку "Добавить"

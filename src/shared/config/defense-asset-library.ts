@@ -140,6 +140,12 @@ export const defenseAssetLibrary: DefenseAsset[] = defenseItems.map((item) => {
   const category = categoryForItem(item.id);
   const seedLayerCode = layerCodeFromLayerId(item.layerId);
   const isNonPhysical = item.id.includes("osint") || item.id.includes("command") || item.id.startsWith("l1-");
+  const coverageType = coverageTypeForCategory(category, isNonPhysical);
+  const placementType = isNonPhysical
+    ? "non-physical"
+    : coverageType === "line" || coverageType === "polygon"
+      ? "zone-object"
+      : "map-object";
   const range = parseRangeLabel(item.rangeLabel);
   return {
     id: item.id,
@@ -156,11 +162,11 @@ export const defenseAssetLibrary: DefenseAsset[] = defenseItems.map((item) => {
     incompatibleLayerCodes: incompatibleLayerCodesForCategory(category),
     minEffectiveDistance: range.minEffectiveDistance,
     maxEffectiveDistance: range.maxEffectiveDistance,
-    coverageType: coverageTypeForCategory(category, isNonPhysical),
+    coverageType,
     coverageRadius: isNonPhysical ? undefined : range.maxEffectiveDistance ?? (item.coverageWeight ? item.coverageWeight * 100 : undefined),
     coverageAngle: category === "jamming" || category === "spoofing" ? 90 : undefined,
     deploymentType: isNonPhysical ? "external" : "static",
-    placementType: isNonPhysical ? "non-physical" : "map-object",
+    placementType,
     score: item.score,
     priority: item.priority,
     tags: item.mapCatalogGroupIds,

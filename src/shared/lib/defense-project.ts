@@ -170,7 +170,7 @@ function assetRangeLabel(asset: DefenseAssetLibraryItem) {
   const max = formatAssetDistance(asset.maxEffectiveDistance ?? asset.coverageRadius);
   if (min && max) return `${min}-${max}`;
   if (max) return `до ${max}`;
-  if (asset.placementType === "non-physical") return "не требует размещения";
+  if (asset.placementType === "non-physical") return "Без карты";
   return "зона задаётся на карте";
 }
 
@@ -194,11 +194,23 @@ function assetCompatibility(
   asset: DefenseAssetLibraryItem,
   activeLayerCode: string | undefined,
 ): Pick<AssetCatalogItem, "compatibilityStatus" | "compatibilityLabel" | "canPlaceInActiveLayer" | "isRecommendedForActiveLayer"> {
+  const isRecommendedForActiveLayer = Boolean(activeLayerCode && asset.recommendedLayerCodes?.includes(activeLayerCode));
+  const isExplicitlyIncompatible = Boolean(activeLayerCode && asset.incompatibleLayerCodes?.includes(activeLayerCode));
+  const isCompatible = !activeLayerCode || asset.placementType === "non-physical" || Boolean(asset.compatibleLayerCodes?.includes(activeLayerCode));
+  if (isExplicitlyIncompatible || !isCompatible) {
+    return {
+      compatibilityStatus: "incompatible",
+      compatibilityLabel: activeLayerCode ? `Не подходит для ${activeLayerCode}` : "Не подходит",
+      canPlaceInActiveLayer: false,
+      isRecommendedForActiveLayer,
+    };
+  }
+
   return {
-    compatibilityStatus: "compatible",
-    compatibilityLabel: "",
+    compatibilityStatus: isRecommendedForActiveLayer ? "recommended" : "compatible",
+    compatibilityLabel: isRecommendedForActiveLayer ? `Подходит для ${activeLayerCode}` : "",
     canPlaceInActiveLayer: true,
-    isRecommendedForActiveLayer: Boolean(activeLayerCode && asset.recommendedLayerCodes?.includes(activeLayerCode)),
+    isRecommendedForActiveLayer,
   };
 }
 

@@ -30,6 +30,8 @@ export function placedObjectsToMapPlacements({
         layerId: object.layerId as DefenseLayerId,
         catalogGroupId: groupId,
         catalogGroupName: label,
+        iconUrl: projectAsset?.iconUrl,
+        markerCategory: projectAsset?.category,
         mapRef: {
           lat: object.coordinates.lat,
           lon: object.coordinates.lng,

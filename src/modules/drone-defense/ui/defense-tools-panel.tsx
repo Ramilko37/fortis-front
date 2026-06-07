@@ -5,28 +5,29 @@ import type { EchelonMapSlot } from "@/modules/drone-defense/domain/echelon-map-
 import { DefenseToolIcon } from "@/modules/drone-defense/ui/defense-tool-icon";
 import type { AssetCatalogItem } from "@/shared/lib/defense-project";
 import type { DefenseProject } from "@/shared/types/defense-project";
-import type { Placement } from "@/shared/types/drone-defense";
-import type { DragEvent, MouseEvent, PointerEvent } from "react";
+import type {
+  DragEvent as ReactDragEvent,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 
 type DefenseToolsPanelProps = {
   assets: AssetCatalogItem[];
   projectAssets: DefenseProject["assetLibrary"];
-  placements: Placement[];
   selectedToolId: string | null;
   selectedObjectAssetId?: string;
   onSelectTool: (asset: AssetCatalogItem) => void;
   onAddTool: (asset: AssetCatalogItem, slot: EchelonMapSlot | null) => void;
   onOpenCoordinates: (asset: AssetCatalogItem) => void;
-  onDragAsset: (asset: AssetCatalogItem, event: DragEvent<HTMLDivElement>) => void;
-  onPointerDragAsset: (asset: AssetCatalogItem, event: PointerEvent<HTMLDivElement>) => void;
-  onMouseDragAsset: (asset: AssetCatalogItem, event: MouseEvent<HTMLDivElement>) => void;
+  onDragAsset: (asset: AssetCatalogItem, event: ReactDragEvent<HTMLDivElement>) => void;
+  onPointerDragAsset: (asset: AssetCatalogItem, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onMouseDragAsset: (asset: AssetCatalogItem, event: ReactMouseEvent<HTMLDivElement>) => void;
   onRemoveTool: (asset: AssetCatalogItem) => void;
 };
 
 export function DefenseToolsPanel({
   assets,
   projectAssets,
-  placements,
   selectedToolId,
   selectedObjectAssetId,
   onSelectTool,
@@ -46,28 +47,29 @@ export function DefenseToolsPanel({
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-2">
+    <div className="grid gap-2">
       {assets.map((assetItem) => {
         const projectAsset = projectAssets.find((asset) => asset.id === assetItem.assetId);
         const primaryGroupId = projectAsset?.mapCatalogGroupIds?.[0];
         const buildAsset = primaryGroupId ? getBuildAssetForCatalogGroup(primaryGroupId) : null;
-        const assetPlacements = placements.filter((item) => item.id === assetItem.assetId || item.catalogGroupId === primaryGroupId);
-        const placement = assetPlacements[0] ?? null;
         const installedCount = assetItem.placedCount;
-        const disabledReason = undefined;
+        const disabledReason = assetItem.canPlaceInActiveLayer ? undefined : assetItem.compatibilityLabel;
 
         const imageUrl = buildAsset?.imageUrl ?? assetItem.imageUrl;
 
         return (
           <DefenseToolIcon
             key={assetItem.assetId}
+            assetId={assetItem.assetId}
             name={assetItem.title}
             categoryLabel={assetItem.categoryLabel}
             rangeLabel={assetItem.rangeLabel}
             priceLabel={assetItem.priceLabel}
             coverageLabel={assetItem.coverageLabel}
+            placementType={assetItem.placementType}
             imageUrl={imageUrl}
             installedCount={installedCount}
+            maxQuantity={assetItem.maxQuantity}
             disabledReason={disabledReason}
             canRemove={assetItem.assetId === selectedObjectAssetId}
             isPlaceholder={buildAsset?.isPlaceholder ?? !primaryGroupId}

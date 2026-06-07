@@ -9,7 +9,7 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { message } from "antd";
-import type { Configuration, DefenseScenarioId, Placement } from "@/shared/types/drone-defense";
+import type { Configuration, DefenseAssetKind, DefenseScenarioId, Placement } from "@/shared/types/drone-defense";
 import {
   kindLabel,
   scenarioStats,
@@ -80,7 +80,7 @@ export function FacilityDrilldown({
   const [viewMode, setViewMode] = useState<ViewMode>("scene3d");
   const [cameraPresetRequest, setCameraPresetRequest] = useState<CameraPresetRequest>({ id: "overview", nonce: 0 });
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(true);
-  const [placingKind, setPlacingKind] = useState<ObjectKind | null>(null);
+  const [placingKind, setPlacingKind] = useState<DefenseAssetKind | null>(null);
   const [placementPoint, setPlacementPoint] = useState<[number, number, number]>([0, 0, 0]);
   const localPlacementSeqRef = useRef(0);
   const [messageApi, contextHolder] = message.useMessage();
@@ -128,7 +128,7 @@ export function FacilityDrilldown({
     messageApi.success(`${kindLabel[kind]} добавлен на карту`);
   };
 
-  const startPlacing = (kind: ObjectKind) => {
+  const startPlacing = (kind: DefenseAssetKind) => {
     setDemoMode(false);
     setPlacingKind(kind);
     setSelectedId(null);

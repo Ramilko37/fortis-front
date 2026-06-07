@@ -69,11 +69,15 @@ for (const filePath of checkedFiles) {
 }
 
 const defenseToolIconSource = readFileSync("src/modules/drone-defense/ui/defense-tool-icon.tsx", "utf8");
-if (!defenseToolIconSource.includes(">Разместить<")) {
-  throw new Error("DefenseToolIcon must expose a visible Разместить action, not only an icon title");
+for (const forbiddenCopy of ["РАЗМЕЩЕНО", "Размещено:", ">Разместить<", "не требует размещения"]) {
+  if (defenseToolIconSource.includes(forbiddenCopy)) {
+    throw new Error(`DefenseToolIcon must not expose legacy compact-card copy: ${forbiddenCopy}`);
+  }
 }
-if (!defenseToolIconSource.includes(">Ввести координаты<")) {
-  throw new Error("DefenseToolIcon must expose a visible Ввести координаты action");
+for (const expectedCopy of ["На карте", "Включено", "Без карты", "Добавить", "Нарисовать", "Перетащите"]) {
+  if (!defenseToolIconSource.includes(expectedCopy)) {
+    throw new Error(`DefenseToolIcon must expose compact-card copy: ${expectedCopy}`);
+  }
 }
 
 const coordinatePlacementPanelSource = readFileSync("src/modules/drone-defense/ui/coordinate-placement-panel.tsx", "utf8");

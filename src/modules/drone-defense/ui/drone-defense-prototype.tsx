@@ -479,7 +479,12 @@ export function DroneDefensePrototype() {
     }
     if (asset.placementType === "non-physical") {
       setCoordinatePlacementAssetId(null);
-      setLastPlacementMessage(`${asset.title}: средство не требует размещения на карте`);
+      setLastPlacementMessage(`${asset.title}: добавляется без карты`);
+      return;
+    }
+    if (asset.placementType === "zone-object") {
+      setCoordinatePlacementAssetId(null);
+      setLastPlacementMessage(`${selectedLayer.code} · ${asset.title}: нарисуйте линию или зону на карте`);
       return;
     }
     setCoordinatePlacementAssetId(asset.assetId);
@@ -504,6 +509,10 @@ export function DroneDefensePrototype() {
       return;
     }
 
+    if (asset.placementType === "zone-object") {
+      setLastPlacementMessage(`${asset.title}: нарисуйте линию или зону в эшелоне ${targetLayer.code}`);
+      return;
+    }
     if (!slot && asset.placementType !== "non-physical") {
       setLastPlacementMessage(`${asset.title}: выберите точку на карте внутри эшелона ${targetLayer.code}`);
       return;
@@ -533,6 +542,10 @@ export function DroneDefensePrototype() {
       return;
     }
     selectAsset(asset.id);
+    if (asset.placementType === "zone-object") {
+      setLastPlacementMessage(`${asset.name}: нарисуйте линию или зону в эшелоне ${selectedLayer.code}`);
+      return;
+    }
     const validation = placeObject(asset.id, selectedLayer.id, { lat, lng });
     setLastPlacementMessage(
       validation.message ??
@@ -552,6 +565,11 @@ export function DroneDefensePrototype() {
     }
     setActiveToolId(asset.id);
     selectAsset(asset.id);
+    if (asset.placementType === "zone-object") {
+      setPointerDraggedAssetId(null);
+      setLastPlacementMessage(`${asset.name}: нарисуйте линию или зону в эшелоне ${selectedLayer.code}`);
+      return;
+    }
     const validation = placeObject(asset.id, selectedLayer.id, { lat, lng });
     setPointerDraggedAssetId(null);
     setLastPlacementMessage(
@@ -571,7 +589,11 @@ export function DroneDefensePrototype() {
     selectAsset(asset.assetId);
     setCoordinatePlacementAssetId(null);
     setCoordinatePlacementValidation(null);
-    setLastPlacementMessage(`${asset.title}: перетащите карточку на карту`);
+    setLastPlacementMessage(
+      asset.placementType === "zone-object"
+        ? `${asset.title}: перетащите на карту, затем нарисуйте зону`
+        : `${asset.title}: перетащите карточку на карту`,
+    );
   };
 
   const startAssetPointerDrag = (asset: AssetCatalogItem, event: ReactPointerEvent<HTMLDivElement>) => {
@@ -581,7 +603,11 @@ export function DroneDefensePrototype() {
     selectAsset(asset.assetId);
     setCoordinatePlacementAssetId(null);
     setCoordinatePlacementValidation(null);
-    setLastPlacementMessage(`${asset.title}: перетащите карточку на карту`);
+    setLastPlacementMessage(
+      asset.placementType === "zone-object"
+        ? `${asset.title}: перетащите на карту, затем нарисуйте зону`
+        : `${asset.title}: перетащите карточку на карту`,
+    );
   };
 
   const startAssetMouseDrag = (asset: AssetCatalogItem, event: ReactMouseEvent<HTMLDivElement>) => {
@@ -591,7 +617,11 @@ export function DroneDefensePrototype() {
     selectAsset(asset.assetId);
     setCoordinatePlacementAssetId(null);
     setCoordinatePlacementValidation(null);
-    setLastPlacementMessage(`${asset.title}: перетащите карточку на карту`);
+    setLastPlacementMessage(
+      asset.placementType === "zone-object"
+        ? `${asset.title}: перетащите на карту, затем нарисуйте зону`
+        : `${asset.title}: перетащите карточку на карту`,
+    );
   };
 
   useEffect(() => {
@@ -736,7 +766,6 @@ export function DroneDefensePrototype() {
               <DefenseToolsPanel
                 assets={filteredCatalogItems}
                 projectAssets={project.assetLibrary}
-                placements={mapConfiguration.placements}
                 selectedToolId={activeToolId}
                 selectedObjectAssetId={selectedPlacedObject?.assetId}
                 onSelectTool={handleSelectTool}
