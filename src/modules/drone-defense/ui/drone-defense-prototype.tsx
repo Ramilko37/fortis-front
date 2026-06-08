@@ -9,12 +9,15 @@ import { CoordinatePlacementPanel, type CoordinatePlacementInput } from "@/modul
 import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
+import { PlacedObjectsPanel } from "@/modules/drone-defense/ui/placed-objects-panel";
+import { ASSET_CATEGORY_COLORS } from "@/modules/drone-defense/ui/map-object-marker";
 import {
   type AssetCatalogItem,
   calculateLayerSummaries,
   findLayerInsertOptions,
   getAssetCatalogItems,
   getLayerRadii,
+  getPlacedObjectCoverage,
   validateLayerGeometry,
 } from "@/shared/lib/defense-project";
 import { MAX_DEFENSE_PROJECT_LAYERS, useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
@@ -150,6 +153,9 @@ export function DroneDefensePrototype() {
   const [coordinatePlacementValidation, setCoordinatePlacementValidation] = useState<CoordinatePlacementValidationState | null>(null);
   const [pointerDraggedAssetId, setPointerDraggedAssetId] = useState<string | null>(null);
   const [lastPlacementMessage, setLastPlacementMessage] = useState<string | null>(null);
+  const [hoveredPanelObjectId, setHoveredPanelObjectId] = useState<string | null>(null);
+  const [focusCoordinate, setFocusCoordinate] = useState<{ lat: number; lng: number } | null>(null);
+  const lastDropRef = useRef<{ assetId: string; lng: number; lat: number; at: number } | null>(null);
   const {
     init,
     loading,
@@ -312,6 +318,23 @@ export function DroneDefensePrototype() {
     () => project.placedObjects.find((object) => object.id === selectedObjectId) ?? null,
     [project.placedObjects, selectedObjectId],
   );
+  const selectedCoverage = useMemo(() => {
+    if (!selectedPlacedObject) return null;
+    const coverage = getPlacedObjectCoverage(project, selectedPlacedObject);
+    if (!coverage || coverage.type === "none") return null;
+    const asset = project.assetLibrary.find((item) => item.id === selectedPlacedObject.assetId);
+    const hex = ASSET_CATEGORY_COLORS[asset?.category ?? "infrastructure"] ?? "#2563eb";
+    const rgb = hex
+      .replace("#", "")
+      .match(/.{2}/g)
+      ?.map((part) => Number.parseInt(part, 16)) ?? [37, 99, 235];
+    return {
+      lat: selectedPlacedObject.coordinates.lat,
+      lng: selectedPlacedObject.coordinates.lng,
+      radiusM: coverage.radiusM,
+      color: [rgb[0], rgb[1], rgb[2], 48] as [number, number, number, number],
+    };
+  }, [project, selectedPlacedObject]);
   const coordinatePlacementAsset = useMemo(
     () => project.assetLibrary.find((asset) => asset.id === coordinatePlacementAssetId) ?? null,
     [project.assetLibrary, coordinatePlacementAssetId],
@@ -424,6 +447,18 @@ export function DroneDefensePrototype() {
     setLastPlacementMessage(`${asset?.name ?? object.name ?? "Объект"} выбран на карте`);
   };
 
+  const deletePlacedObjectFromPanel = (objectId: string) => {
+    deletePlacedObject(objectId);
+    setHoveredPanelObjectId((current) => (current === objectId ? null : current));
+    setLastPlacementMessage("Объект удалён с карты");
+  };
+
+  const showPlacedObjectOnMap = (objectId: string) => {
+    const object = project.placedObjects.find((item) => item.id === objectId);
+    if (!object) return;
+    setFocusCoordinate({ lat: object.coordinates.lat, lng: object.coordinates.lng });
+  };
+
   const transferPlacedObject = (objectId: string, layerId: string) => {
     const object = project.placedObjects.find((item) => item.id === objectId);
     const targetLayer = project.layers.find((layer) => layer.id === layerId);
@@ -481,7 +516,25 @@ export function DroneDefensePrototype() {
   };
 
   const placeDraggedAssetAtCoordinate = (assetId: string, { lng, lat }: { lng: number; lat: number }) => {
-    if (!selectedLayer) return;
+    if (!selectedLayer) {
+      setLastPlacementMessage("Выберите эшелон для размещения.");
+      setPointerDraggedAssetId(null);
+      return;
+    }
+    const now = Date.now();
+    const lastDrop = lastDropRef.current;
+    if (
+      lastDrop &&
+      lastDrop.assetId === assetId &&
+      now - lastDrop.at < 600 &&
+      Math.abs(lastDrop.lng - lng) < 0.00001 &&
+      Math.abs(lastDrop.lat - lat) < 0.00001
+    ) {
+      setPointerDraggedAssetId(null);
+      return;
+    }
+    lastDropRef.current = { assetId, lng, lat, at: now };
+
     const asset = project.assetLibrary.find((item) => item.id === assetId);
     if (!asset) {
       setLastPlacementMessage("Средство защиты не найдено в библиотеке");
@@ -718,6 +771,9 @@ export function DroneDefensePrototype() {
               selectedSlotId={selectedSlotId}
               activeToolId={activeToolId}
               placementHint={placementHint}
+              hoveredObjectId={hoveredPanelObjectId}
+              focusCoordinate={focusCoordinate}
+              selectedCoverage={selectedCoverage}
               onSelectLayer={selectLayerWithDefaultSlot}
               onSelectSlot={(slot) => {
                 selectLayer(slot.layerId);
@@ -738,6 +794,18 @@ export function DroneDefensePrototype() {
               pointerDraggedAssetId={pointerDraggedAssetId}
               onPointerDropAsset={placeDraggedAssetAtCoordinate}
             />
+
+            <div className="pointer-events-none absolute right-3 top-20 z-20 w-[min(100%,18rem)] lg:right-5">
+              <PlacedObjectsPanel
+                project={project}
+                selectedObjectId={selectedObjectId}
+                hoveredObjectId={hoveredPanelObjectId}
+                onSelectObject={selectPlacedObject}
+                onDeleteObject={deletePlacedObjectFromPanel}
+                onHoverObject={setHoveredPanelObjectId}
+                onShowOnMap={showPlacedObjectOnMap}
+              />
+            </div>
 
             {coordinatePlacementAsset && selectedLayer ? (
               <CoordinatePlacementPanel

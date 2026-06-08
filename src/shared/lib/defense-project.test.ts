@@ -108,10 +108,11 @@ const okValidation = validateObjectPlacement(project, "mobile-radar", l2.id, ins
 assert(okValidation.isValid, "mobile-radar should be placeable inside L2");
 
 const tooCloseValidation = validateObjectPlacement(project, "mobile-radar", l2.id, insideTooClose);
-assert(tooCloseValidation.isValid, "placement must not reject points inside the ring inner radius");
+assert(!tooCloseValidation.isValid, "placement must reject points inside the ring inner radius");
 
 const badValidation = validateObjectPlacement(project, "mobile-radar", l2.id, outside);
-assert(badValidation.isValid, "placement must not reject points outside active layer geometry");
+assert(!badValidation.isValid, "placement must reject points outside active layer geometry");
+assert(badValidation.message?.includes("вне диапазона"), "outside placement must explain echelon range error");
 
 const customLayer = createRingLayer(project, {
   name: "Пользовательский рубеж",
@@ -238,16 +239,16 @@ const tightenedProject = {
   ),
 };
 const conflicts = calculateLayerConflicts(tightenedProject, l2.id);
-assert(conflicts.length === 0, "calculateLayerConflicts must stay empty after edited ring bounds");
+assert(conflicts.length === 2, "calculateLayerConflicts must flag objects outside tightened ring bounds");
 const conflictFlags = getPlacedObjectConflictFlags(tightenedProject, tightenedProject.placedObjects[0]);
-assert(!conflictFlags.hasGeometryConflict, "conflict flags must not derive geometry conflicts from current layer geometry");
+assert(conflictFlags.hasGeometryConflict, "conflict flags must derive geometry conflicts from current layer geometry");
 const syncedConflictProject = syncPlacedObjectConflictFlags(tightenedProject);
 assert(
-  syncedConflictProject.placedObjects.every((object) => !object.hasGeometryConflict && !object.hasCoverageConflict && !object.hasTerrainConflict),
-  "syncPlacedObjectConflictFlags must keep diagnostic conflict snapshots clear",
+  syncedConflictProject.placedObjects.every((object) => object.hasGeometryConflict && !object.hasCoverageConflict && !object.hasTerrainConflict),
+  "syncPlacedObjectConflictFlags must snapshot geometry conflicts on placed objects",
 );
-const conflictSummary = calculateLayerSummaries(tightenedProject).find((item) => item.layerId === l2.id);
-assert(conflictSummary?.conflictCount === 0, "layer summaries must keep conflictCount at zero");
+const conflictSummary = calculateLayerSummaries(syncedConflictProject).find((item) => item.layerId === l2.id);
+assert(conflictSummary?.conflictCount === 2, "layer summaries must expose geometry conflict count");
 
 const reordered = updateLayerOrder(project, l2.id, "up");
 assert(reordered.layers[0].id === l2.id && reordered.layers[0].order === 1, "updateLayerOrder must move layer up and normalize order");
@@ -293,10 +294,10 @@ assert(transferOk.project.selectedObjectId === transferProject.placedObjects[0].
 const l3 = project.layers.find((layer) => layer.code === "L3");
 assert(l3, "default project must include L3");
 const transferAcrossGeometry = transferPlacedObjectToLayerInProject(withSecondRadar, withSecondRadar.placedObjects[0].id, l3.id);
-assert(transferAcrossGeometry.validation.isValid, "transfer outside target layer geometry must be allowed");
+assert(!transferAcrossGeometry.validation.isValid, "transfer outside target layer geometry must be rejected");
 assert(
-  transferAcrossGeometry.project.placedObjects[0].layerId === l3.id,
-  "transfer outside target layer geometry must still update layerId",
+  transferAcrossGeometry.project.placedObjects[0].layerId === l2.id,
+  "rejected transfer must keep the original layerId",
 );
 
 const duplicate = duplicatePlacedObjectInProject(withRadar, withRadar.placedObjects[0].id);

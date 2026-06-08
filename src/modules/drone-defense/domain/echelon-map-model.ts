@@ -33,6 +33,8 @@ export type EchelonMapPlacement = {
   isCatalogPlacement: boolean;
   isSelected?: boolean;
   isConflict?: boolean;
+  isWarning?: boolean;
+  isInactive?: boolean;
   slotId?: string;
   catalogGroupId?: string;
   iconUrl?: string;
@@ -331,6 +333,8 @@ export function buildEchelonMapModel({
           isCatalogPlacement: Boolean(placement.catalogGroupId),
           isSelected: placement.isSelected,
           isConflict: placement.isConflict,
+          isWarning: placement.isWarning,
+          isInactive: placement.isInactive,
           slotId: placement.slotId,
           catalogGroupId: placement.catalogGroupId,
           iconUrl: placement.iconUrl,

@@ -238,6 +238,7 @@ export function CalculatorPage() {
               budgetMln={budgetMln}
               setBudgetMln={setBudgetMln}
               result={budgetResult}
+              isConfigurationEmpty={isConfigurationEmpty}
               onApplySelection={() => applyBudgetSelection(budgetResult.picks)}
             />
           ) : null}
@@ -258,6 +259,7 @@ export function CalculatorPage() {
           budgetResult={budgetResult}
           generatedAt={new Date()}
           layerSummaries={layerSummaries}
+          isConfigurationEmpty={isConfigurationEmpty}
         />
       </div>
     </div>
@@ -574,15 +576,22 @@ function BudgetTab({
   budgetMln,
   setBudgetMln,
   result,
+  isConfigurationEmpty,
   onApplySelection,
 }: {
   budgetMln: number;
   setBudgetMln: (v: number) => void;
   result: ReturnType<typeof fitToBudget>;
+  isConfigurationEmpty: boolean;
   onApplySelection: () => void;
 }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+      {isConfigurationEmpty ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 lg:col-span-2">
+          Бюджетный подбор — справочный режим. Текущая карта пуста: расчёт не применён к конфигурации, пока вы не разместите объекты или не нажмёте «Применить подбор к карте».
+        </div>
+      ) : null}
       <aside className="lg:sticky lg:top-6 lg:self-start">
         <div className="rounded-2xl border border-slate-200 bg-white p-5  ">
           <label className="font-mono text-[11px] uppercase tracking-wider text-slate-500">Бюджет, млн руб</label>

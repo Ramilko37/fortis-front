@@ -41,7 +41,9 @@ export function placedObjectsToMapPlacements({
         feasibility: 0.82,
         environmentModifier: 0.92,
         isSelected: object.id === project.selectedObjectId,
-        isConflict: false,
+        isConflict: Boolean(object.hasGeometryConflict || object.hasCoverageConflict),
+        isWarning: Boolean(object.hasTerrainConflict),
+        isInactive: object.status === "inactive",
       },
     ];
   });

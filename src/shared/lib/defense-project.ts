@@ -514,7 +514,6 @@ export function validateObjectPlacement(
   layerId: string | undefined,
   coordinates: Coordinates,
 ): PlacementValidationResult {
-  void coordinates;
   if (!layerId) return { isValid: false, level: "error", message: "Выберите эшелон" };
   if (!assetId) return { isValid: false, level: "error", message: "Выберите средство защиты" };
 
@@ -522,6 +521,14 @@ export function validateObjectPlacement(
   if (!layer) return { isValid: false, level: "error", message: "Эшелон не найден" };
   const asset = project.assetLibrary.find((item) => item.id === assetId);
   if (!asset) return { isValid: false, level: "error", message: "Средство защиты не найдено" };
+
+  if (!isPointInsideLayerGeometry(layer, coordinates)) {
+    return {
+      isValid: false,
+      level: "error",
+      message: `Точка находится вне диапазона эшелона ${layer.code}.`,
+    };
+  }
 
   return { isValid: true, level: "success" };
 }
@@ -757,12 +764,27 @@ export function getPlacedObjectConflictFlags(
   project: DefenseProject,
   object: PlacedDefenseObject,
 ): PlacedObjectConflictFlags {
-  void project;
-  void object;
+  const layer = project.layers.find((item) => item.id === object.layerId);
+  const hasGeometryConflict = layer ? !isPointInsideLayerGeometry(layer, object.coordinates) : true;
   return {
-    hasGeometryConflict: false,
+    hasGeometryConflict,
     hasCoverageConflict: false,
     hasTerrainConflict: false,
+  };
+}
+
+export function getPlacedObjectCoverage(
+  project: DefenseProject,
+  object: PlacedDefenseObject,
+): { type: DefenseAssetLibraryItem["coverageType"]; radiusM: number; angleDeg?: number } | null {
+  const asset = project.assetLibrary.find((item) => item.id === object.assetId);
+  if (!asset || asset.coverageType === "none") return null;
+  const radiusM = object.customCoverageRadius ?? asset.coverageRadius;
+  if (!radiusM || radiusM <= 0) return null;
+  return {
+    type: asset.coverageType,
+    radiusM,
+    angleDeg: object.customCoverageAngle ?? asset.coverageAngle,
   };
 }
 
@@ -850,9 +872,11 @@ export function calculateCostByLayer(project: DefenseProject): LayerCost[] {
 }
 
 export function calculateLayerConflicts(project: DefenseProject, layerId?: string): PlacedDefenseObject[] {
-  void project;
-  void layerId;
-  return [];
+  return project.placedObjects.filter((object) => {
+    if (layerId && object.layerId !== layerId) return false;
+    const flags = getPlacedObjectConflictFlags(project, object);
+    return flags.hasGeometryConflict || flags.hasCoverageConflict || flags.hasTerrainConflict;
+  });
 }
 
 export function calculateLayerSummaries(project: DefenseProject): LayerSummary[] {

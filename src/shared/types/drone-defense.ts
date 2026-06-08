@@ -113,6 +113,8 @@ export type Placement = {
   environmentModifier: number;
   isSelected?: boolean;
   isConflict?: boolean;
+  isWarning?: boolean;
+  isInactive?: boolean;
   sceneRef?: {
     x: number;
     z: number;

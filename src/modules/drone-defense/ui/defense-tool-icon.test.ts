@@ -52,18 +52,10 @@ console.log("[✓] All invariants hold: size=32, radius=4, offset=16\n");
 console.log("=== placeObject integration (via domain helpers) ===\n");
 
 const project = createDefaultDefenseProject();
-const ringLayer = project.layers.find((l) => l.geometry.type === "ring");
-assert(ringLayer, "Expected a ring layer in default project");
+const ringLayer = project.layers.find((layer) => layer.code === "L2");
+assert(ringLayer, "Expected L2 ring layer in default project");
 
-const center = ringLayer.geometry.type === "ring"
-  ? ringLayer.geometry.center
-  : project.baseObject.center;
-
-// Pick a point clearly inside the ring
-const insideCoords: Coordinates = {
-  lat: center.lat,
-  lng: center.lng,
-};
+const insideCoords: Coordinates = { lat: 55.44, lng: 37.1 };
 
 // 1. Validate placement at center
 const v1 = validateObjectPlacement(project, project.assetLibrary[0].id, ringLayer.id, insideCoords);
@@ -90,19 +82,13 @@ const conflicts = calculateLayerConflicts(projectWithObject);
 assert(conflicts.length === 0, `Expected 0 conflicts, got ${conflicts.length}`);
 console.log(`[✓] No placement diagnostics: ${conflicts.length}\n`);
 
-// 4. Place outside ring — should still succeed without diagnostics
-const farCoords: Coordinates = {
-  lat: center.lat + 0.5,
-  lng: center.lng + 0.5,
-};
+// 4. Place outside ring — must be rejected
+const farCoords: Coordinates = { lat: 55.9, lng: 38.2 };
 
 const v2 = validateObjectPlacement(project, project.assetLibrary[0].id, ringLayer.id, farCoords);
-if (!v2.isValid) {
-  console.log(`[~] Far point validation rejected: ${v2.message}`);
-} else {
-  const p2 = placeObjectInProject(project, project.assetLibrary[0].id, ringLayer.id, farCoords);
-  const conflictsFar = calculateLayerConflicts(p2);
-  console.log(`[✓] Far point placed; diagnostics: ${conflictsFar.length}`);
-}
+assert(!v2.isValid, `Expected outside placement to be rejected, got: ${v2.message}`);
+const p2 = placeObjectInProject(projectWithObject, project.assetLibrary[0].id, ringLayer.id, farCoords);
+assert(p2.placedObjects.length === projectWithObject.placedObjects.length, "Outside placement must not create a new object");
+console.log(`[✓] Far point rejected: ${v2.message}`);
 
 console.log("\n=== all tests passed ===");

@@ -318,7 +318,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     },
     saveProjectToLocalStorage: () => persist(get().project),
     restoreProjectFromLocalStorage: () => {
-      const project = readProject() ?? readLegacyConfigurationProject() ?? createDefaultDefenseProject();
+      const rawProject = readProject() ?? readLegacyConfigurationProject() ?? createDefaultDefenseProject();
+      const project = syncPlacedObjectConflictFlags(rawProject);
       set({ project, hydrated: true, ...syncSelection(project) });
     },
     exportProjectJson: () => exportDefenseProjectJson(get().project),

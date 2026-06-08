@@ -31,6 +31,13 @@ import type {
   ThreatRoute,
 } from "@/shared/types/drone-defense";
 
+type SelectedCoverageSpec = {
+  lat: number;
+  lng: number;
+  radiusM: number;
+  color: [number, number, number, number];
+};
+
 type GisBoardProps = {
   className?: string;
   facilities: Facility[];
@@ -47,6 +54,9 @@ type GisBoardProps = {
   selectedSlotId: string | null;
   activeToolId: string | null;
   placementHint: string;
+  hoveredObjectId?: string | null;
+  focusCoordinate?: { lat: number; lng: number } | null;
+  selectedCoverage?: SelectedCoverageSpec | null;
   onSelectLayer: (layerId: string) => void;
   onSelectSlot: (slot: EchelonMapSlot) => void;
   onSelectPlacement: (placementId: string) => void;
@@ -141,6 +151,9 @@ export function GisBoard({
   selectedSlotId,
   activeToolId,
   placementHint,
+  hoveredObjectId,
+  focusCoordinate,
+  selectedCoverage,
   onSelectLayer,
   onSelectSlot,
   onSelectPlacement,
@@ -152,6 +165,10 @@ export function GisBoard({
 }: GisBoardProps) {
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [hoveredPlacementId, setHoveredPlacementId] = useState<string | null>(null);
+  const [showObjectsLayer, setShowObjectsLayer] = useState(true);
+  const [showCoverageLayer, setShowCoverageLayer] = useState(true);
+  const [showConflictsLayer, setShowConflictsLayer] = useState(false);
+  const [showTerrainLayer, setShowTerrainLayer] = useState(false);
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
   const [viewState, setViewState] = useState<LayerFocusViewState>(fallbackViewState);
   const boardRef = useRef<HTMLElement | null>(null);
@@ -239,6 +256,28 @@ export function GisBoard({
   }, [focusedViewState]);
 
   useEffect(() => {
+    if (!focusCoordinate) return;
+    const nextFocus: LayerFocusViewState = {
+      longitude: focusCoordinate.lng,
+      latitude: focusCoordinate.lat,
+      zoom: Math.max(viewStateRef.current.zoom, 11.5),
+      pitch: viewStateRef.current.pitch ?? 28,
+      bearing: viewStateRef.current.bearing ?? 0,
+    };
+    const from = normalizeViewState(viewStateRef.current);
+    const to = normalizeViewState(nextFocus);
+    const startedAt = performance.now();
+    const animate = (now: number) => {
+      const progress = Math.min((now - startedAt) / 900, 1);
+      const nextViewState = interpolateViewState(from, to, linearEasing(progress));
+      viewStateRef.current = nextViewState;
+      setViewState(nextViewState);
+      if (progress < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [focusCoordinate?.lat, focusCoordinate?.lng]);
+
+  useEffect(() => {
     if (!pointerDraggedAssetId || !onPointerDropAsset) return;
     const dropDraggedAsset = (event: PointerEvent | MouseEvent | DragEvent) => {
       const boardElement = boardRef.current;
@@ -301,6 +340,11 @@ export function GisBoard({
   }, [boardSize.height, boardSize.width, echelonModel.placements, viewState]);
 
   const mapToolMarkers: MapToolMarker[] = [];
+
+  const coverageLayerData = useMemo(() => {
+    if (!showCoverageLayer || !selectedCoverage) return [];
+    return [selectedCoverage];
+  }, [selectedCoverage, showCoverageLayer]);
 
   const deckLayers = useMemo(
     () =>
@@ -439,9 +483,23 @@ export function GisBoard({
           lineWidthMinPixels: 1,
           onHover: ({ object }) => setHoverLabel(object ? `H3 ${object.id}` : null),
         }),
+        new ScatterplotLayer<SelectedCoverageSpec>({
+          id: "selected-object-coverage",
+          data: coverageLayerData,
+          getPosition: (item) => [item.lng, item.lat],
+          getRadius: (item) => item.radiusM,
+          radiusUnits: "meters",
+          filled: true,
+          stroked: true,
+          getFillColor: (item) => item.color,
+          getLineColor: (item) => [item.color[0], item.color[1], item.color[2], 220] as [number, number, number, number],
+          getLineWidth: 2,
+          lineWidthUnits: "pixels",
+          pickable: false,
+        }),
         new ScatterplotLayer<EchelonMapPlacement>({
           id: "echelon-placement-objects",
-          data: echelonModel.placements.filter((item) => item.isSelected),
+          data: showObjectsLayer ? echelonModel.placements.filter((item) => item.isSelected) : [],
           getPosition: (item) => item.position,
           getRadius: (item) => (item.isSelected ? 2200 : item.layerId === selectedLayerId ? 1700 : 1150),
           radiusMinPixels: 5,
@@ -538,6 +596,8 @@ export function GisBoard({
       selectedFacility?.center.lat,
       selectedFacility?.center.lon,
       selectedLayerId,
+      showObjectsLayer,
+      coverageLayerData,
       visibleFacilities,
     ],
   );
@@ -591,8 +651,11 @@ export function GisBoard({
       </DeckGL>
 
       <div className="pointer-events-none absolute inset-0 z-10">
-        {markerOverlayPlacements.map(({ placement, x, y }) => {
+        {showObjectsLayer
+          ? markerOverlayPlacements.map(({ placement, x, y }) => {
           const layerLabel = visibleMapLayers.find((layer) => layer.id === placement.layerId)?.shortName;
+          const isHovered =
+            hoveredPlacementId === placement.id || hoveredObjectId === placement.sourcePlacementId;
           return (
             <MapObjectMarker
               key={placement.id}
@@ -601,7 +664,7 @@ export function GisBoard({
               y={y}
               zoom={viewState.zoom}
               layerLabel={layerLabel}
-              isHovered={hoveredPlacementId === placement.id}
+              isHovered={isHovered}
               onSelect={(nextPlacement) => {
                 const slot = nextPlacement.slotId ? echelonModel.slots.find((item) => item.id === nextPlacement.slotId) : null;
                 if (slot) {
@@ -616,7 +679,8 @@ export function GisBoard({
               }}
             />
           );
-        })}
+        })
+          : null}
 
         {mapToolMarkers.map((marker) => {
           const isBuilt = Boolean(marker.placement);
@@ -665,6 +729,28 @@ export function GisBoard({
             </button>
           );
         })}
+      </div>
+
+      <div className="absolute right-4 top-4 z-10 rounded-lg border border-white/60 bg-white/95 px-3 py-2 text-xs shadow-md shadow-slate-900/10 backdrop-blur">
+        <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-400">Слои карты</p>
+        <div className="space-y-1 text-slate-700">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="checkbox" checked={showObjectsLayer} onChange={(event) => setShowObjectsLayer(event.target.checked)} />
+            Объекты
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input type="checkbox" checked={showCoverageLayer} onChange={(event) => setShowCoverageLayer(event.target.checked)} />
+            Покрытие
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-slate-400">
+            <input type="checkbox" checked={showConflictsLayer} onChange={(event) => setShowConflictsLayer(event.target.checked)} disabled />
+            Конфликты
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-slate-400">
+            <input type="checkbox" checked={showTerrainLayer} onChange={(event) => setShowTerrainLayer(event.target.checked)} disabled />
+            Рельеф
+          </label>
+        </div>
       </div>
 
       <div className="absolute left-4 top-4 z-10 flex max-w-[min(42rem,calc(100%-2rem))] flex-wrap items-center gap-2">

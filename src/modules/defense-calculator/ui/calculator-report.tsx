@@ -35,6 +35,7 @@ export function CalculatorReport({
   budgetResult,
   generatedAt,
   layerSummaries,
+  isConfigurationEmpty = false,
 }: {
   myEstimate: ConfigurationEstimate;
   referenceEstimates: Array<ReturnType<typeof estimateConfiguration>>;
@@ -42,6 +43,7 @@ export function CalculatorReport({
   budgetResult: ReturnType<typeof fitToBudget>;
   generatedAt?: Date;
   layerSummaries?: LayerSummary[];
+  isConfigurationEmpty?: boolean;
 }) {
   const columns = [...referenceEstimates, myEstimate];
   const minTotal = Math.min(...columns.map((c) => c.totalMln));
@@ -83,18 +85,28 @@ export function CalculatorReport({
               <td className="num total">{formatMln(myEstimate.totalMln)}</td>
               <td>Сумма по всем эшелонам</td>
             </tr>
-            <tr>
-              <td>Бюджетный режим</td>
-              <td className="num">{formatMln(budgetResult.budgetMln)}</td>
-              <td>
-                Распределено {formatMln(budgetResult.spentMln)}, остаток {formatMln(budgetResult.remainingMln)}
-              </td>
-            </tr>
-            <tr>
-              <td>Позиции в бюджете</td>
-              <td className="num">{picksIncludedCount} / {budgetResult.picks.length}</td>
-              <td>Количество включенных средств</td>
-            </tr>
+            {isConfigurationEmpty ? (
+              <tr>
+                <td>Бюджетный подбор</td>
+                <td className="num">—</td>
+                <td>Не применён: текущая конфигурация карты пуста</td>
+              </tr>
+            ) : (
+              <>
+                <tr>
+                  <td>Бюджетный режим</td>
+                  <td className="num">{formatMln(budgetResult.budgetMln)}</td>
+                  <td>
+                    Распределено {formatMln(budgetResult.spentMln)}, остаток {formatMln(budgetResult.remainingMln)}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Позиции в бюджете</td>
+                  <td className="num">{picksIncludedCount} / {budgetResult.picks.length}</td>
+                  <td>Количество включенных средств</td>
+                </tr>
+              </>
+            )}
           </tbody>
         </table>
       </section>

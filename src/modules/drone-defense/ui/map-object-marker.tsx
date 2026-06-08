@@ -45,6 +45,16 @@ const layerCategoryFallback: Record<string, string> = {
   layer_09_hardening: "engineering-protection",
 };
 
+const markerStateClasses: Record<MapMarkerState, string> = {
+  default: "border-[var(--marker-color)]",
+  hover: "scale-[1.08] border-[var(--marker-color)] shadow-xl shadow-slate-950/40",
+  selected: "scale-[1.1] border-[var(--marker-color)] ring-2 ring-white/90 shadow-xl shadow-blue-950/35",
+  disabled: "border-slate-500 opacity-40",
+  warning: "border-amber-400 ring-2 ring-amber-300/70",
+  conflict: "border-rose-500 ring-2 ring-rose-400/70",
+  inactive: "border-slate-500 opacity-55",
+};
+
 export function getAssetCategoryColor(placement: EchelonMapPlacement) {
   const category = placement.markerCategory ?? layerCategoryFallback[placement.layerId] ?? "infrastructure";
   return ASSET_CATEGORY_COLORS[category] ?? ASSET_CATEGORY_COLORS.infrastructure;
@@ -89,6 +99,9 @@ export function getAssetMarkerIcon(placement: EchelonMapPlacement): ReactNode {
 
 export function getMarkerState(placement: EchelonMapPlacement, isHovered: boolean): MapMarkerState {
   if (placement.isSelected) return "selected";
+  if (placement.isInactive) return "inactive";
+  if (placement.isConflict) return "conflict";
+  if (placement.isWarning) return "warning";
   if (isHovered) return "hover";
   return "default";
 }
@@ -131,6 +144,7 @@ export function MapObjectMarker({
   const showLabel = shouldShowLabel({ zoom, isSelected: Boolean(placement.isSelected), isHovered });
   const markerSize = placement.isSelected ? 46 : isHovered ? 40 : 36;
   const markerBadge = placement.qty > 1 ? placement.qty : null;
+  const statusBadge = placement.isConflict ? "!" : placement.isWarning ? "!" : null;
   const markerStyle = {
     "--marker-color": categoryColor,
     left: x,
@@ -143,9 +157,7 @@ export function MapObjectMarker({
   return (
     <button
       type="button"
-      className={`pointer-events-auto absolute z-20 grid place-items-center rounded-[11px] border-2 bg-slate-950/90 text-[17px] text-white shadow-lg shadow-slate-950/30 outline-none transition duration-150 hover:scale-[1.08] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
-        placement.isSelected ? "ring-2 ring-white/90" : ""
-      } border-[var(--marker-color)]`}
+      className={`pointer-events-auto absolute z-20 grid cursor-pointer place-items-center rounded-[11px] border-2 bg-slate-950/90 text-[17px] text-white shadow-lg shadow-slate-950/30 outline-none transition duration-150 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${markerStateClasses[state]}`}
       style={markerStyle}
       aria-label={`${placement.label}, ${layerLabel ?? placement.layerId}, ${placement.qty} ед.`}
       title={`${placement.label}${layerLabel ? ` · ${layerLabel}` : ""}`}
@@ -169,6 +181,16 @@ export function MapObjectMarker({
       {markerBadge ? (
         <span className="markerBadge absolute -right-1.5 -top-1.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-slate-950 px-1 text-[10px] font-black leading-none text-white ring-1 ring-white/80">
           {markerBadge}
+        </span>
+      ) : null}
+      {statusBadge ? (
+        <span
+          className={`absolute -left-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] font-black leading-none text-white ring-1 ring-white/80 ${
+            placement.isConflict ? "bg-rose-500" : "bg-amber-400 text-slate-950"
+          }`}
+          aria-hidden="true"
+        >
+          {statusBadge}
         </span>
       ) : null}
       {showLabel ? (

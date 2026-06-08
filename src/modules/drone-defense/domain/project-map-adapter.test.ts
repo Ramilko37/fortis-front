@@ -1,6 +1,12 @@
 // Run: npx tsx src/modules/drone-defense/domain/project-map-adapter.test.ts
 
-import { applyAssetQuantityDraftsToProject, createDefaultDefenseProject, placeObjectInProject, updateLayerGeometryFromRadii } from "@/shared/lib/defense-project";
+import {
+  applyAssetQuantityDraftsToProject,
+  createDefaultDefenseProject,
+  placeObjectInProject,
+  syncPlacedObjectConflictFlags,
+  updateLayerGeometryFromRadii,
+} from "@/shared/lib/defense-project";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -41,18 +47,18 @@ assert(aggregatePlacements.length === 1, "aggregate draft object must produce on
 assert(aggregatePlacements[0].qty === 4, "aggregate map placement qty must reflect object quantity");
 assert(aggregatePlacements[0].readiness === 0.9, "active map placement must expose active readiness");
 
-const reshapedProject = {
+const reshapedProject = syncPlacedObjectConflictFlags({
   ...placedProject,
   layers: placedProject.layers.map((layer) =>
     layer.id === l2.id ? updateLayerGeometryFromRadii(layer, { innerRadiusM: 50000, widthM: 5000 }) : layer,
   ),
-};
+});
 const reshapedPlacements = placedObjectsToMapPlacements({
   project: reshapedProject,
   facilityId: "facility-alpha",
   scenarioId: "baseline",
 });
-assert(!reshapedPlacements[0].isConflict, "map placement must not expose conflict state for objects outside layer geometry");
+assert(reshapedPlacements[0].isConflict, "map placement must expose conflict state for objects outside layer geometry");
 
 const aircraftProject = placeObjectInProject(project, "aircraft", l5.id, { lat: 55.15, lng: 37.1 });
 const fallbackPlacements = placedObjectsToMapPlacements({

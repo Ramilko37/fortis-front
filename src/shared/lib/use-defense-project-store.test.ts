@@ -78,8 +78,8 @@ assert(coordinateObject?.coordinates.altitude === 120, "store coordinate placeme
 assert(coordinateObject?.notes === "координатный ввод", "store coordinate placement must persist notes");
 const outsidePlacementCount = useDefenseProjectStore.getState().project.placedObjects.length;
 const outsidePlacement = useDefenseProjectStore.getState().placeObject("mobile-radar", l2.id, { lat: 55.2, lng: 37.1 });
-assert(outsidePlacement.isValid, "store coordinate placement must allow points outside echelon geometry");
-assert(useDefenseProjectStore.getState().project.placedObjects.length === outsidePlacementCount + 1, "outside coordinate placement must still add an object");
+assert(!outsidePlacement.isValid, "store coordinate placement must reject points outside echelon geometry");
+assert(useDefenseProjectStore.getState().project.placedObjects.length === outsidePlacementCount, "outside coordinate placement must not add an object");
 
 useDefenseProjectStore.getState().applyBudgetSelection([{ assetId: "mobile-radar", included: true }]);
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "budget selection must create visible draft objects");
@@ -181,18 +181,18 @@ const editResult = useDefenseProjectStore.getState().updateLayerGeometry(l2ForEd
 assert(editResult.ok, "updateLayerGeometry must save valid edited geometry");
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "updateLayerGeometry must not delete placed objects");
 assert(
-  useDefenseProjectStore.getState().project.placedObjects.every((object) => !object.hasGeometryConflict && !object.hasCoverageConflict && !object.hasTerrainConflict),
-  "updateLayerGeometry must not mark existing objects as conflicts",
+  useDefenseProjectStore.getState().project.placedObjects.every((object) => object.hasGeometryConflict && !object.hasCoverageConflict && !object.hasTerrainConflict),
+  "updateLayerGeometry must snapshot geometry conflicts for objects outside edited ring",
 );
 
 const l3ForTransfer = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "L3");
 assert(l3ForTransfer, "store project must include L3 before transfer check");
 const transferObject = useDefenseProjectStore.getState().project.placedObjects[0];
 const crossGeometryTransfer = useDefenseProjectStore.getState().transferObjectToLayer(transferObject.id, l3ForTransfer.id);
-assert(crossGeometryTransfer.isValid, "transferObjectToLayer must allow coordinates outside target layer");
+assert(!crossGeometryTransfer.isValid, "transferObjectToLayer must reject coordinates outside target layer");
 assert(
-  useDefenseProjectStore.getState().project.placedObjects[0].layerId === l3ForTransfer.id,
-  "cross-geometry transferObjectToLayer must update layer",
+  useDefenseProjectStore.getState().project.placedObjects[0].layerId === l2ForEdit.id,
+  "rejected transferObjectToLayer must keep the original layer",
 );
 
 const l2AfterEdit = useDefenseProjectStore.getState().project.layers.find((layer) => layer.code === "L2");
