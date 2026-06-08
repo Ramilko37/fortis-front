@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import DeckGL from "@deck.gl/react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import DeckGL, { type DeckGLRef } from "@deck.gl/react";
 import { H3HexagonLayer } from "@deck.gl/geo-layers";
 import { PathLayer, PolygonLayer, ScatterplotLayer, TextLayer } from "@deck.gl/layers";
 import { Layer, WebMercatorViewport } from "@deck.gl/core";
@@ -20,6 +20,13 @@ import {
 import type { BuildAssetIcon } from "@/modules/drone-defense/domain/echelon-build-assets";
 import { MapObjectMarker } from "@/modules/drone-defense/ui/map-object-marker";
 import { withBasePath } from "@/shared/lib/base-path";
+import {
+  buildSectorPolygon,
+  getCoverageShape,
+  getMarkerState,
+  screenPointToSlot,
+  type MarkerState,
+} from "@/modules/drone-defense/domain/placement-helpers";
 import type {
   Configuration,
   DefenseCatalogResponse,
@@ -49,15 +56,14 @@ type GisBoardProps = {
   placementHint: string;
   onSelectLayer: (layerId: string) => void;
   onSelectSlot: (slot: EchelonMapSlot) => void;
-  onSelectPlacement: (placementId: string) => void;
   onSelectTool: (groupId: string) => void;
   onPlaceActiveTool?: (coordinate: { lng: number; lat: number }) => void;
-  onDropAsset?: (assetId: string, coordinate: { lng: number; lat: number }) => void;
-  pointerDraggedAssetId?: string | null;
-  onPointerDropAsset?: (assetId: string, coordinate: { lng: number; lat: number }) => void;
+  selectedPlacementId: string | null;
+  coverageVisible: boolean;
+  locateTarget: { lon: number; lat: number; at: number } | null;
+  onSelectPlacement: (placementId: string) => void;
+  onDropAsset: (args: { groupId: string; layerId: DefenseLayerId; slotId: string; mapRef: { lon: number; lat: number } }) => void;
 };
-
-const defenseAssetDragMimeType = "application/x-fortis-defense-asset";
 
 const mapStyle: StyleSpecification = {
   version: 8,
@@ -113,6 +119,18 @@ function interpolateViewState(from: LayerFocusViewState, to: LayerFocusViewState
   };
 }
 
+const markerStateColors: Record<
+  MarkerState,
+  { fill: [number, number, number, number]; line: [number, number, number, number]; lineWidth: number }
+> = {
+  default: { fill: [37, 99, 235, 235], line: [255, 255, 255, 220], lineWidth: 1 },
+  hover: { fill: [37, 99, 235, 255], line: [191, 219, 254, 255], lineWidth: 2 },
+  selected: { fill: [15, 23, 42, 255], line: [250, 204, 21, 255], lineWidth: 3 },
+  warning: { fill: [245, 158, 11, 235], line: [180, 83, 9, 255], lineWidth: 2 },
+  conflict: { fill: [239, 68, 68, 235], line: [153, 27, 27, 255], lineWidth: 3 },
+  inactive: { fill: [148, 163, 184, 140], line: [203, 213, 225, 160], lineWidth: 1 },
+};
+
 type SlotBuildIcon = {
   slot: EchelonMapSlot;
   group: EchelonCatalogGroup;
@@ -143,21 +161,24 @@ export function GisBoard({
   placementHint,
   onSelectLayer,
   onSelectSlot,
-  onSelectPlacement,
   onSelectTool,
   onPlaceActiveTool,
+  selectedPlacementId,
+  coverageVisible,
+  locateTarget,
+  onSelectPlacement,
   onDropAsset,
-  pointerDraggedAssetId,
-  onPointerDropAsset,
 }: GisBoardProps) {
   const [hoverLabel, setHoverLabel] = useState<string | null>(null);
   const [hoveredPlacementId, setHoveredPlacementId] = useState<string | null>(null);
   const [boardSize, setBoardSize] = useState({ width: 0, height: 0 });
+  const [dropPreviewSlotId, setDropPreviewSlotId] = useState<string | null>(null);
   const [viewState, setViewState] = useState<LayerFocusViewState>(fallbackViewState);
   const boardRef = useRef<HTMLElement | null>(null);
   const viewStateRef = useRef<LayerFocusViewState>(fallbackViewState);
   const animationFrameRef = useRef<number | null>(null);
   const isAnimatingFocusRef = useRef(false);
+  const deckRef = useRef<DeckGLRef>(null);
 
   const selectedFacility = facilities.find((item) => item.id === selectedFacilityId);
   const visibleFacilities = useMemo(() => (selectedFacility ? [selectedFacility] : []), [selectedFacility]);
@@ -239,38 +260,6 @@ export function GisBoard({
   }, [focusedViewState]);
 
   useEffect(() => {
-    if (!pointerDraggedAssetId || !onPointerDropAsset) return;
-    const dropDraggedAsset = (event: PointerEvent | MouseEvent | DragEvent) => {
-      const boardElement = boardRef.current;
-      if (!boardElement) return;
-      const rect = boardElement.getBoundingClientRect();
-      if (
-        event.clientX < rect.left ||
-        event.clientX > rect.right ||
-        event.clientY < rect.top ||
-        event.clientY > rect.bottom
-      ) {
-        return;
-      }
-      const viewport = new WebMercatorViewport({
-        ...viewStateRef.current,
-        width: rect.width,
-        height: rect.height,
-      });
-      const [lng, lat] = viewport.unproject([event.clientX - rect.left, event.clientY - rect.top]);
-      onPointerDropAsset(pointerDraggedAssetId, { lng, lat });
-    };
-    window.addEventListener("pointerup", dropDraggedAsset, true);
-    window.addEventListener("mouseup", dropDraggedAsset, true);
-    window.addEventListener("dragend", dropDraggedAsset, true);
-    return () => {
-      window.removeEventListener("pointerup", dropDraggedAsset, true);
-      window.removeEventListener("mouseup", dropDraggedAsset, true);
-      window.removeEventListener("dragend", dropDraggedAsset, true);
-    };
-  }, [onPointerDropAsset, pointerDraggedAssetId]);
-
-  useEffect(() => {
     const boardElement = boardRef.current;
     if (!boardElement) return;
 
@@ -284,6 +273,17 @@ export function GisBoard({
     resizeObserver.observe(boardElement);
     return () => resizeObserver.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!locateTarget) return;
+    const next = normalizeViewState({
+      ...viewStateRef.current,
+      longitude: locateTarget.lon,
+      latitude: locateTarget.lat,
+    });
+    viewStateRef.current = next;
+    setViewState(next);
+  }, [locateTarget]);
 
   const zoomReadout = viewState.zoom;
   const markerOverlayPlacements = useMemo(() => {
@@ -301,6 +301,83 @@ export function GisBoard({
   }, [boardSize.height, boardSize.width, echelonModel.placements, viewState]);
 
   const mapToolMarkers: MapToolMarker[] = [];
+
+  const placementById = useMemo(
+    () => new Map(configuration.placements.map((placement) => [placement.id, placement])),
+    [configuration.placements],
+  );
+  // A slot is in conflict when more than one object competes for it, regardless
+  // of which catalog group they belong to. Keyed on slotId alone so two different
+  // assets dropped on the same slot both render as conflict.
+  const contestedSlotIds = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const placement of configuration.placements) {
+      if (!placement.slotId) continue;
+      counts.set(placement.slotId, (counts.get(placement.slotId) ?? 0) + 1);
+    }
+    return new Set([...counts.entries()].filter(([, count]) => count > 1).map(([slotId]) => slotId));
+  }, [configuration.placements]);
+
+  const resolveMarkerState = useCallback(
+    (item: EchelonMapPlacement): MarkerState => {
+      const placement = placementById.get(item.id.split(":")[0]);
+      if (!placement) return "default";
+      return getMarkerState({
+        placement,
+        selectedPlacementId,
+        hoveredPlacementId,
+        isDuplicateInSlot: Boolean(placement.slotId && contestedSlotIds.has(placement.slotId)),
+      });
+    },
+    [placementById, selectedPlacementId, hoveredPlacementId, contestedSlotIds],
+  );
+
+  const coverageLayers = useMemo(() => {
+    if (!coverageVisible || !selectedPlacementId || !selectedFacility) return [];
+    const placement = placementById.get(selectedPlacementId);
+    if (!placement) return [];
+    const center = placement.mapRef ?? selectedFacility.center;
+    const shape = getCoverageShape(placement);
+    if (shape.kind === "circle") {
+      return [
+        new ScatterplotLayer<{ center: { lon: number; lat: number }; radiusM: number }>({
+          id: "coverage-circle",
+          data: [{ center, radiusM: shape.radiusM }],
+          getPosition: (item) => [item.center.lon, item.center.lat],
+          getRadius: (item) => item.radiusM,
+          radiusUnits: "meters",
+          filled: true,
+          stroked: true,
+          getFillColor: [37, 99, 235, 40],
+          getLineColor: [37, 99, 235, 200],
+          getLineWidth: 2,
+          lineWidthUnits: "pixels",
+        }),
+      ];
+    }
+    if (shape.kind === "sector") {
+      const ring = buildSectorPolygon({
+        center,
+        azimuthDeg: shape.azimuthDeg,
+        halfAngleDeg: shape.halfAngleDeg,
+        radiusM: shape.radiusM,
+      });
+      return [
+        new PolygonLayer<{ ring: Array<[number, number]> }>({
+          id: "coverage-sector",
+          data: [{ ring }],
+          getPolygon: (item) => item.ring,
+          filled: true,
+          stroked: true,
+          getFillColor: [37, 99, 235, 40],
+          getLineColor: [37, 99, 235, 200],
+          getLineWidth: 2,
+          lineWidthUnits: "pixels",
+        }),
+      ];
+    }
+    return [];
+  }, [coverageVisible, selectedPlacementId, selectedFacility, placementById]);
 
   const deckLayers = useMemo(
     () =>
@@ -445,33 +522,35 @@ export function GisBoard({
           getPosition: (item) => item.position,
           getRadius: (item) => (item.isSelected ? 2200 : item.layerId === selectedLayerId ? 1700 : 1150),
           radiusMinPixels: 5,
-          radiusMaxPixels: 18,
-          getFillColor: (item) => (item.catalogGroupId ? [255, 255, 255, 0] : item.color),
-          getLineColor: (item) =>
-            item.isSelected
-              ? [37, 99, 235, 255]
-              : item.layerId === selectedLayerId
-                ? [15, 23, 42, 255]
-                : [255, 255, 255, 220],
-          lineWidthMinPixels: 1,
+          radiusMaxPixels: 16,
           stroked: true,
           pickable: true,
+          getFillColor: (item) => markerStateColors[resolveMarkerState(item)].fill,
+          getLineColor: (item) => markerStateColors[resolveMarkerState(item)].line,
+          getLineWidth: (item) => markerStateColors[resolveMarkerState(item)].lineWidth,
+          lineWidthUnits: "pixels",
+          updateTriggers: {
+            getFillColor: [selectedPlacementId, hoveredPlacementId, contestedSlotIds],
+            getLineColor: [selectedPlacementId, hoveredPlacementId, contestedSlotIds],
+            getLineWidth: [selectedPlacementId, hoveredPlacementId, contestedSlotIds],
+          },
           onClick: ({ object }) => {
             if (!object) return;
             const slot = object.slotId ? echelonModel.slots.find((item) => item.id === object.slotId) : null;
             if (slot) {
               onSelectSlot(slot);
-              return;
             }
-            onSelectPlacement(object.sourcePlacementId);
+            onSelectPlacement(object.id.split(":")[0]);
             onSelectLayer(object.layerId);
           },
-          onHover: ({ object }) =>
+          onHover: ({ object }) => {
+            setHoveredPlacementId(object ? object.id.split(":")[0] : null);
             setHoverLabel(
               object
-                ? `${object.label} · ${visibleMapLayers.find((layer) => layer.id === object.layerId)?.shortName}`
+                ? `${object.label} · ${visibleMapLayers.find((layer) => layer.id === object.layerId)?.shortName ?? ""}`
                 : null,
-            ),
+            );
+          },
         }),
         new TextLayer<EchelonMapPlacement>({
           id: "echelon-placement-labels",
@@ -487,6 +566,7 @@ export function GisBoard({
           getBackgroundColor: [255, 255, 255, 220],
           backgroundPadding: [3, 2],
         }),
+        ...coverageLayers,
         new PathLayer<ThreatRoute>({
           id: "threat-corridors",
           data: filteredRoutes,
@@ -526,8 +606,11 @@ export function GisBoard({
       ] satisfies Layer[],
     [
       echelonModel,
+      coverageLayers,
+      contestedSlotIds,
       filteredHexes,
       filteredRoutes,
+      hoveredPlacementId,
       layerCoverage,
       onSelectFacility,
       onSelectLayer,
@@ -535,37 +618,93 @@ export function GisBoard({
       onSelectSlot,
       previewLayer,
       visibleMapLayers,
+      resolveMarkerState,
       selectedFacility?.center.lat,
       selectedFacility?.center.lon,
       selectedLayerId,
+      selectedPlacementId,
       visibleFacilities,
     ],
+  );
+
+  // Convert a client-space point on the board into [lon, lat] via the deck.gl viewport.
+  // NOTE: deck.gl v9's Deck instance does NOT expose `unproject` directly (the plan assumed it did);
+  // the public path is `deck.getViewports()[0].unproject([x, y])`, which returns [lon, lat].
+  const unprojectClientPoint = useCallback(
+    (clientX: number, clientY: number, rect: DOMRect): [number, number] | null => {
+      const deck = deckRef.current?.deck;
+      if (!deck) return null;
+      const viewport = deck.getViewports()[0];
+      if (!viewport) return null;
+      const coord = viewport.unproject([clientX - rect.left, clientY - rect.top]);
+      if (!coord || coord.length < 2 || !Number.isFinite(coord[0]) || !Number.isFinite(coord[1])) return null;
+      return [coord[0], coord[1]];
+    },
+    [],
+  );
+
+  // Drop overlay handlers live on the <section> itself. The visual overlay div is
+  // `pointer-events-none` so it never blocks deck.gl pan/zoom; drag events still bubble
+  // to the section, which keeps drag-drop working without capturing normal pointer input.
+  const handleSectionDragOver = useCallback(
+    (event: DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      const rect = event.currentTarget.getBoundingClientRect();
+      const coord = unprojectClientPoint(event.clientX, event.clientY, rect);
+      if (!coord) {
+        setDropPreviewSlotId(null);
+        return;
+      }
+      const slot = screenPointToSlot({
+        lon: coord[0],
+        lat: coord[1],
+        activeLayerId: selectedLayerId as DefenseLayerId,
+        slots: echelonModel.slots,
+      });
+      setDropPreviewSlotId(slot?.id ?? null);
+    },
+    [unprojectClientPoint, selectedLayerId, echelonModel.slots],
+  );
+
+  const handleSectionDragLeave = useCallback(() => setDropPreviewSlotId(null), []);
+
+  const handleSectionDrop = useCallback(
+    (event: DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      const groupId = event.dataTransfer.getData("application/x-fortis-group");
+      setDropPreviewSlotId(null);
+      if (!groupId) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const coord = unprojectClientPoint(event.clientX, event.clientY, rect);
+      if (!coord) return;
+      const slot = screenPointToSlot({
+        lon: coord[0],
+        lat: coord[1],
+        activeLayerId: selectedLayerId as DefenseLayerId,
+        slots: echelonModel.slots,
+      });
+      if (!slot) return;
+      onDropAsset({
+        groupId,
+        layerId: selectedLayerId as DefenseLayerId,
+        slotId: slot.id,
+        mapRef: { lon: slot.position[0], lat: slot.position[1] },
+      });
+    },
+    [unprojectClientPoint, selectedLayerId, echelonModel.slots, onDropAsset],
   );
 
   return (
     <section
       ref={boardRef}
       className={`relative h-[calc(100vh-11.5rem)] min-h-[540px] overflow-hidden rounded-lg border border-slate-200 ${className}`}
-      onDragOver={(event) => {
-        if (!event.dataTransfer.types.includes(defenseAssetDragMimeType)) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-      }}
-      onDrop={(event) => {
-        const assetId = event.dataTransfer.getData(defenseAssetDragMimeType);
-        if (!assetId || !onDropAsset) return;
-        event.preventDefault();
-        const rect = event.currentTarget.getBoundingClientRect();
-        const viewport = new WebMercatorViewport({
-          ...viewStateRef.current,
-          width: rect.width,
-          height: rect.height,
-        });
-        const [lng, lat] = viewport.unproject([event.clientX - rect.left, event.clientY - rect.top]);
-        onDropAsset(assetId, { lng, lat });
-      }}
+      onDragOver={handleSectionDragOver}
+      onDragLeave={handleSectionDragLeave}
+      onDrop={handleSectionDrop}
     >
       <DeckGL
+        ref={deckRef}
         viewState={viewState}
         onViewStateChange={({ viewState: nextViewState }) => {
           if (isAnimatingFocusRef.current) return;
@@ -700,6 +839,23 @@ export function GisBoard({
           {hoverLabel}
         </div>
       ) : null}
+
+      {/*
+        Drop overlay. CHOICE: `pointer-events-none` + drag handlers live on the parent <section>
+        (not here). The alternative primary variant — an `absolute inset-0 z-20` div that owns the
+        handlers — sits above the deck canvas and would swallow pan/zoom pointer events whenever the
+        user is NOT dragging. Since drag events bubble to the section regardless, the handlers-on-section
+        variant keeps drag-drop working while guaranteeing the map controller stays usable. This div is
+        purely a visual drop indicator. Needs manual verification in Task 9 (drag from assets panel,
+        confirm snap to nearest slot + that normal map pan/zoom is unaffected).
+      */}
+      <div className="pointer-events-none absolute inset-0 z-20">
+        {dropPreviewSlotId ? (
+          <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-md border border-blue-300 bg-blue-600/90 px-3 py-1.5 text-xs font-semibold text-white shadow-lg">
+            Слот: {echelonModel.slots.find((slot) => slot.id === dropPreviewSlotId)?.label ?? dropPreviewSlotId}
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

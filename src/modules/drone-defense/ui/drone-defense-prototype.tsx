@@ -9,6 +9,7 @@ import { CoordinatePlacementPanel, type CoordinatePlacementInput } from "@/modul
 import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
+import { EchelonObjectsList } from "@/modules/drone-defense/ui/echelon-objects-list";
 import {
   type AssetCatalogItem,
   calculateLayerSummaries,
@@ -150,6 +151,7 @@ export function DroneDefensePrototype() {
   const [coordinatePlacementValidation, setCoordinatePlacementValidation] = useState<CoordinatePlacementValidationState | null>(null);
   const [pointerDraggedAssetId, setPointerDraggedAssetId] = useState<string | null>(null);
   const [lastPlacementMessage, setLastPlacementMessage] = useState<string | null>(null);
+  const [locateTarget, setLocateTarget] = useState<{ lon: number; lat: number; at: number } | null>(null);
   const {
     init,
     loading,
@@ -166,6 +168,12 @@ export function DroneDefensePrototype() {
     upsertLocalPlacement,
     moveLocalPlacement,
     removeLocalPlacement,
+    selectedPlacementId,
+    coverageVisible,
+    selectPlacement,
+    setCoverageVisible,
+    placeAssetInSlot,
+    removePlacement,
   } = useDefenseStudioStore();
   const {
     project,
@@ -365,6 +373,13 @@ export function DroneDefensePrototype() {
     setLastPlacementMessage(null);
   };
 
+  const handleLocatePlacement = (placement: { id: string; mapRef?: { lon: number; lat: number } }) => {
+    selectPlacement(placement.id);
+    if (placement.mapRef) {
+      setLocateTarget({ lon: placement.mapRef.lon, lat: placement.mapRef.lat, at: Date.now() });
+    }
+  };
+
   const saveLayerWizard = () => {
     if (!layerWizardState || !wizardValidation?.isValid) return;
     if (layerWizardState.mode === "create") {
@@ -503,6 +518,7 @@ export function DroneDefensePrototype() {
   const startAssetDrag = (asset: AssetCatalogItem, event: ReactDragEvent<HTMLDivElement>) => {
     event.dataTransfer.effectAllowed = "copy";
     event.dataTransfer.setData(defenseAssetDragMimeType, asset.assetId);
+    event.dataTransfer.setData("application/x-fortis-group", asset.assetId);
     event.dataTransfer.setData("text/plain", asset.title);
     setPointerDraggedAssetId(asset.assetId);
     setActiveToolId(asset.assetId);
@@ -683,6 +699,28 @@ export function DroneDefensePrototype() {
                 onMouseDragAsset={startAssetMouseDrag}
                 onRemoveTool={(asset) => removeCatalogAsset(asset.assetId)}
               />
+              <div className="mt-5 border-t border-slate-100 pt-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Объекты эшелона</p>
+                  <label className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <input
+                      type="checkbox"
+                      checked={coverageVisible}
+                      onChange={(event) => setCoverageVisible(event.target.checked)}
+                    />
+                    Покрытие
+                  </label>
+                </div>
+                <EchelonObjectsList
+                  layerId={selectedLayerId as DefenseLayerId}
+                  placements={mapConfiguration.placements}
+                  catalog={catalog}
+                  selectedPlacementId={selectedPlacementId}
+                  onSelect={(id) => selectPlacement(id)}
+                  onLocate={handleLocatePlacement}
+                  onRemove={(id) => void removePlacement(id)}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -723,7 +761,6 @@ export function DroneDefensePrototype() {
                 selectLayer(slot.layerId);
                 setSelectedSlotId(slot.id);
               }}
-              onSelectPlacement={selectPlacedObject}
               onSelectTool={(groupId) => {
                 const asset =
                   project.assetLibrary.find((item) => item.id === groupId) ??
@@ -734,9 +771,11 @@ export function DroneDefensePrototype() {
                 );
               }}
               onPlaceActiveTool={placeActiveToolAtCoordinate}
-              onDropAsset={placeDraggedAssetAtCoordinate}
-              pointerDraggedAssetId={pointerDraggedAssetId}
-              onPointerDropAsset={placeDraggedAssetAtCoordinate}
+              selectedPlacementId={selectedPlacementId}
+              coverageVisible={coverageVisible}
+              locateTarget={locateTarget}
+              onSelectPlacement={(id) => selectPlacement(id)}
+              onDropAsset={(args) => void placeAssetInSlot(args)}
             />
 
             {coordinatePlacementAsset && selectedLayer ? (
