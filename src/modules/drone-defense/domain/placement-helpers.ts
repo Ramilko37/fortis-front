@@ -47,3 +47,24 @@ export function describePlacement({
     costRub: unitCost * placement.qty,
   };
 }
+
+export type MarkerState = "default" | "hover" | "selected" | "warning" | "conflict" | "inactive";
+
+export function getMarkerState({
+  placement,
+  selectedPlacementId,
+  hoveredPlacementId,
+  isDuplicateInSlot,
+}: {
+  placement: Placement;
+  selectedPlacementId: string | null;
+  hoveredPlacementId: string | null;
+  isDuplicateInSlot: boolean;
+}): MarkerState {
+  if (placement.id === selectedPlacementId) return "selected";
+  if (isDuplicateInSlot) return "conflict";
+  if (placement.readiness <= READINESS_INACTIVE_THRESHOLD) return "inactive";
+  if (placement.readiness < READINESS_WARNING_THRESHOLD) return "warning";
+  if (placement.id === hoveredPlacementId) return "hover";
+  return "default";
+}
