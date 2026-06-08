@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { buildScenarioConfiguration, hexCells, threatRoutes } from "@/modules/drone-defense/infra/mock-defense-data";
+import { buildCatalogPlacement, buildScenarioConfiguration, hexCells, threatRoutes } from "@/modules/drone-defense/infra/mock-defense-data";
 import { fetchCatalog, fetchFacilities, fetchLayers } from "@/modules/drone-defense/infra/api-client";
 import {
   getCatalog as localGetCatalog,
@@ -11,6 +11,7 @@ import {
 import type {
   Configuration,
   DefenseCatalogResponse,
+  DefenseLayerId,
   DefenseLayersResponse,
   DefenseScenarioId,
   Facility,
@@ -30,6 +31,12 @@ type StudioState = {
   facilities: Facility[];
   layers: DefenseLayersResponse | null;
   localPlacementsByScenario: Partial<Record<DefenseScenarioId, Placement[]>>;
+  selectedPlacementId: string | null;
+  coverageVisible: boolean;
+  selectPlacement: (placementId: string | null) => void;
+  setCoverageVisible: (visible: boolean) => void;
+  placeAssetInSlot: (args: { groupId: string; layerId: DefenseLayerId; slotId: string; mapRef: { lon: number; lat: number } }) => Promise<boolean>;
+  removePlacement: (placementId: string) => Promise<void>;
   init: () => Promise<void>;
   setView: (view: StudioView) => void;
   setFacilityId: (facilityId: string) => Promise<void>;
@@ -80,6 +87,8 @@ export const useDefenseStudioStore = create<StudioState>((set, get) => ({
   facilities: [],
   layers: null,
   localPlacementsByScenario: {},
+  selectedPlacementId: null,
+  coverageVisible: false,
   init: async () => {
     set({ loading: true, error: null });
     try {
@@ -198,6 +207,28 @@ export const useDefenseStudioStore = create<StudioState>((set, get) => ({
     } catch (error) {
       set({ error: error instanceof Error ? error.message : "failed to remove local placement", loading: false });
     }
+  },
+  selectPlacement: (placementId) => set({ selectedPlacementId: placementId }),
+  setCoverageVisible: (visible) => set({ coverageVisible: visible }),
+  placeAssetInSlot: async ({ groupId, layerId, slotId, mapRef }) => {
+    const { facilityId, scenarioId } = get();
+    const current = get().localPlacementsByScenario[scenarioId] ?? [];
+    const duplicate = current.some((item) => item.slotId === slotId && item.catalogGroupId === groupId);
+    if (duplicate) {
+      set({ error: "Это средство уже стоит в выбранном слоте" });
+      return false;
+    }
+    const placement = buildCatalogPlacement({ facilityId, scenarioId, groupId, slotId, mapRef });
+    placement.layerId = layerId;
+    await get().upsertLocalPlacement(placement);
+    set({ selectedPlacementId: placement.id });
+    return true;
+  },
+  removePlacement: async (placementId) => {
+    if (get().selectedPlacementId === placementId) {
+      set({ selectedPlacementId: null });
+    }
+    await get().removeLocalPlacement(placementId);
   },
 }));
 
