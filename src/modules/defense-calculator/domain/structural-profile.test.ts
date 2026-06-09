@@ -17,7 +17,7 @@ function assert(condition: unknown, message: string): asserts condition {
   assert(profile.echelonCount === 0, "empty echelonCount must be 0");
   assert(profile.categoryCount === 0, "empty categoryCount must be 0");
   assert(profile.conflictCount === 0, "empty conflictCount must be 0");
-  assert(profile.coverageZoneCount === 0, "empty coverageZoneCount must be 0");
+  assert(profile.coveredObjectCount === 0, "empty coveredObjectCount must be 0");
   assert(profile.totalMln === 0, "empty totalMln must be 0");
   assert(profile.byEchelon.length === 0, "empty byEchelon must be empty");
 }
@@ -41,10 +41,14 @@ function assert(condition: unknown, message: string): asserts condition {
   assert(profile.objectCount === 2, `objectCount expected 2, got ${profile.objectCount}`);
   assert(profile.unitCount === 3, `unitCount expected 3, got ${profile.unitCount}`);
   assert(profile.echelonCount === 1, `echelonCount expected 1, got ${profile.echelonCount}`);
-  assert(profile.coverageZoneCount === 1, `coverageZoneCount expected 1 (only the covered asset), got ${profile.coverageZoneCount}`);
+  assert(profile.coveredObjectCount === 1, `coveredObjectCount expected 1 (only the covered asset), got ${profile.coveredObjectCount}`);
   assert(profile.categoryCount >= 1, "categoryCount must count distinct categories");
   assert(profile.byEchelon.length === 1, "byEchelon must have one occupied echelon");
   assert(profile.byEchelon[0].objectCount === 2, "byEchelon objectCount mismatch");
+  assert(profile.byEchelon[0].unitCount === 3, "byEchelon unitCount must sum quantities");
+  assert(profile.byEchelon[0].coveredObjectCount === 1, "byEchelon coveredObjectCount must count covered objects in that layer");
+  assert(profile.byEchelon[0].categoryCount >= 1, "byEchelon categoryCount must count distinct categories in that layer");
+  assert(profile.byEchelon[0].conflictCount === 0, "byEchelon conflictCount must be zero for non-conflicting placement");
 }
 
 console.log("structural-profile: OK");

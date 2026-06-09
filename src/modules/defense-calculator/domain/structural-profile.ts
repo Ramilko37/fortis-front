@@ -17,7 +17,7 @@ export type StructuralEchelonProfile = {
   unitCount: number;
   categoryCount: number;
   conflictCount: number;
-  coverageZoneCount: number;
+  coveredObjectCount: number;
 };
 
 export type StructuralProfile = {
@@ -26,8 +26,8 @@ export type StructuralProfile = {
   echelonCount: number;
   categoryCount: number;
   conflictCount: number;
-  coverageZoneCount: number;
-  totalMln: number; // optional layer — cost is no longer the headline metric
+  coveredObjectCount: number;
+  totalMln: number; // cost is optional as a metric — no longer the headline
   byEchelon: StructuralEchelonProfile[];
 };
 
@@ -36,35 +36,42 @@ export function buildStructuralProfile(project: DefenseProject): StructuralProfi
   const summaries = calculateLayerSummaries(project);
 
   const categories = new Set<string>();
-  let coverageZoneCount = 0;
+  let coveredObjectCount = 0;
   for (const object of project.placedObjects) {
     const asset = assetsById.get(object.assetId);
     if (!asset) continue;
     categories.add(asset.category);
-    if (asset.coverageType !== "none") coverageZoneCount += 1;
+    if (asset.coverageType !== "none") coveredObjectCount += 1;
+  }
+
+  const objectsByLayer = new Map<string, typeof project.placedObjects>();
+  for (const object of project.placedObjects) {
+    const list = objectsByLayer.get(object.layerId) ?? [];
+    list.push(object);
+    objectsByLayer.set(object.layerId, list);
   }
 
   const byEchelon: StructuralEchelonProfile[] = summaries
     .filter((summary) => summary.objectCount > 0)
     .map((summary) => {
-      const objects = project.placedObjects.filter((object) => object.layerId === summary.layerId);
+      const objects = objectsByLayer.get(summary.layerId) ?? [];
       const layerCategories = new Set<string>();
-      let layerCoverageZones = 0;
+      let layerCoveredObjects = 0;
       for (const object of objects) {
         const asset = assetsById.get(object.assetId);
         if (!asset) continue;
         layerCategories.add(asset.category);
-        if (asset.coverageType !== "none") layerCoverageZones += 1;
+        if (asset.coverageType !== "none") layerCoveredObjects += 1;
       }
       return {
         layerId: summary.layerId,
         layerCode: summary.layerCode,
         layerName: summary.layerName,
-        objectCount: summary.objectCount,
-        unitCount: summary.unitCount,
+        objectCount: objects.length,
+        unitCount: objects.reduce((acc, object) => acc + object.quantity, 0),
         categoryCount: layerCategories.size,
         conflictCount: summary.conflictCount,
-        coverageZoneCount: layerCoverageZones,
+        coveredObjectCount: layerCoveredObjects,
       };
     });
 
@@ -74,7 +81,7 @@ export function buildStructuralProfile(project: DefenseProject): StructuralProfi
     echelonCount: byEchelon.length,
     categoryCount: categories.size,
     conflictCount: summaries.reduce((acc, summary) => acc + summary.conflictCount, 0),
-    coverageZoneCount,
+    coveredObjectCount,
     totalMln: calculateProjectTotalCost(project),
     byEchelon,
   };
