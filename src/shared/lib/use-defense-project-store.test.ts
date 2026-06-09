@@ -246,8 +246,6 @@ useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
   );
 
   // Any map mutation resets the flag to false.
-  const layerId = useDefenseProjectStore.getState().project.layers[0]?.id;
-  assert(layerId, "expected at least one layer");
   useDefenseProjectStore.getState().setAssetQuantity(firstAssetId, 2);
   assert(
     useDefenseProjectStore.getState().budgetApplied === false,
@@ -260,6 +258,32 @@ useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
   assert(
     useDefenseProjectStore.getState().budgetApplied === false,
     "clearProject must reset budgetApplied to false",
+  );
+
+  // restoreProjectFromLocalStorage resets the flag.
+  useDefenseProjectStore.getState().applyBudgetSelection([{ assetId: firstAssetId, included: true }]);
+  assert(useDefenseProjectStore.getState().budgetApplied === true, "precondition: flag true before restore");
+  useDefenseProjectStore.getState().saveProjectToLocalStorage();
+  useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+  useDefenseProjectStore.getState().restoreProjectFromLocalStorage();
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === false,
+    "restoreProjectFromLocalStorage must reset budgetApplied to false",
+  );
+}
+
+// Selection-only actions must NOT reset the flag.
+useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+{
+  const st = useDefenseProjectStore.getState();
+  const aId = st.project.assetLibrary[0]?.id;
+  assert(aId, "expected an asset");
+  st.applyBudgetSelection([{ assetId: aId, included: true }]);
+  assert(useDefenseProjectStore.getState().budgetApplied === true, "precondition: flag true");
+  useDefenseProjectStore.getState().selectAsset(aId);
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === true,
+    "selectAsset must NOT reset budgetApplied",
   );
 }
 

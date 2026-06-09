@@ -250,7 +250,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
         activeLayerId: layerId,
         layers: get().project.layers.map((layer) => ({ ...layer, isActive: layer.id === layerId })),
       };
-      applyProject(project, set);
+      persist(project);
+      set({ project, ...syncSelection(project) });
     },
     setBaseObjectCenter: (center) => {
       const current = get().project.baseObject.center;
@@ -259,7 +260,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     },
     selectAsset: (assetId) => {
       const project = { ...get().project, selectedAssetId: assetId, mode: "place-object" as const };
-      applyProject(project, set);
+      persist(project);
+      set({ project, ...syncSelection(project) });
     },
     selectObject: (objectId) => {
       const object = get().project.placedObjects.find((item) => item.id === objectId);
@@ -270,7 +272,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
         activeLayerId: object.layerId,
         layers: get().project.layers.map((layer) => ({ ...layer, isActive: layer.id === object.layerId })),
       };
-      applyProject(project, set);
+      persist(project);
+      set({ project, ...syncSelection(project) });
     },
     setAssetQuantity: (assetId, quantity) => applyProject(setAssetQuantityInProject(get().project, assetId, quantity), set),
     placeObject: (assetId, layerId, coordinates, patch) => {
