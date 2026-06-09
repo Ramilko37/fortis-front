@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AppstoreOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, CloseOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
 import { buildEchelonMapModel } from "@/modules/drone-defense/domain/echelon-map-model";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
@@ -152,6 +152,8 @@ export function DroneDefensePrototype() {
   const [pointerDraggedAssetId, setPointerDraggedAssetId] = useState<string | null>(null);
   const [lastPlacementMessage, setLastPlacementMessage] = useState<string | null>(null);
   const [locateTarget, setLocateTarget] = useState<{ lon: number; lat: number; at: number } | null>(null);
+  const [echelonObjectsLayerId, setEchelonObjectsLayerId] = useState<DefenseLayerId | null>(null);
+  const [isEchelonObjectsCollapsed, setIsEchelonObjectsCollapsed] = useState(false);
   const {
     init,
     loading,
@@ -315,6 +317,10 @@ export function DroneDefensePrototype() {
   const selectedLayerObjects = useMemo(
     () => project.placedObjects.filter((object) => object.layerId === selectedLayerId),
     [project.placedObjects, selectedLayerId],
+  );
+  const activeEchelonObjectsLayer = useMemo(
+    () => project.layers.find((layer) => layer.id === echelonObjectsLayerId) ?? selectedLayer,
+    [echelonObjectsLayerId, project.layers, selectedLayer],
   );
   const selectedPlacedObject = useMemo(
     () => project.placedObjects.find((object) => object.id === selectedObjectId) ?? null,
@@ -699,28 +705,6 @@ export function DroneDefensePrototype() {
                 onMouseDragAsset={startAssetMouseDrag}
                 onRemoveTool={(asset) => removeCatalogAsset(asset.assetId)}
               />
-              <div className="mt-5 border-t border-slate-100 pt-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Объекты эшелона</p>
-                  <label className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <input
-                      type="checkbox"
-                      checked={coverageVisible}
-                      onChange={(event) => setCoverageVisible(event.target.checked)}
-                    />
-                    Покрытие
-                  </label>
-                </div>
-                <EchelonObjectsList
-                  layerId={selectedLayerId as DefenseLayerId}
-                  placements={mapConfiguration.placements}
-                  catalog={catalog}
-                  selectedPlacementId={selectedPlacementId}
-                  onSelect={(id) => selectPlacement(id)}
-                  onLocate={handleLocatePlacement}
-                  onRemove={(id) => void removePlacement(id)}
-                />
-              </div>
             </div>
           </div>
         </section>
@@ -736,6 +720,58 @@ export function DroneDefensePrototype() {
           <div className="absolute left-4 top-4 z-30 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow">
             Загрузка данных…
           </div>
+        ) : null}
+
+        {echelonObjectsLayerId && activeEchelonObjectsLayer ? (
+          <aside className="absolute right-4 top-4 z-30 w-[340px] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-500">Объекты эшелона</p>
+                <h3 className="text-sm font-semibold text-slate-950">{activeEchelonObjectsLayer.code} · {activeEchelonObjectsLayer.name}</h3>
+                <p className="text-xs text-slate-500">Открывается отдельно, чтобы не перегружать основную панель.</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                  onClick={() => setIsEchelonObjectsCollapsed((current) => !current)}
+                  title={isEchelonObjectsCollapsed ? "Развернуть карточку" : "Свернуть карточку"}
+                >
+                  {isEchelonObjectsCollapsed ? <UpOutlined /> : <DownOutlined />}
+                </button>
+                <button
+                  type="button"
+                  className="h-8 w-8 rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                  onClick={() => setEchelonObjectsLayerId(null)}
+                  title="Закрыть карточку"
+                  aria-label="Закрыть карточку"
+                >
+                  <CloseOutlined />
+                </button>
+              </div>
+            </div>
+            {!isEchelonObjectsCollapsed ? (
+              <div className="max-h-[70vh] overflow-y-auto p-4">
+                <label className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <span>Покрытие</span>
+                  <input
+                    type="checkbox"
+                    checked={coverageVisible}
+                    onChange={(event) => setCoverageVisible(event.target.checked)}
+                  />
+                </label>
+                <EchelonObjectsList
+                  layerId={echelonObjectsLayerId}
+                  placements={mapConfiguration.placements}
+                  catalog={catalog}
+                  selectedPlacementId={selectedPlacementId}
+                  onSelect={(id) => selectPlacement(id)}
+                  onLocate={handleLocatePlacement}
+                  onRemove={(id) => void removePlacement(id)}
+                />
+              </div>
+            ) : null}
+          </aside>
         ) : null}
 
         {view === "gis" ? (
@@ -908,7 +944,10 @@ export function DroneDefensePrototype() {
                           <button
                             type="button"
                             className="block w-full cursor-pointer text-left"
-                            onClick={() => selectLayerWithDefaultSlot(layer.id)}
+                            onClick={() => {
+                              selectLayerWithDefaultSlot(layer.id);
+                              setEchelonObjectsLayerId(layer.id as DefenseLayerId);
+                            }}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="truncate text-xs font-semibold text-slate-950">
@@ -934,14 +973,20 @@ export function DroneDefensePrototype() {
                                 <button
                                   type="button"
                                   className="cursor-pointer rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-200"
-                                  onClick={editSelectedLayer}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    editSelectedLayer();
+                                  }}
                                 >
                                   Настроить
                                 </button>
                                 <button
                                   type="button"
                                   className="cursor-pointer rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
-                                  onClick={deleteSelectedLayer}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    deleteSelectedLayer();
+                                  }}
                                   disabled={!canDeleteSelectedLayer}
                                   title={
                                     project.layers.length <= 1
