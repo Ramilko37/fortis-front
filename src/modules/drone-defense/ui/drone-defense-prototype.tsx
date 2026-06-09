@@ -170,12 +170,8 @@ export function DroneDefensePrototype() {
     upsertLocalPlacement,
     moveLocalPlacement,
     removeLocalPlacement,
-    selectedPlacementId,
     coverageVisible,
-    selectPlacement,
     setCoverageVisible,
-    placeAssetInSlot,
-    removePlacement,
   } = useDefenseStudioStore();
   const {
     project,
@@ -290,16 +286,12 @@ export function DroneDefensePrototype() {
       }).filter((placement) => project.layers.find((layer) => layer.id === placement.layerId)?.isVisible !== false),
     [facilityId, project, scenarioId],
   );
-  const localScenePlacements = useMemo(
-    () => studioConfiguration.placements.filter((placement) => placement.id.startsWith("local-")),
-    [studioConfiguration.placements],
-  );
   const mapConfiguration = useMemo(
     () => ({
       ...studioConfiguration,
-      placements: [...projectCatalogPlacements, ...localScenePlacements],
+      placements: projectCatalogPlacements,
     }),
-    [localScenePlacements, projectCatalogPlacements, studioConfiguration],
+    [projectCatalogPlacements, studioConfiguration],
   );
   const echelonModel = useMemo(
     () =>
@@ -326,6 +318,7 @@ export function DroneDefensePrototype() {
     () => project.placedObjects.find((object) => object.id === selectedObjectId) ?? null,
     [project.placedObjects, selectedObjectId],
   );
+  const selectedPlacementId = selectedObjectId ?? null;
   const coordinatePlacementAsset = useMemo(
     () => project.assetLibrary.find((asset) => asset.id === coordinatePlacementAssetId) ?? null,
     [project.assetLibrary, coordinatePlacementAssetId],
@@ -380,7 +373,7 @@ export function DroneDefensePrototype() {
   };
 
   const handleLocatePlacement = (placement: { id: string; mapRef?: { lon: number; lat: number } }) => {
-    selectPlacement(placement.id);
+    selectObject(placement.id);
     if (placement.mapRef) {
       setLocateTarget({ lon: placement.mapRef.lon, lat: placement.mapRef.lat, at: Date.now() });
     }
@@ -519,6 +512,40 @@ export function DroneDefensePrototype() {
           ? `${asset.name} размещено в эшелоне ${selectedLayer.code}`
           : "Не удалось разместить объект"),
     );
+  };
+
+  const placeDroppedAssetOnMap = (args: {
+    groupId: string;
+    layerId: DefenseLayerId;
+    slotId: string;
+    mapRef: { lon: number; lat: number };
+  }) => {
+    const asset =
+      project.assetLibrary.find((item) => item.id === args.groupId) ??
+      project.assetLibrary.find((item) => item.mapCatalogGroupIds?.includes(args.groupId));
+    if (!asset) {
+      setLastPlacementMessage("Средство защиты не найдено в библиотеке");
+      return;
+    }
+    const validation = placeObject(asset.id, args.layerId, { lat: args.mapRef.lat, lng: args.mapRef.lon });
+    if (!validation.isValid) {
+      setLastPlacementMessage(validation.message ?? "Не удалось разместить объект");
+      return;
+    }
+    setActiveToolId(asset.id);
+    setSelectedSlotId(args.slotId);
+    setPointerDraggedAssetId(null);
+    setCoordinatePlacementAssetId(null);
+    setCoordinatePlacementValidation(null);
+    setLastPlacementMessage(`${asset.name} размещено в эшелоне ${selectedLayer?.code ?? "—"}`);
+  };
+
+  const deleteProjectPlacement = (objectId: string) => {
+    const object = project.placedObjects.find((item) => item.id === objectId);
+    if (!object) return;
+    const messageAsset = project.assetLibrary.find((item) => item.id === object.assetId);
+    deletePlacedObject(objectId);
+    setLastPlacementMessage(`${messageAsset?.name ?? "Объект"} удалён из общей конфигурации`);
   };
 
   const startAssetDrag = (asset: AssetCatalogItem, event: ReactDragEvent<HTMLDivElement>) => {
@@ -762,12 +789,12 @@ export function DroneDefensePrototype() {
                 </label>
                 <EchelonObjectsList
                   layerId={echelonObjectsLayerId}
-                  placements={mapConfiguration.placements}
+                  placements={projectCatalogPlacements}
                   catalog={catalog}
                   selectedPlacementId={selectedPlacementId}
-                  onSelect={(id) => selectPlacement(id)}
+                  onSelect={(id) => selectPlacedObject(id)}
                   onLocate={handleLocatePlacement}
-                  onRemove={(id) => void removePlacement(id)}
+                  onRemove={(id) => deleteProjectPlacement(id)}
                 />
               </div>
             ) : null}
@@ -810,8 +837,8 @@ export function DroneDefensePrototype() {
               selectedPlacementId={selectedPlacementId}
               coverageVisible={coverageVisible}
               locateTarget={locateTarget}
-              onSelectPlacement={(id) => selectPlacement(id)}
-              onDropAsset={(args) => void placeAssetInSlot(args)}
+              onSelectPlacement={(id) => selectPlacedObject(id)}
+              onDropAsset={placeDroppedAssetOnMap}
             />
 
             {coordinatePlacementAsset && selectedLayer ? (
@@ -1032,7 +1059,7 @@ export function DroneDefensePrototype() {
               key={`${facilityId}:${scenarioId}`}
               facilityName={selectedFacility?.name ?? "Facility"}
               scenario={scenarioId}
-              configuration={mapConfiguration}
+              configuration={studioConfiguration}
               onScenarioChange={(nextScenarioId) => void setScenarioId(nextScenarioId)}
               onLocalPlacementUpsert={(placement) => void upsertLocalPlacement(placement)}
               onLocalPlacementMove={(args) => void moveLocalPlacement(args)}

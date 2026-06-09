@@ -22,6 +22,7 @@ const placements = placedObjectsToMapPlacements({
 
 assert(placements.length === 1, "placed object must produce one map placement");
 assert(placements[0].catalogGroupId === "l2-radar", "mobile-radar placement must use l2-radar map group");
+assert(placements[0].id === placedProject.placedObjects[0].id, "map placement id must reuse placed object id");
 assert(placements[0].layerId === l2.id, "map placement must keep project layer id");
 assert(placements[0].qty === 1, "map placement qty must reflect object quantity");
 assert(placements[0].readiness === 0.72, "planned map placement must expose planned readiness");
