@@ -42,6 +42,7 @@ export const MAX_DEFENSE_PROJECT_LAYERS = 20;
 type DefenseProjectState = {
   project: DefenseProject;
   hydrated: boolean;
+  budgetApplied: boolean;
   activeLayerId?: string;
   selectedAssetId?: string;
   selectedObjectId?: string;
@@ -128,7 +129,7 @@ function syncSelection(project: DefenseProject) {
 
 function applyProject(project: DefenseProject, set: (state: Partial<DefenseProjectState>) => void) {
   persist(project);
-  set({ project, ...syncSelection(project) });
+  set({ project, budgetApplied: false, ...syncSelection(project) });
 }
 
 export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => {
@@ -136,6 +137,7 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
   return {
     project: initialProject,
     hydrated: false,
+    budgetApplied: false,
     ...syncSelection(initialProject),
     createLayer: (data) => {
       if (get().project.layers.length >= MAX_DEFENSE_PROJECT_LAYERS) return;
@@ -248,7 +250,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
         activeLayerId: layerId,
         layers: get().project.layers.map((layer) => ({ ...layer, isActive: layer.id === layerId })),
       };
-      applyProject(project, set);
+      persist(project);
+      set({ project, ...syncSelection(project) });
     },
     setBaseObjectCenter: (center) => {
       const current = get().project.baseObject.center;
@@ -257,7 +260,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     },
     selectAsset: (assetId) => {
       const project = { ...get().project, selectedAssetId: assetId, mode: "place-object" as const };
-      applyProject(project, set);
+      persist(project);
+      set({ project, ...syncSelection(project) });
     },
     selectObject: (objectId) => {
       const object = get().project.placedObjects.find((item) => item.id === objectId);
@@ -268,7 +272,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
         activeLayerId: object.layerId,
         layers: get().project.layers.map((layer) => ({ ...layer, isActive: layer.id === object.layerId })),
       };
-      applyProject(project, set);
+      persist(project);
+      set({ project, ...syncSelection(project) });
     },
     setAssetQuantity: (assetId, quantity) => applyProject(setAssetQuantityInProject(get().project, assetId, quantity), set),
     placeObject: (assetId, layerId, coordinates, patch) => {
@@ -310,16 +315,17 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
         .filter((pick) => pick.included)
         .map((pick) => ({ assetId: pick.assetId, quantity: 1 }));
       applyProject({ ...applyAssetQuantityDraftsToProject(get().project, lines), source: "custom" }, set);
+      set({ budgetApplied: true });
     },
     clearProject: () => {
       const project = createDefaultDefenseProject();
       persist(project);
-      set({ project, hydrated: true, ...syncSelection(project) });
+      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
     },
     saveProjectToLocalStorage: () => persist(get().project),
     restoreProjectFromLocalStorage: () => {
       const project = readProject() ?? readLegacyConfigurationProject() ?? createDefaultDefenseProject();
-      set({ project, hydrated: true, ...syncSelection(project) });
+      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
     },
     exportProjectJson: () => exportDefenseProjectJson(get().project),
     importProjectJson: (raw) => {

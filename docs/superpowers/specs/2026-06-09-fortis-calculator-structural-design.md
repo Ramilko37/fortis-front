@@ -60,7 +60,7 @@ type StructuralProfile = {
   echelonCount: number;      // эшелонов с objectCount > 0
   categoryCount: number;     // distinct asset.category по размещённым
   conflictCount: number;     // Σ LayerSummary.conflictCount
-  coverageZoneCount: number; // объектов с coverageType ≠ "none"
+  coverageZoneCount: number; // объектов с coverageType ≠ "none" — реализовано под именем coveredObjectCount
   totalMln: number;          // estimate.totalMln (опциональный слой)
   byEchelon: Array<{         // разбивка для таблицы
     layerId: string; layerCode: string; layerName: string;

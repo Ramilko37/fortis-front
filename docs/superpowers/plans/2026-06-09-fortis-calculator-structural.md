@@ -8,6 +8,8 @@
 
 **Tech Stack:** TypeScript, React (Next.js App Router), Zustand. Tests run via `npx tsx <file>` with custom `assert()` helpers (no test framework).
 
+> **Post-implementation note:** during code review the structural field `coverageZoneCount` was renamed to `coveredObjectCount` (it counts placed objects whose asset has a coverage type, per-record — not distinct geometric zones), and the UI labels were made honest accordingly ("Позиции с покрытием" / "С покрытием"). The code blocks below still show the original `coverageZoneCount` name; read them as `coveredObjectCount`.
+
 ---
 
 ### Task 1: `budgetApplied` flag in the project store

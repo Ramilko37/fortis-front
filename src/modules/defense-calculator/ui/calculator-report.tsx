@@ -5,14 +5,13 @@
 import {
   criteria,
   defaultThresholds,
-  echelons,
 } from "@/modules/defense-calculator/infra/catalog-data";
 import { formatMln, priorityLabel } from "@/modules/defense-calculator/domain/format";
 import type {
   ConfigurationEstimate,
   PriorityColor,
 } from "@/modules/defense-calculator/domain/calculator-types";
-import type { estimateConfiguration } from "@/modules/defense-calculator/domain/costing";
+import type { StructuralProfile } from "@/modules/defense-calculator/domain/structural-profile";
 import type { fitToBudget } from "@/modules/defense-calculator/domain/budget-fit";
 import type { LayerSummary } from "@/shared/types/defense-project";
 
@@ -30,21 +29,21 @@ type ScoredAsset = {
 
 export function CalculatorReport({
   myEstimate,
-  referenceEstimates,
+  structuralProfile,
   scoredAssets,
   budgetResult,
+  budgetApplied,
   generatedAt,
   layerSummaries,
 }: {
   myEstimate: ConfigurationEstimate;
-  referenceEstimates: Array<ReturnType<typeof estimateConfiguration>>;
+  structuralProfile: StructuralProfile;
   scoredAssets: ScoredAsset[];
   budgetResult: ReturnType<typeof fitToBudget>;
+  budgetApplied: boolean;
   generatedAt?: Date;
   layerSummaries?: LayerSummary[];
 }) {
-  const columns = [...referenceEstimates, myEstimate];
-  const minTotal = Math.min(...columns.map((c) => c.totalMln));
   const weightsSummary = criteria.map((c) => `${c.name} ${c.weight}`).join(" · ");
   const picksIncludedCount = budgetResult.picks.filter((pick) => pick.included).length;
   const generatedAtLabel = (generatedAt ?? new Date()).toLocaleString("ru-RU");
@@ -83,18 +82,22 @@ export function CalculatorReport({
               <td className="num total">{formatMln(myEstimate.totalMln)}</td>
               <td>Сумма по всем эшелонам</td>
             </tr>
-            <tr>
-              <td>Бюджетный режим</td>
-              <td className="num">{formatMln(budgetResult.budgetMln)}</td>
-              <td>
-                Распределено {formatMln(budgetResult.spentMln)}, остаток {formatMln(budgetResult.remainingMln)}
-              </td>
-            </tr>
-            <tr>
-              <td>Позиции в бюджете</td>
-              <td className="num">{picksIncludedCount} / {budgetResult.picks.length}</td>
-              <td>Количество включенных средств</td>
-            </tr>
+            {budgetApplied ? (
+              <>
+                <tr>
+                  <td>Бюджетный режим</td>
+                  <td className="num">{formatMln(budgetResult.budgetMln)}</td>
+                  <td>
+                    Распределено {formatMln(budgetResult.spentMln)}, остаток {formatMln(budgetResult.remainingMln)}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Позиции в бюджете</td>
+                  <td className="num">{picksIncludedCount} / {budgetResult.picks.length}</td>
+                  <td>Количество включенных средств</td>
+                </tr>
+              </>
+            ) : null}
           </tbody>
         </table>
       </section>
@@ -179,48 +182,23 @@ export function CalculatorReport({
       ) : null}
 
       <section className="report-section">
-        <h2>2. Сравнение конфигураций</h2>
-        <table className="report-table">
+        <h2>2. Структурный профиль конфигурации</h2>
+        <table className="report-table report-table-tight">
           <thead>
             <tr>
-              <th>Эшелон</th>
-              {columns.map((col) => (
-                <th key={col.configurationId} className="num">
-                  {col.configurationName}
-                </th>
-              ))}
+              <th>Показатель</th>
+              <th className="num">Значение</th>
             </tr>
           </thead>
           <tbody>
-            {echelons.map((echelon) => (
-              <tr key={echelon.id}>
-                <td>{echelon.name}</td>
-                {columns.map((col) => {
-                  const e = col.echelons.find((x) => x.echelonId === echelon.id);
-                  return (
-                    <td key={col.configurationId} className="num">
-                      {e && !e.isEmpty ? formatMln(e.echelonTotalMln) : "—"}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            <tr><td>Объекты (позиции)</td><td className="num strong">{structuralProfile.objectCount}</td></tr>
+            <tr><td>Единицы</td><td className="num">{structuralProfile.unitCount}</td></tr>
+            <tr><td>Эшелоны (занятые)</td><td className="num">{structuralProfile.echelonCount}</td></tr>
+            <tr><td>Категории средств</td><td className="num">{structuralProfile.categoryCount}</td></tr>
+            <tr><td>Конфликты</td><td className="num">{structuralProfile.conflictCount}</td></tr>
+            <tr><td>Позиции с покрытием</td><td className="num">{structuralProfile.coveredObjectCount}</td></tr>
+            <tr><td>Стоимость (опционально)</td><td className="num total">{formatMln(structuralProfile.totalMln)}</td></tr>
           </tbody>
-          <tfoot>
-            <tr>
-              <td className="num">ИТОГО</td>
-              {columns.map((col) => (
-                <td
-                  key={col.configurationId}
-                  className="num total"
-                  style={col.totalMln === minTotal ? { color: PRINT_PRIORITY_COLOR.green } : undefined}
-                >
-                  {formatMln(col.totalMln)}
-                  {col.totalMln === minTotal ? " (мин)" : ""}
-                </td>
-              ))}
-            </tr>
-          </tfoot>
         </table>
       </section>
 
@@ -264,40 +242,42 @@ export function CalculatorReport({
         <p className="report-note">Веса критериев (сумма 100): {weightsSummary}.</p>
       </section>
 
-      <section className="report-section">
-        <h2>4. Подбор под бюджет — {formatMln(budgetResult.budgetMln)}</h2>
-        <p className="report-note">
-          Распределено {formatMln(budgetResult.spentMln)} · Остаток {formatMln(budgetResult.remainingMln)}.
-          Порядок: первоочередные по убыванию балла, затем средний и последний приоритет.
-        </p>
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th className="num">#</th>
-              <th>Средство</th>
-              <th className="num">Балл</th>
-              <th className="num">Цена/ед.</th>
-              <th className="num">Σ нарастающим</th>
-              <th>Статус</th>
-            </tr>
-          </thead>
-          <tbody>
-            {budgetResult.picks.map((pick, index) => (
-              <tr key={pick.assetId} style={pick.included ? undefined : { color: "#94a3b8" }}>
-                <td className="num">{index + 1}</td>
-                <td>
-                  <span className="dot" style={{ background: PRINT_PRIORITY_COLOR[pick.priority] }} />
-                  {pick.assetName}
-                </td>
-                <td className="num">{pick.weightedScore.toFixed(0)}</td>
-                <td className="num">{pick.unitPriceMln > 0 ? formatMln(pick.unitPriceMln) : "—"}</td>
-                <td className="num">{pick.included ? formatMln(pick.cumulativeMln) : "—"}</td>
-                <td>{pick.included ? "включено" : "не вошло"}</td>
+      {budgetApplied ? (
+        <section className="report-section">
+          <h2>4. Подбор под бюджет — {formatMln(budgetResult.budgetMln)}</h2>
+          <p className="report-note">
+            Распределено {formatMln(budgetResult.spentMln)} · Остаток {formatMln(budgetResult.remainingMln)}.
+            Порядок: первоочередные по убыванию балла, затем средний и последний приоритет.
+          </p>
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th className="num">#</th>
+                <th>Средство</th>
+                <th className="num">Балл</th>
+                <th className="num">Цена/ед.</th>
+                <th className="num">Σ нарастающим</th>
+                <th>Статус</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {budgetResult.picks.map((pick, index) => (
+                <tr key={pick.assetId} style={pick.included ? undefined : { color: "#94a3b8" }}>
+                  <td className="num">{index + 1}</td>
+                  <td>
+                    <span className="dot" style={{ background: PRINT_PRIORITY_COLOR[pick.priority] }} />
+                    {pick.assetName}
+                  </td>
+                  <td className="num">{pick.weightedScore.toFixed(0)}</td>
+                  <td className="num">{pick.unitPriceMln > 0 ? formatMln(pick.unitPriceMln) : "—"}</td>
+                  <td className="num">{pick.included ? formatMln(pick.cumulativeMln) : "—"}</td>
+                  <td>{pick.included ? "включено" : "не вошло"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
 
       <p className="report-footer">
         Базовые цены — из эталонного документа, расширенный каталог карты дополнен ориентировочными CAPEX-оценками.

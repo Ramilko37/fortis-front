@@ -228,4 +228,65 @@ assert(
   "setBaseObjectCenter must keep ring layer geometry aligned with the selected facility",
 );
 
+// ── budgetApplied flag (item 7) ──────────────────────────────────────────────
+storage.clear();
+useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+
+{
+  const s = useDefenseProjectStore.getState();
+  assert(s.budgetApplied === false, "budgetApplied must default to false");
+
+  // Applying a budget selection sets the flag true.
+  const firstAssetId = s.project.assetLibrary[0]?.id;
+  assert(firstAssetId, "expected at least one asset in library");
+  s.applyBudgetSelection([{ assetId: firstAssetId, included: true }]);
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === true,
+    "applyBudgetSelection must set budgetApplied true",
+  );
+
+  // Any map mutation resets the flag to false.
+  useDefenseProjectStore.getState().setAssetQuantity(firstAssetId, 2);
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === false,
+    "a map mutation must reset budgetApplied to false",
+  );
+
+  // clearProject resets the flag.
+  useDefenseProjectStore.getState().applyBudgetSelection([{ assetId: firstAssetId, included: true }]);
+  useDefenseProjectStore.getState().clearProject();
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === false,
+    "clearProject must reset budgetApplied to false",
+  );
+
+  // restoreProjectFromLocalStorage resets the flag.
+  useDefenseProjectStore.getState().applyBudgetSelection([{ assetId: firstAssetId, included: true }]);
+  assert(useDefenseProjectStore.getState().budgetApplied === true, "precondition: flag true before restore");
+  useDefenseProjectStore.getState().saveProjectToLocalStorage();
+  useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+  useDefenseProjectStore.getState().restoreProjectFromLocalStorage();
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === false,
+    "restoreProjectFromLocalStorage must reset budgetApplied to false",
+  );
+}
+
+// Selection-only actions must NOT reset the flag.
+useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+{
+  const st = useDefenseProjectStore.getState();
+  const aId = st.project.assetLibrary[0]?.id;
+  assert(aId, "expected an asset");
+  st.applyBudgetSelection([{ assetId: aId, included: true }]);
+  assert(useDefenseProjectStore.getState().budgetApplied === true, "precondition: flag true");
+  useDefenseProjectStore.getState().selectAsset(aId);
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === true,
+    "selectAsset must NOT reset budgetApplied",
+  );
+}
+
+console.log("budgetApplied flag: OK");
+
 console.log("use-defense-project-store.test.ts: project store contracts passed");
