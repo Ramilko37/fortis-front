@@ -25,5 +25,6 @@ assert(!toolIconSource.includes("aspect-square w-full"), "Compact library card m
 assert(!toolIconSource.includes("MinusOutlined"), "Library card must not expose the large remove action");
 
 assert(toolsPanelSource.includes("placementType={assetItem.placementType}"), "DefenseToolsPanel must pass placementType into compact cards");
+assert(toolsPanelSource.includes("previewImageUrl={previewImageUrl}"), "DefenseToolsPanel must pass previewImageUrl into compact cards");
 
 console.log("compact-asset-cards-contract.test.mjs: compact draggable asset cards contract passed");

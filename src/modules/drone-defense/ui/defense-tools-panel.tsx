@@ -53,6 +53,7 @@ export function DefenseToolsPanel({
         const disabledReason = undefined;
 
         const imageUrl = buildAsset?.imageUrl ?? assetItem.imageUrl;
+        const previewImageUrl = buildAsset?.previewImageUrl ?? assetItem.imageUrl;
 
         return (
           <DefenseToolIcon
@@ -65,6 +66,7 @@ export function DefenseToolsPanel({
             coverageLabel={assetItem.coverageLabel}
             placementType={assetItem.placementType}
             imageUrl={imageUrl}
+            previewImageUrl={previewImageUrl}
             installedCount={installedCount}
             maxQuantity={assetItem.maxQuantity}
             disabledReason={disabledReason}

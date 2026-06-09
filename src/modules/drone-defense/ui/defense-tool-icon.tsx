@@ -23,6 +23,7 @@ export type DefenseToolIconProps = {
   coverageLabel: string;
   placementType: DefenseAssetLibraryItem["placementType"];
   imageUrl: string;
+  previewImageUrl: string;
   installedCount: number;
   maxQuantity: number;
   disabledReason?: string;
@@ -46,6 +47,7 @@ export function DefenseToolIcon({
   coverageLabel,
   placementType,
   imageUrl,
+  previewImageUrl,
   installedCount,
   maxQuantity,
   disabledReason,
@@ -72,7 +74,7 @@ export function DefenseToolIcon({
   const rootRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
   const infoRef = useRef<AssetInfo>({ title: "", imageUrl: "" });
-  infoRef.current = { title: `${name}\n${coverageLabel}`, imageUrl: withBasePath(imageUrl) };
+  infoRef.current = { title: `${name}\n${coverageLabel}`, imageUrl: withBasePath(previewImageUrl) };
 
   // ── helpers ──────────────────────────────────────────────────────────
 
@@ -85,8 +87,8 @@ export function DefenseToolIcon({
       "display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:center;padding:6px;" +
       "background:rgba(255,255,255,0.96);box-shadow:0 12px 28px rgba(15,23,42,0.24);" +
       "pointer-events:none;will-change:transform;font:12px system-ui,sans-serif;color:#0f172a;";
-    const img = document.createElement("img");
-    img.src = infoRef.current.imageUrl;
+        const img = document.createElement("img");
+        img.src = infoRef.current.imageUrl;
     img.style.cssText = "width:42px;height:42px;object-fit:cover;display:block;border-radius:6px;background:#f1f5f9;";
     const text = document.createElement("div");
     text.style.cssText = "min-width:0;display:grid;gap:2px;";
@@ -210,7 +212,7 @@ export function DefenseToolIcon({
 
       <span className="relative block h-12 w-12 overflow-hidden rounded-md border border-slate-100 bg-slate-100">
         <Image
-          src={withBasePath(imageUrl)}
+          src={withBasePath(previewImageUrl)}
           alt=""
           width={56}
           height={56}

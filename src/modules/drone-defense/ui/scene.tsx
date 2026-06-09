@@ -1553,13 +1553,3 @@ export function PrototypeScene({
     </Canvas>
   );
 }
-
-useGLTF.preload(withBasePath("/models/protection/02_cable_mesh_curtain_textured.glb"));
-useGLTF.preload(withBasePath("/models/protection/03_fbs_protection_enclosure_textured.glb"));
-useGLTF.preload(withBasePath("/models/protection/04_perimeter_fbs_cable_barrier_textured.glb"));
-useGLTF.preload(withBasePath("/models/protection/05_protective_scaffolding_with_equipment_textured.glb"));
-useGLTF.preload(withBasePath("/models/protective/operator_substation_protected.glb"));
-useGLTF.preload(withBasePath("/models/protective/protective_scaffolding_with_equipment.glb"));
-useGLTF.preload(withBasePath("/models/protective/fbs_protection_enclosure.glb"));
-useGLTF.preload(withBasePath("/models/protective/perimeter_fbs_cable_barrier.glb"));
-useGLTF.preload(withBasePath("/models/protective/cable_mesh_curtain_module.glb"));
