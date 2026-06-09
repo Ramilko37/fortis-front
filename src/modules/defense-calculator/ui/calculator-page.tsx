@@ -109,16 +109,11 @@ export function CalculatorPage() {
     loadPresetProject(refId);
   };
 
-  // For reference-matching configs, apply the PDF bundled lump sums; otherwise honest unit×qty.
-  const estimate = useMemo(() => {
-    const matchingRef = referenceConfigurations.find(
-      (ref) =>
-        ref.lines.length === calculatorConfig.lines.length &&
-        ref.lines.every((rl) => calculatorConfig.lines.some((cl) => cl.assetId === rl.assetId && cl.quantity === rl.quantity)),
-    );
-    const overrides = matchingRef ? bundleOverridesMln[matchingRef.id] : undefined;
-    return estimateConfiguration(calculatorConfig, { ...context, lineTotalOverridesMln: overrides });
-  }, [calculatorConfig, context]);
+  // Live map always costs honestly as unit×qty — no reference lump-sum override (item 6/8).
+  const estimate = useMemo(
+    () => estimateConfiguration(calculatorConfig, context),
+    [calculatorConfig, context],
+  );
 
   const placedCount = calculateProjectTotalUnits(project);
   const positionsCount = calculateProjectTotalObjects(project);
