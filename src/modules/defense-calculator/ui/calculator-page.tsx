@@ -5,13 +5,12 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { BulbOutlined, MoonOutlined, PrinterOutlined } from "@ant-design/icons";
 import {
-  bundleOverridesMln,
   criteria,
   defaultThresholds,
   echelons,
-  referenceConfigurations,
 } from "@/modules/defense-calculator/infra/catalog-data";
 import { projectAssetsToCalculatorAssets } from "@/modules/defense-calculator/domain/project-asset-adapter";
+import { buildStructuralProfile } from "@/modules/defense-calculator/domain/structural-profile";
 import { estimateConfiguration, type CostingContext } from "@/modules/defense-calculator/domain/costing";
 import { computeWeightedScore, priorityForScore } from "@/modules/defense-calculator/domain/scoring";
 import { fitToBudget } from "@/modules/defense-calculator/domain/budget-fit";
@@ -62,9 +61,9 @@ export function CalculatorPage() {
   const [budgetMln, setBudgetMln] = useState(9300);
   const {
     project,
-    loadPresetProject,
     applyBudgetSelection,
     restoreProjectFromLocalStorage,
+    budgetApplied,
   } = useDefenseProjectStore();
 
   useEffect(() => {
@@ -92,28 +91,18 @@ export function CalculatorPage() {
     [budgetMln, calculatorAssets],
   );
 
-  const referenceEstimates = useMemo(
-    () =>
-      referenceConfigurations.map((ref) =>
-        estimateConfiguration(ref, { ...context, lineTotalOverridesMln: bundleOverridesMln[ref.id] }),
-      ),
-    [context],
-  );
-
   const calculatorConfig = useMemo(
     () => projectToCalculatorConfiguration(project),
     [project],
   );
-
-  const loadReference = (refId: string) => {
-    loadPresetProject(refId);
-  };
 
   // Live map always costs honestly as unit×qty — no reference lump-sum override (item 6/8).
   const estimate = useMemo(
     () => estimateConfiguration(calculatorConfig, context),
     [calculatorConfig, context],
   );
+
+  const structuralProfile = useMemo(() => buildStructuralProfile(project), [project]);
 
   const placedCount = calculateProjectTotalUnits(project);
   const positionsCount = calculateProjectTotalObjects(project);
@@ -196,7 +185,7 @@ export function CalculatorPage() {
           {(
             [
               { id: "configure", label: "Конфигуратор" },
-              { id: "compare", label: "Сравнение" },
+              { id: "compare", label: "Структура" },
               { id: "budget", label: "Подбор под бюджет" },
             ] as Array<{ id: Tab; label: string }>
           ).map((item) => (
@@ -222,11 +211,10 @@ export function CalculatorPage() {
               estimate={estimate}
               project={project}
               layerSummaries={layerSummaries}
-              loadReference={loadReference}
             />
           ) : null}
           {tab === "compare" ? (
-            <CompareTab referenceEstimates={referenceEstimates} myEstimate={estimate} />
+            <StructureTab profile={structuralProfile} />
           ) : null}
           {tab === "budget" ? (
             <BudgetTab
@@ -248,9 +236,10 @@ export function CalculatorPage() {
       <div className="hidden print:block">
         <CalculatorReport
           myEstimate={estimate}
-          referenceEstimates={referenceEstimates}
+          structuralProfile={structuralProfile}
           scoredAssets={scoredAssets}
           budgetResult={budgetResult}
+          budgetApplied={budgetApplied}
           generatedAt={new Date()}
           layerSummaries={layerSummaries}
         />
@@ -301,13 +290,11 @@ function ConfigureTab({
   estimate,
   project,
   layerSummaries,
-  loadReference,
 }: {
   scoredAssets: ScoredAsset[];
   estimate: ReturnType<typeof estimateConfiguration>;
   project: DefenseProject;
   layerSummaries: LayerSummary[];
-  loadReference: (refId: string) => void;
 }) {
   const card = "rounded-2xl border border-slate-200 bg-white ";
   const statusLabel: Record<DefenseProject["placedObjects"][number]["status"], string> = {
@@ -351,20 +338,6 @@ function ConfigureTab({
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-slate-500">Загрузить эталон:</span>
-          {referenceConfigurations.map((ref) => (
-            <button
-              key={ref.id}
-              type="button"
-              onClick={() => loadReference(ref.id)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-mono text-xs text-slate-700 transition hover:border-blue-400 hover:text-blue-700"
-            >
-              {ref.name}
-            </button>
-          ))}
-        </div>
-
         {layerSections.map(({ layer, objectRows, totalMln, coveragePct, conflictCount, rangeLabel }) => {
           if (objectRows.length === 0) return null;
           return (
@@ -489,76 +462,72 @@ function CoverageBar({ pct }: { pct: number }) {
   );
 }
 
-// ─── Compare tab ────────────────────────────────────────────────────────────
+// ─── Structure tab (item 8: structural profile, cost optional) ────────────────
 
-function CompareTab({
-  referenceEstimates,
-  myEstimate,
-}: {
-  referenceEstimates: Array<ReturnType<typeof estimateConfiguration>>;
-  myEstimate: ReturnType<typeof estimateConfiguration>;
-}) {
-  const columns = [...referenceEstimates, myEstimate];
-  const minTotal = Math.min(...columns.map((c) => c.totalMln));
+function StructureTab({ profile }: { profile: ReturnType<typeof buildStructuralProfile> }) {
+  const metrics: Array<{ label: string; value: number }> = [
+    { label: "Объекты (позиции)", value: profile.objectCount },
+    { label: "Единицы", value: profile.unitCount },
+    { label: "Эшелоны (занятые)", value: profile.echelonCount },
+    { label: "Категории средств", value: profile.categoryCount },
+    { label: "Конфликты", value: profile.conflictCount },
+    { label: "Зоны покрытия", value: profile.coveredObjectCount },
+  ];
+
+  if (profile.objectCount === 0) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-8 text-center text-sm text-amber-800">
+        Конфигурация пуста — структурный профиль появится после размещения средств на карте.
+      </div>
+    );
+  }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white ">
-      <table className="w-full min-w-160 border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 ">
-            <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-wider text-slate-500">Эшелон</th>
-            {columns.map((col) => (
-              <th
-                key={col.configurationId}
-                className="px-4 py-3 text-right font-(family-name:--font-syne) text-sm text-slate-900 "
-              >
-                {col.configurationName}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {echelons.map((echelon) => (
-            <tr key={echelon.id} className="border-b border-slate-100 hover:bg-slate-50">
-              <td className="px-4 py-2.5">
-                <span className="text-slate-600 ">{echelon.name}</span>
-                <span className="ml-2 font-mono text-[11px] text-slate-400">{echelon.rangeLabel}</span>
-              </td>
-              {columns.map((col) => {
-                const e = col.echelons.find((x) => x.echelonId === echelon.id);
-                return (
-                  <td
-                    key={col.configurationId}
-                    className={`px-4 py-2.5 text-right font-mono tabular-nums ${
-                      e && !e.isEmpty ? "text-slate-700 " : "text-slate-300"
-                    }`}
-                  >
-                    {e && !e.isEmpty ? formatMln(e.echelonTotalMln) : "—"}
-                  </td>
-                );
-              })}
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="font-mono text-3xl font-bold tabular-nums text-slate-900">{metric.value}</p>
+            <p className="mt-1 text-xs text-slate-500">{metric.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table className="w-full min-w-160 border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-slate-200">
+              <th className="px-4 py-3 text-left font-mono text-[11px] uppercase tracking-wider text-slate-500">Эшелон</th>
+              <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Объекты</th>
+              <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Единицы</th>
+              <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Категории</th>
+              <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Покрытие</th>
+              <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Конфликты</th>
             </tr>
-          ))}
-          <tr className="border-t-2 border-slate-300 bg-slate-50  ">
-            <td className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-blue-600">
-              Итого
-            </td>
-            {columns.map((col) => (
-              <td
-                key={col.configurationId}
-                className={`px-4 py-3 text-right font-mono text-base font-bold tabular-nums ${
-                  col.totalMln === minTotal ? "text-emerald-600" : "text-slate-900 "
-                }`}
-              >
-                {formatMln(col.totalMln)}
-                {col.totalMln === minTotal ? (
-                  <span className="ml-1 font-sans text-[10px] font-normal uppercase text-emerald-500">мин</span>
-                ) : null}
-              </td>
+          </thead>
+          <tbody>
+            {profile.byEchelon.map((layer) => (
+              <tr key={layer.layerId} className="border-b border-slate-100 hover:bg-slate-50">
+                <td className="px-4 py-2.5 text-slate-600">
+                  <span className="font-mono text-[11px] font-bold text-blue-700">{layer.layerCode}</span>
+                  <span className="ml-2">{layer.layerName}</span>
+                </td>
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-slate-700">{layer.objectCount}</td>
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-slate-700">{layer.unitCount}</td>
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-slate-700">{layer.categoryCount}</td>
+                <td className="px-4 py-2.5 text-right font-mono tabular-nums text-slate-700">{layer.coveredObjectCount}</td>
+                <td className={`px-4 py-2.5 text-right font-mono tabular-nums ${layer.conflictCount > 0 ? "text-amber-600" : "text-slate-300"}`}>
+                  {layer.conflictCount > 0 ? layer.conflictCount : "—"}
+                </td>
+              </tr>
             ))}
-          </tr>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
+
+      <p className="font-mono text-[11px] text-slate-400">
+        Стоимость (опционально): {formatMln(profile.totalMln)}
+      </p>
     </div>
   );
 }
