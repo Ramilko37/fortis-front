@@ -51,4 +51,31 @@ function assert(condition: unknown, message: string): asserts condition {
   assert(profile.byEchelon[0].conflictCount === 0, "byEchelon conflictCount must be zero for non-conflicting placement");
 }
 
+// Two echelons → echelonCount reflects both, and root totals equal the sum of byEchelon rows.
+{
+  let project: DefenseProject = createDefaultDefenseProject();
+  const layer1 = project.layers[0];
+  const layer2 = project.layers[1];
+  assert(layer2, "fixture needs at least two layers");
+  const withCoverage = project.assetLibrary.find((a) => a.coverageType !== "none");
+  const noCoverage = project.assetLibrary.find((a) => a.coverageType === "none");
+  assert(withCoverage && noCoverage, "fixture needs both coverage types");
+
+  const at = project.baseObject.center;
+  project = placeObjectInProject(project, withCoverage.id, layer1.id, at, { quantity: 2 });
+  project = placeObjectInProject(project, noCoverage.id, layer2.id, at, { quantity: 3 });
+  assert(project.placedObjects.length === 2, "fixture must place exactly 2 objects across 2 layers");
+
+  const profile = buildStructuralProfile(project);
+  assert(profile.echelonCount === 2, `echelonCount expected 2, got ${profile.echelonCount}`);
+  assert(profile.objectCount === 2, `objectCount expected 2, got ${profile.objectCount}`);
+  assert(profile.unitCount === 5, `unitCount expected 5, got ${profile.unitCount}`);
+  assert(profile.coveredObjectCount === 1, `coveredObjectCount expected 1, got ${profile.coveredObjectCount}`);
+  assert(profile.byEchelon.length === 2, "byEchelon must list both occupied echelons");
+  const echelonObjectSum = profile.byEchelon.reduce((acc, e) => acc + e.objectCount, 0);
+  assert(echelonObjectSum === profile.objectCount, "sum of byEchelon objectCount must equal root objectCount");
+  const echelonUnitSum = profile.byEchelon.reduce((acc, e) => acc + e.unitCount, 0);
+  assert(echelonUnitSum === profile.unitCount, "sum of byEchelon unitCount must equal root unitCount");
+}
+
 console.log("structural-profile: OK");
