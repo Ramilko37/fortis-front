@@ -30,7 +30,7 @@ import type {
   PriorityColor,
 } from "@/modules/defense-calculator/domain/calculator-types";
 
-type Tab = "configure" | "compare" | "budget";
+type Tab = "configure" | "structure" | "budget";
 
 const PRIORITY_DOT: Record<PriorityColor, string> = {
   green: "bg-emerald-500",
@@ -176,7 +176,7 @@ export function CalculatorPage() {
           isConfigurationEmpty ? "border-amber-200 bg-amber-50 text-amber-800" : "border-blue-100 bg-blue-50 text-blue-900"
         }`}>
           {isConfigurationEmpty
-            ? "Конфигурация пока не собрана. Добавьте средства защиты на карте или загрузите эталон."
+            ? "Конфигурация пока не собрана. Добавьте средства защиты на карте."
             : "Расчёт построен на основе текущей конфигурации карты"}
         </div>
 
@@ -185,7 +185,7 @@ export function CalculatorPage() {
           {(
             [
               { id: "configure", label: "Конфигуратор" },
-              { id: "compare", label: "Структура" },
+              { id: "structure", label: "Структура" },
               { id: "budget", label: "Подбор под бюджет" },
             ] as Array<{ id: Tab; label: string }>
           ).map((item) => (
@@ -213,7 +213,7 @@ export function CalculatorPage() {
               layerSummaries={layerSummaries}
             />
           ) : null}
-          {tab === "compare" ? (
+          {tab === "structure" ? (
             <StructureTab profile={structuralProfile} />
           ) : null}
           {tab === "budget" ? (
@@ -471,7 +471,7 @@ function StructureTab({ profile }: { profile: ReturnType<typeof buildStructuralP
     { label: "Эшелоны (занятые)", value: profile.echelonCount },
     { label: "Категории средств", value: profile.categoryCount },
     { label: "Конфликты", value: profile.conflictCount },
-    { label: "Зоны покрытия", value: profile.coveredObjectCount },
+    { label: "Позиции с покрытием", value: profile.coveredObjectCount },
   ];
 
   if (profile.objectCount === 0) {
@@ -501,7 +501,7 @@ function StructureTab({ profile }: { profile: ReturnType<typeof buildStructuralP
               <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Объекты</th>
               <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Единицы</th>
               <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Категории</th>
-              <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Покрытие</th>
+              <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">С покрытием</th>
               <th className="px-4 py-3 text-right font-mono text-[11px] uppercase tracking-wider text-slate-500">Конфликты</th>
             </tr>
           </thead>
