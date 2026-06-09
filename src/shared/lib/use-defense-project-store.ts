@@ -42,6 +42,7 @@ export const MAX_DEFENSE_PROJECT_LAYERS = 20;
 type DefenseProjectState = {
   project: DefenseProject;
   hydrated: boolean;
+  budgetApplied: boolean;
   activeLayerId?: string;
   selectedAssetId?: string;
   selectedObjectId?: string;
@@ -128,7 +129,7 @@ function syncSelection(project: DefenseProject) {
 
 function applyProject(project: DefenseProject, set: (state: Partial<DefenseProjectState>) => void) {
   persist(project);
-  set({ project, ...syncSelection(project) });
+  set({ project, budgetApplied: false, ...syncSelection(project) });
 }
 
 export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => {
@@ -136,6 +137,7 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
   return {
     project: initialProject,
     hydrated: false,
+    budgetApplied: false,
     ...syncSelection(initialProject),
     createLayer: (data) => {
       if (get().project.layers.length >= MAX_DEFENSE_PROJECT_LAYERS) return;
@@ -310,16 +312,17 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
         .filter((pick) => pick.included)
         .map((pick) => ({ assetId: pick.assetId, quantity: 1 }));
       applyProject({ ...applyAssetQuantityDraftsToProject(get().project, lines), source: "custom" }, set);
+      set({ budgetApplied: true });
     },
     clearProject: () => {
       const project = createDefaultDefenseProject();
       persist(project);
-      set({ project, hydrated: true, ...syncSelection(project) });
+      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
     },
     saveProjectToLocalStorage: () => persist(get().project),
     restoreProjectFromLocalStorage: () => {
       const project = readProject() ?? readLegacyConfigurationProject() ?? createDefaultDefenseProject();
-      set({ project, hydrated: true, ...syncSelection(project) });
+      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
     },
     exportProjectJson: () => exportDefenseProjectJson(get().project),
     importProjectJson: (raw) => {

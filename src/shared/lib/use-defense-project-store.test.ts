@@ -228,4 +228,41 @@ assert(
   "setBaseObjectCenter must keep ring layer geometry aligned with the selected facility",
 );
 
+// ── budgetApplied flag (item 7) ──────────────────────────────────────────────
+storage.clear();
+useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+
+{
+  const s = useDefenseProjectStore.getState();
+  assert(s.budgetApplied === false, "budgetApplied must default to false");
+
+  // Applying a budget selection sets the flag true.
+  const firstAssetId = s.project.assetLibrary[0]?.id;
+  assert(firstAssetId, "expected at least one asset in library");
+  s.applyBudgetSelection([{ assetId: firstAssetId, included: true }]);
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === true,
+    "applyBudgetSelection must set budgetApplied true",
+  );
+
+  // Any map mutation resets the flag to false.
+  const layerId = useDefenseProjectStore.getState().project.layers[0]?.id;
+  assert(layerId, "expected at least one layer");
+  useDefenseProjectStore.getState().setAssetQuantity(firstAssetId, 2);
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === false,
+    "a map mutation must reset budgetApplied to false",
+  );
+
+  // clearProject resets the flag.
+  useDefenseProjectStore.getState().applyBudgetSelection([{ assetId: firstAssetId, included: true }]);
+  useDefenseProjectStore.getState().clearProject();
+  assert(
+    useDefenseProjectStore.getState().budgetApplied === false,
+    "clearProject must reset budgetApplied to false",
+  );
+}
+
+console.log("budgetApplied flag: OK");
+
 console.log("use-defense-project-store.test.ts: project store contracts passed");
