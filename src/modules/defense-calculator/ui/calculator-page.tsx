@@ -339,7 +339,6 @@ function ConfigureTab({
     <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
       <div className="space-y-4">
         {layerSections.map(({ layer, objectRows, totalMln, coveragePct, conflictCount, rangeLabel }) => {
-          if (objectRows.length === 0) return null;
           return (
             <section key={layer.id} className={`${card} p-4`}>
               <div className="flex items-baseline justify-between gap-3 border-b border-slate-200 pb-3 ">
@@ -366,6 +365,12 @@ function ConfigureTab({
               </div>
 
               <div className="mt-3 space-y-1.5">
+                {objectRows.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500">
+                    В этом эшелоне пока нет размещённых средств. Добавьте средство с карты на этот эшелон.
+                  </div>
+                ) : null}
+
                 {objectRows.map(({ object, projectAsset, asset, weightedScore, priority, unitPriceMln }) => {
                   const lineTotal = unitPriceMln * object.quantity;
                   return (
