@@ -1,4 +1,5 @@
 import type { DefensePriority } from "@/shared/types/defense-configuration";
+import type { DefenseAssetCompoundProfile } from "@/shared/types/defense-configuration";
 
 export type Coordinates = {
   lat: number;
@@ -75,6 +76,7 @@ export type DefenseAsset = {
   recommendedLayerCodes?: string[];
   compatibleLayerCodes?: string[];
   incompatibleLayerCodes?: string[];
+  protectionType?: string;
   minEffectiveDistance?: number;
   maxEffectiveDistance?: number;
   coverageType: DefenseAssetCoverageType;
@@ -86,6 +88,7 @@ export type DefenseAsset = {
   modelUrl?: string;
   score?: number;
   priority?: DefensePriority;
+  compoundProfile?: DefenseAssetCompoundProfile;
   tags?: string[];
   legacyItemId?: string;
   calculatorAssetId?: string | null;

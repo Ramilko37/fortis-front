@@ -3,6 +3,16 @@ import type { DefenseLayerId, DefenseScenarioId, Placement } from "@/shared/type
 export type DefenseConfigurationSource = "custom" | "preset";
 export type DefensePriority = "primary" | "medium" | "low";
 
+export type DefenseAssetCompoundProfile = {
+  kind: "compound-post";
+  postType: string;
+  personnelCount: string;
+  accountability: string;
+  armament: string;
+  weaponUnits: string;
+  sectorOrRange: string;
+};
+
 export type DefenseItem = {
   id: string;
   title: string;
@@ -20,7 +30,9 @@ export type DefenseItem = {
   defaultQuantity?: number;
   score: number;
   priority: DefensePriority;
+  protectionType?: string;
   coverageWeight?: number;
+  compoundProfile?: DefenseAssetCompoundProfile;
   iconUrl?: string;
 };
 

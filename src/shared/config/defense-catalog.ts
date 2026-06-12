@@ -9,6 +9,8 @@ function mapOnlyItem({
   assetTemplateId,
   score,
   pricePerUnitMln,
+  compoundProfile,
+  protectionType,
 }: {
   id: string;
   title: string;
@@ -18,6 +20,8 @@ function mapOnlyItem({
   assetTemplateId: string;
   score: number;
   pricePerUnitMln: number;
+  compoundProfile?: DefenseItem["compoundProfile"];
+  protectionType?: DefenseItem["protectionType"];
 }): DefenseItem {
   return {
     id,
@@ -34,7 +38,9 @@ function mapOnlyItem({
     maxQuantity: 1,
     score,
     priority: score >= 20 ? "primary" : "medium",
+    protectionType,
     coverageWeight: score,
+    compoundProfile,
   };
 }
 
@@ -51,7 +57,26 @@ const mapOnlyDefenseItems: DefenseItem[] = [
   mapOnlyItem({ id: "l3-classification", title: "ПО классификации целей", groupId: "l3-classification", layerId: "layer_03_identification", echelonId: "ech_2_detection", assetTemplateId: "asset-radar-l2", score: 20, pricePerUnitMln: 5 }),
   mapOnlyItem({ id: "l4-gps-spoof", title: "GPS-спуферы", groupId: "l4-gps-spoof", layerId: "layer_04_suppression", echelonId: "ech_3_suppression", assetTemplateId: "asset-ew-l4", score: 16, pricePerUnitMln: 9 }),
   mapOnlyItem({ id: "l4-microwave", title: "СВЧ-оружие", groupId: "l4-microwave", layerId: "layer_04_suppression", echelonId: "ech_3_suppression", assetTemplateId: "asset-ew-l4", score: 18, pricePerUnitMln: 120 }),
-  mapOnlyItem({ id: "l5-mobile-fire", title: "МОГ", groupId: "l5-mobile-fire", layerId: "layer_05_mid_range_kinetic", echelonId: "ech_4_fire_priority", assetTemplateId: "asset-kinetic-l6", score: 15, pricePerUnitMln: 35 }),
+  mapOnlyItem({
+    id: "l5-mobile-fire",
+    title: "МОГ",
+    groupId: "l5-mobile-fire",
+    layerId: "layer_05_mid_range_kinetic",
+    echelonId: "ech_4_fire_priority",
+    assetTemplateId: "asset-kinetic-l6",
+    score: 15,
+    pricePerUnitMln: 35,
+    protectionType: "МОГ",
+    compoundProfile: {
+      kind: "compound-post",
+      postType: "Мобильный огневой пост",
+      personnelCount: "4–8 человек",
+      accountability: "МО, ЧОП, Росгвардия",
+      armament: "автомат/пулемёт/ПБС",
+      weaponUnits: "2–4 единицы",
+      sectorOrRange: "до 4–8 км, сектор 90–360°",
+    },
+  }),
   mapOnlyItem({ id: "l5-bars", title: "БАРС", groupId: "l5-bars", layerId: "layer_05_mid_range_kinetic", echelonId: "ech_4_fire_priority", assetTemplateId: "asset-kinetic-l6", score: 16, pricePerUnitMln: 28 }),
   mapOnlyItem({ id: "l6-pzrk", title: "ПЗРК", groupId: "l6-pzrk", layerId: "layer_06_last_line_kinetic", echelonId: "ech_5_fire_reserve", assetTemplateId: "asset-kinetic-l6", score: 18, pricePerUnitMln: 18 }),
   mapOnlyItem({ id: "l7-camouflage", title: "Маскировочные сети и экраны", groupId: "l7-camouflage", layerId: "layer_07_accuracy_disruption", echelonId: "ech_6_passive_itz", assetTemplateId: "asset-ew-l4", score: 16, pricePerUnitMln: 14 }),

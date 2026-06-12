@@ -15,12 +15,24 @@ const DRAG_THRESHOLD = 6; // px before we commit to drag mode
 
 type AssetInfo = { title: string; imageUrl: string };
 
+type DefenseCompoundProfile = {
+  kind: "compound-post";
+  postType: string;
+  personnelCount: string;
+  accountability: string;
+  armament: string;
+  weaponUnits: string;
+  sectorOrRange: string;
+};
+
 export type DefenseToolIconProps = {
   name: string;
+  protectionType?: string;
   categoryLabel: string;
   rangeLabel: string;
   priceLabel: string;
   coverageLabel: string;
+  compoundProfile?: DefenseCompoundProfile;
   placementType: DefenseAssetLibraryItem["placementType"];
   imageUrl: string;
   previewImageUrl: string;
@@ -45,8 +57,9 @@ export function DefenseToolIcon({
   rangeLabel,
   priceLabel,
   coverageLabel,
+  protectionType,
+  compoundProfile,
   placementType,
-  imageUrl,
   previewImageUrl,
   installedCount,
   maxQuantity,
@@ -62,6 +75,7 @@ export function DefenseToolIcon({
   const canAdd = !disabledReason;
   const isZoneObject = placementType === "zone-object";
   const canDrag = canAdd;
+  const isCompoundPost = compoundProfile?.kind === "compound-post";
   const title = disabledReason ?? `${name}: ${rangeLabel}. Перетащите на карту внутри выбранного эшелона`;
   const counterText = isZoneObject
       ? `Участков: ${installedCount}`
@@ -69,6 +83,7 @@ export function DefenseToolIcon({
         ? `На карте: ${installedCount}/${maxQuantity}`
         : `На карте: ${installedCount}`;
   const placementBadge = isZoneObject ? "Зона" : "Карта";
+  const protectionBadge = protectionType;
   const actionText = isZoneObject ? "Нарисовать" : "Перетащите";
 
   const rootRef = useRef<HTMLDivElement>(null);
@@ -233,9 +248,38 @@ export function DefenseToolIcon({
         </div>
         <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] leading-tight text-slate-500">
           <span className="truncate">{categoryLabel}</span>
+          {protectionBadge ? <>
+            <span aria-hidden="true">·</span>
+            <span className="truncate">{protectionBadge}</span>
+          </> : null}
           <span aria-hidden="true">·</span>
           <span className="truncate">{coverageLabel}</span>
         </div>
+        {isCompoundPost ? (
+          <>
+            <p className="mt-1 flex flex-wrap gap-x-1 text-[10px] leading-tight text-slate-600">
+              <span className="font-semibold text-slate-700">Тип поста:</span>
+              <span className="truncate">{compoundProfile.postType}</span>
+              <span aria-hidden="true">·</span>
+              <span className="font-semibold text-slate-700">Личный состав:</span>
+              <span className="truncate">{compoundProfile.personnelCount}</span>
+            </p>
+            <p className="mt-1 flex flex-wrap gap-x-1 text-[10px] leading-tight text-slate-600">
+              <span className="font-semibold text-slate-700">Подотчётность:</span>
+              <span className="truncate">{compoundProfile.accountability}</span>
+            </p>
+            <p className="mt-1 flex flex-wrap gap-x-1 text-[10px] leading-tight text-slate-600">
+              <span className="font-semibold text-slate-700">Оружие:</span>
+              <span className="truncate">{compoundProfile.armament}</span>
+              <span aria-hidden="true">·</span>
+              <span className="font-semibold text-slate-700">Ед.:</span>
+              <span className="truncate">{compoundProfile.weaponUnits}</span>
+              <span aria-hidden="true">·</span>
+              <span className="font-semibold text-slate-700">Сектор:</span>
+              <span className="truncate">{compoundProfile.sectorOrRange}</span>
+            </p>
+          </>
+        ) : null}
         <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] leading-tight text-slate-500">
           <span className="truncate">{priceLabel}</span>
           <span aria-hidden="true">·</span>

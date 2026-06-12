@@ -60,10 +60,12 @@ export function DefenseToolsPanel({
             key={assetItem.assetId}
             assetId={assetItem.assetId}
             name={assetItem.title}
+            protectionType={assetItem.protectionType}
             categoryLabel={assetItem.categoryLabel}
             rangeLabel={assetItem.rangeLabel}
             priceLabel={assetItem.priceLabel}
             coverageLabel={assetItem.coverageLabel}
+            compoundProfile={assetItem.compoundProfile}
             placementType={assetItem.placementType}
             imageUrl={imageUrl}
             previewImageUrl={previewImageUrl}

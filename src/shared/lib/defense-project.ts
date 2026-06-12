@@ -82,6 +82,7 @@ export type AssetCatalogItem = {
   score: number;
   priority: DefenseAssetLibraryItem["priority"];
   imageUrl: string;
+  protectionType?: string;
   isRecommendedForActiveLayer: boolean;
   compatibilityStatus: "recommended" | "compatible" | "warning" | "incompatible";
   compatibilityLabel: string;
@@ -90,6 +91,7 @@ export type AssetCatalogItem = {
   maxQuantity: number;
   placementType: DefenseAssetLibraryItem["placementType"];
   tags: string[];
+  compoundProfile?: DefenseAssetLibraryItem["compoundProfile"];
 };
 
 function nowIso() {
@@ -216,6 +218,7 @@ export function getAssetCatalogItems(
     return {
       assetId: asset.id,
       title: asset.name,
+      protectionType: asset.protectionType,
       subtitle: assetSubtitle(asset),
       category: asset.category,
       categoryLabel: categoryLabels[asset.category],
@@ -233,6 +236,7 @@ export function getAssetCatalogItems(
       placedCount,
       maxQuantity: 0,
       placementType: asset.placementType,
+      compoundProfile: asset.compoundProfile,
       tags: asset.tags ?? [],
     };
   });
