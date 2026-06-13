@@ -7,7 +7,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, { params }: Ctx) {
   const { id } = await params;
   try {
-    const data = await backendFetch(`/projects/get?id=${encodeURIComponent(id)}`);
+    const data = await backendFetch(`/projects/export?id=${encodeURIComponent(id)}`);
     return Response.json(data);
   } catch (err) {
     return backendErrorResponse(err);
