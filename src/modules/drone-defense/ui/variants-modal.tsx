@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircleFilled } from "@ant-design/icons";
-import { Alert, Button, Input, List, Modal, Spin, Tag, Typography, theme } from "antd";
+import { Alert, Button, Input, Modal, Spin, Tag, Typography, theme } from "antd";
 import { useDefenseVariantsStore } from "@/modules/drone-defense/domain/use-defense-variants-store";
 import type { VariantSummary } from "@/shared/types/defense-project";
 
@@ -154,65 +154,73 @@ function VariantsBody({
   }
 
   return (
-    <List
-      dataSource={variants}
+    <ul
       style={{
+        listStyle: "none",
+        margin: 0,
+        padding: 0,
         maxHeight: 360,
         overflowY: "auto",
         marginInline: -token.paddingContentHorizontalLG,
       }}
-      renderItem={(variant) => {
+    >
+      {variants.map((variant) => {
         const isActive = variant.projectId === activeVariantId;
         return (
-          <List.Item
+          <li
+            key={variant.projectId}
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: token.marginSM,
+              paddingBlock: token.paddingSM,
               paddingInline: token.paddingContentHorizontalLG,
+              borderBottom: `1px solid ${token.colorBorderSecondary}`,
               background: isActive ? token.colorPrimaryBg : undefined,
               transition: `background ${token.motionDurationMid}`,
             }}
-            actions={[
-              <Button
-                key="load"
-                type="link"
-                size="small"
-                onClick={() => onLoad(variant.projectId)}
-              >
-                Загрузить
-              </Button>,
-              <Button
-                key="delete"
-                type="link"
-                size="small"
-                danger
-                onClick={() => onDelete(variant.projectId)}
-              >
-                Удалить
-              </Button>,
-            ]}
           >
-            <List.Item.Meta
-              avatar={
-                isActive ? (
-                  <CheckCircleFilled
-                    style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }}
-                  />
-                ) : undefined
-              }
-              title={
-                <span style={{ display: "inline-flex", alignItems: "center", gap: token.marginXS }}>
-                  {variant.name}
-                  {isActive ? (
-                    <Tag color="processing" style={{ marginInlineEnd: 0 }}>
-                      Текущий
-                    </Tag>
-                  ) : null}
-                </span>
-              }
-              description={`v${variant.version} · ${formatUpdatedAt(variant.updatedAt)}`}
-            />
-          </List.Item>
+            {isActive ? (
+              <CheckCircleFilled
+                style={{ color: token.colorPrimary, fontSize: token.fontSizeLG }}
+              />
+            ) : null}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: token.marginXS,
+                }}
+              >
+                <Typography.Text strong>{variant.name}</Typography.Text>
+                {isActive ? (
+                  <Tag color="processing" style={{ marginInlineEnd: 0 }}>
+                    Текущий
+                  </Tag>
+                ) : null}
+              </div>
+              <Typography.Text
+                type="secondary"
+                style={{ display: "block", fontSize: token.fontSizeSM }}
+              >
+                {`v${variant.version} · ${formatUpdatedAt(variant.updatedAt)}`}
+              </Typography.Text>
+            </div>
+            <Button type="link" size="small" onClick={() => onLoad(variant.projectId)}>
+              Загрузить
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              danger
+              onClick={() => onDelete(variant.projectId)}
+            >
+              Удалить
+            </Button>
+          </li>
         );
-      }}
-    />
+      })}
+    </ul>
   );
 }
