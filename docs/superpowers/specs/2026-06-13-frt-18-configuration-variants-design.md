@@ -91,7 +91,7 @@ Auth сейчас не проверяется (whitelist-режим, `auth_url` 
 |---|---|---|
 | `GET /api/defense/projects` | `GET /projects` | список вариантов |
 | `POST /api/defense/projects` | `POST /projects` | «Сохранить как…» |
-| `GET /api/defense/projects/[id]` | `GET /projects/get?id=` | загрузить вариант |
+| `GET /api/defense/projects/[id]` | `GET /projects/export?id=` | загрузить вариант (полный проект; `get` отдаёт только метаданные) |
 | `PUT /api/defense/projects/[id]` | `PUT /projects/update?id=` | «Сохранить» (overwrite) |
 | `DELETE /api/defense/projects/[id]` | `DELETE /projects/delete?id=` | удалить |
 
