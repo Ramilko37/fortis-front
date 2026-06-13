@@ -122,6 +122,7 @@ export function DroneDefensePrototype() {
         .map(projectLayerToMapLayer),
     [project.layers],
   );
+  const allProjectMapLayers = useMemo(() => [...project.layers].map(projectLayerToMapLayer), [project.layers]);
   const selectedLayerId = project.activeLayerId ?? project.layers[0]?.id ?? "";
   const selectedLayer = useMemo(
     () => project.layers.find((layer) => layer.id === selectedLayerId) ?? project.layers[0],
@@ -722,6 +723,7 @@ export function DroneDefensePrototype() {
                   layerId={echelonObjectsLayerId}
                   placements={projectCatalogPlacements}
                   catalog={catalog}
+                  layers={allProjectMapLayers}
                   hiddenPlacementIds={hiddenPlacementIds}
                   selectedPlacementId={selectedPlacementId}
                   onSelect={(id) => selectPlacedObject(id)}

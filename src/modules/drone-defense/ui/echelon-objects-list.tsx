@@ -1,9 +1,9 @@
 "use client";
 
 import { describePlacement } from "@/modules/drone-defense/domain/placement-helpers";
-import { defenseLayers } from "@/modules/drone-defense/infra/mock-defense-data";
 import type {
   DefenseCatalogResponse,
+  DefenseLayer,
   DefenseLayerId,
   Placement,
 } from "@/shared/types/drone-defense";
@@ -29,6 +29,7 @@ export function EchelonObjectsList({
   layerId,
   placements,
   catalog,
+  layers,
   hiddenPlacementIds,
   selectedPlacementId,
   onSelect,
@@ -38,6 +39,7 @@ export function EchelonObjectsList({
   layerId: DefenseLayerId;
   placements: Placement[];
   catalog: DefenseCatalogResponse | null;
+  layers: DefenseLayer[];
   hiddenPlacementIds: Set<string>;
   selectedPlacementId: string | null;
   onSelect: (placementId: string) => void;
@@ -58,7 +60,7 @@ export function EchelonObjectsList({
   return (
     <ul className="space-y-2">
       {layerPlacements.map((placement) => {
-        const summary = describePlacement({ placement, catalog, layers: defenseLayers });
+        const summary = describePlacement({ placement, catalog, layers });
         const isSelected = placement.id === selectedPlacementId;
         const isHidden = hiddenPlacementIds.has(placement.id);
         return (
