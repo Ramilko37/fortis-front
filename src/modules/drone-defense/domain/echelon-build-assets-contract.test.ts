@@ -100,18 +100,24 @@ const l4Slot: EchelonMapSlot = {
   status: "empty",
   color: [255, 255, 255, 235],
 };
-const placeholderOption = getBuildOptionForSlot({
-  slot: l4Slot,
+const l7Slot: EchelonMapSlot = {
+  ...l4Slot,
+  id: "layer_07_accuracy_disruption-slot-01",
+  layerId: "layer_07_accuracy_disruption",
+};
+const finalArtOption = getBuildOptionForSlot({
+  slot: l7Slot,
   catalogGroups: echelonCatalogGroups,
   placements: [],
 });
 
 if (
-  placeholderOption?.groupId !== "l4-ew-gnss" ||
-  !placeholderOption.imageUrl.includes("placeholders/l4.svg") ||
-  !placeholderOption.previewImageUrl.includes("placeholders/l4.svg")
+  finalArtOption?.groupId !== "l7-camouflage" ||
+  finalArtOption.isPlaceholder ||
+  !finalArtOption.imageUrl.includes("/drone-defense/assets/camouflage-nets.avif") ||
+  !finalArtOption.previewImageUrl.includes("/drone-defense/assets/thumbs/camouflage-nets.avif")
 ) {
-  throw new Error("Layers without final art must still expose placeholder build icons");
+  throw new Error("Former placeholder layers must expose newly added final art");
 }
 
 const directOption = getBuildOptionForCatalogGroup({
