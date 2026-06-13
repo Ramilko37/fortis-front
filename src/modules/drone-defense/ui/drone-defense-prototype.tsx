@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppstoreOutlined, CloseOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
 import { buildEchelonMapModel } from "@/modules/drone-defense/domain/echelon-map-model";
@@ -31,9 +31,14 @@ import {
   type LayerWizardDraft,
   type LayerWizardState,
 } from "@/modules/drone-defense/domain/prototype-workflow";
+import {
+  DEFAULT_PROTECTION_TYPE_VISIBILITY,
+  isMogVisibleInMap,
+  type ProtectionTypeVisibility,
+} from "@/modules/drone-defense/domain/protection-visibility";
 import { MAX_DEFENSE_PROJECT_LAYERS, useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
 import type { LayerInsertOption } from "@/shared/lib/defense-project";
-import type { DefenseLayer, DefenseLayerId } from "@/shared/types/drone-defense";
+import type { DefenseLayer, DefenseLayerId, Placement } from "@/shared/types/drone-defense";
 import type { DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
 const defenseAssetDragMimeType = "application/x-fortis-defense-asset";
@@ -53,6 +58,9 @@ export function DroneDefensePrototype() {
   const [locateTarget, setLocateTarget] = useState<{ lon: number; lat: number; at: number } | null>(null);
   const [echelonObjectsLayerId, setEchelonObjectsLayerId] = useState<DefenseLayerId | null>(null);
   const [isEchelonObjectsCollapsed, setIsEchelonObjectsCollapsed] = useState(false);
+  const [protectionTypeVisibility, setProtectionTypeVisibility] = useState<ProtectionTypeVisibility>(
+    DEFAULT_PROTECTION_TYPE_VISIBILITY,
+  );
   const {
     init,
     loading,
@@ -185,12 +193,28 @@ export function DroneDefensePrototype() {
       }).filter((placement) => project.layers.find((layer) => layer.id === placement.layerId)?.isVisible !== false),
     [facilityId, project, scenarioId],
   );
+  const isPlacementVisible = useCallback(
+    (placement: Placement) => {
+      const object = project.placedObjects.find((item) => item.id === placement.id);
+      const objectAsset = object ? project.assetLibrary.find((item) => item.id === object.assetId) : undefined;
+      return isMogVisibleInMap(placement, objectAsset, protectionTypeVisibility);
+    },
+    [project.assetLibrary, project.placedObjects, protectionTypeVisibility],
+  );
+  const visibleProjectCatalogPlacements = useMemo(
+    () => projectCatalogPlacements.filter((placement) => isPlacementVisible(placement)),
+    [projectCatalogPlacements, isPlacementVisible],
+  );
+  const hiddenPlacementIds = useMemo(
+    () => new Set(projectCatalogPlacements.filter((placement) => !isPlacementVisible(placement)).map((placement) => placement.id)),
+    [projectCatalogPlacements, isPlacementVisible],
+  );
   const mapConfiguration = useMemo(
     () => ({
       ...studioConfiguration,
-      placements: projectCatalogPlacements,
+      placements: visibleProjectCatalogPlacements,
     }),
-    [projectCatalogPlacements, studioConfiguration],
+    [studioConfiguration, visibleProjectCatalogPlacements],
   );
   const echelonModel = useMemo(
     () =>
@@ -681,10 +705,24 @@ export function DroneDefensePrototype() {
                     onChange={(event) => setCoverageVisible(event.target.checked)}
                   />
                 </label>
+                <label className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <span>Показать МОГ</span>
+                  <input
+                    type="checkbox"
+                    checked={protectionTypeVisibility.mog}
+                    onChange={() =>
+                      setProtectionTypeVisibility((current) => ({
+                        ...current,
+                        mog: !current.mog,
+                      }))
+                    }
+                  />
+                </label>
                 <EchelonObjectsList
                   layerId={echelonObjectsLayerId}
                   placements={projectCatalogPlacements}
                   catalog={catalog}
+                  hiddenPlacementIds={hiddenPlacementIds}
                   selectedPlacementId={selectedPlacementId}
                   onSelect={(id) => selectPlacedObject(id)}
                   onLocate={handleLocatePlacement}
