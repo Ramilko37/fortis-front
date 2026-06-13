@@ -1,9 +1,16 @@
 import type { NextConfig } from "next";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const frontendRoot = dirname(fileURLToPath(import.meta.url));
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.trim() || "";
 const isStaticExport = process.env.NEXT_STATIC_EXPORT === "true";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: frontendRoot,
+  },
   output: isStaticExport ? "export" : undefined,
   trailingSlash: true,
   images: {

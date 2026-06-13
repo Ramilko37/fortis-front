@@ -124,7 +124,7 @@ const mogPlacement = {
     sectorOrRange: "до 4–8 км, сектор 90–360°",
     azimuth: 180,
   },
-};
+} as const;
 const mogShape = getCoverageShape(mogPlacement);
 if (mogShape.kind !== "sector") {
   throw new Error(`МOГ placement should be rendered as sector coverage; got ${mogShape.kind}`);
