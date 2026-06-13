@@ -11,6 +11,7 @@ import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
 import { EchelonObjectsList } from "@/modules/drone-defense/ui/echelon-objects-list";
 import { MogCompositionEditor } from "@/modules/drone-defense/ui/mog-composition-editor";
+import { VariantSelector } from "@/modules/drone-defense/ui/variant-selector";
 import {
   type AssetCatalogItem,
   buildPlacedDefenseCompoundProfile,
@@ -582,6 +583,9 @@ export function DroneDefensePrototype() {
                 <h1 className="truncate text-lg font-semibold text-slate-950">Моя карта</h1>
                 <p className="truncate text-xs text-slate-500">Defense Configuration Studio</p>
               </div>
+            </div>
+            <div className="mt-3">
+              <VariantSelector />
             </div>
           </div>
 
