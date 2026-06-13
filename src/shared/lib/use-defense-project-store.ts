@@ -78,6 +78,7 @@ type DefenseProjectState = {
   duplicatePlacedObject: (objectId: string) => void;
   validateObjectPlacement: (assetId: string, layerId: string, coordinates: Coordinates) => PlacementValidationResult;
   loadPresetProject: (presetId: string) => void;
+  replaceProject: (project: DefenseProject) => void;
   applyBudgetSelection: (picks: Array<{ assetId: string; included: boolean }>) => void;
   clearProject: () => void;
   saveProjectToLocalStorage: () => void;
@@ -310,6 +311,7 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       };
       applyProject(project, set);
     },
+    replaceProject: (project) => applyProject(project, set),
     applyBudgetSelection: (picks) => {
       const lines = picks
         .filter((pick) => pick.included)
