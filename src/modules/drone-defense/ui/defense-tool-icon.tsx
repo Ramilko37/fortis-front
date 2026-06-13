@@ -77,6 +77,8 @@ export function DefenseToolIcon({
   const canDrag = canAdd;
   const isCompoundPost = compoundProfile?.kind === "compound-post";
   const title = disabledReason ?? `${name}: ${rangeLabel}. Перетащите на карту внутри выбранного эшелона`;
+  const coverageText = coverageLabel;
+  const costText = `Базовая стоимость поста: ${priceLabel}`;
   const counterText = isZoneObject
       ? `Участков: ${installedCount}`
       : maxQuantity > 0
@@ -253,7 +255,7 @@ export function DefenseToolIcon({
             <span className="truncate">{protectionBadge}</span>
           </> : null}
           <span aria-hidden="true">·</span>
-          <span className="truncate">{coverageLabel}</span>
+            <span className="truncate">{coverageText}</span>
         </div>
         {isCompoundPost ? (
           <>
@@ -281,7 +283,7 @@ export function DefenseToolIcon({
           </>
         ) : null}
         <div className="mt-1 flex min-w-0 items-center gap-1 text-[11px] leading-tight text-slate-500">
-          <span className="truncate">{priceLabel}</span>
+          <span className="truncate">{isCompoundPost ? costText : priceLabel}</span>
           <span aria-hidden="true">·</span>
           <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">{placementBadge}</span>
         </div>

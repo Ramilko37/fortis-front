@@ -161,6 +161,8 @@ const coverageTypeLabels: Record<DefenseAssetLibraryItem["coverageType"], string
   none: "Без покрытия на карте",
 };
 
+const compoundCoverageTypeLabel = "Дальность/сектор";
+
 function formatAssetDistance(meters: number | undefined) {
   if (meters === undefined) return null;
   if (meters >= 1000) return `${(meters / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км`;
@@ -183,6 +185,9 @@ function assetPriceLabel(asset: DefenseAssetLibraryItem) {
 }
 
 function assetCoverageLabel(asset: DefenseAssetLibraryItem) {
+  if (asset.compoundProfile?.kind === "compound-post" && asset.compoundProfile.sectorOrRange) {
+    return `${compoundCoverageTypeLabel}: ${asset.compoundProfile.sectorOrRange}`;
+  }
   const radius = formatAssetDistance(asset.coverageRadius);
   const typeLabel = coverageTypeLabels[asset.coverageType];
   if (radius && asset.coverageAngle) return `${typeLabel}: ${radius}, ${asset.coverageAngle}°`;
@@ -190,6 +195,11 @@ function assetCoverageLabel(asset: DefenseAssetLibraryItem) {
   if (asset.placementType === "zone-object") return `${typeLabel}: зона`;
   if (asset.placementType === "non-physical") return typeLabel;
   return `${typeLabel}: точка`;
+}
+
+function assetCoverageTypeLabel(asset: DefenseAssetLibraryItem) {
+  if (asset.compoundProfile?.kind === "compound-post") return compoundCoverageTypeLabel;
+  return coverageTypeLabels[asset.coverageType];
 }
 
 function assetCompatibility(
@@ -228,7 +238,7 @@ export function getAssetCatalogItems(
       priceLabel: assetPriceLabel(asset),
       rangeLabel: assetRangeLabel(asset),
       coverageType: asset.coverageType,
-      coverageTypeLabel: coverageTypeLabels[asset.coverageType],
+      coverageTypeLabel: assetCoverageTypeLabel(asset),
       coverageLabel: assetCoverageLabel(asset),
       score: asset.score ?? 0,
       priority: asset.priority,

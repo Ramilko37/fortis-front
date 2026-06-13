@@ -10,7 +10,7 @@ type MogCompositionEditorProps = {
 
 function formatCost(pricePerUnitMln: number | null): string {
   if (pricePerUnitMln === null) return "без CAPEX";
-  return `${pricePerUnitMln.toLocaleString("ru-RU")} млн ₽/шт`;
+  return `Демо-стоимость поста: ${pricePerUnitMln.toLocaleString("ru-RU")} млн ₽/шт`;
 }
 
 function clampAzimuth(value: number): number {
@@ -18,6 +18,18 @@ function clampAzimuth(value: number): number {
   const normalized = value % 360;
   return normalized < 0 ? normalized + 360 : normalized;
 }
+
+function parseFirstNumber(value: string): string {
+  return value.match(/\d+/)?.[0] ?? "";
+}
+
+function sanitizeCount(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+const postTypeOptions = ["МОГ", "ПВН", "ГОР", "КПП", "Другой пост"];
+const accountabilityOptions = ["Росгвардия", "МО", "ЧОП"];
+const armamentOptions = ["Огнестрел", "Антидроновые ружья", "Дроны-перехватчики", "Автомат/пулемёт/ПБС"];
 
 export function MogCompositionEditor({ asset, profile, onChange }: MogCompositionEditorProps) {
   const updateField = (patch: Partial<PlacedDefenseCompoundProfile>) => {
@@ -30,7 +42,7 @@ export function MogCompositionEditor({ asset, profile, onChange }: MogCompositio
   };
 
   return (
-    <aside className="pointer-events-none absolute right-4 top-4 z-30 w-[320px] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur">
+    <aside className="pointer-events-none absolute right-4 top-4 z-30 w-[320px] max-w-[calc(100vw-2rem)] max-h-[min(70vh,calc(100vh-2rem))] overflow-y-auto rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur">
       <div className="pointer-events-auto">
         <div className="mb-2 flex items-center justify-between">
           <div>
@@ -50,41 +62,67 @@ export function MogCompositionEditor({ asset, profile, onChange }: MogCompositio
         <div className="mt-2 grid grid-cols-1 gap-2">
           <label className="grid gap-1 text-[11px] font-semibold text-slate-600">
             Тип поста
-            <input
-              value={profile.postType}
+            <select
+              value={postTypeOptions.includes(profile.postType) ? profile.postType : postTypeOptions[0]}
               onChange={(event) => updateField({ postType: event.target.value })}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
-            />
+            >
+              {postTypeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="grid gap-1 text-[11px] font-semibold text-slate-600">
             Личный состав
             <input
-              value={profile.personnelCount}
-              onChange={(event) => updateField({ personnelCount: event.target.value })}
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={parseFirstNumber(profile.personnelCount)}
+              onChange={(event) => updateField({ personnelCount: sanitizeCount(event.target.value) })}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
             />
           </label>
           <label className="grid gap-1 text-[11px] font-semibold text-slate-600">
             Подотчётность
-            <input
-              value={profile.accountability}
+            <select
+              value={accountabilityOptions.includes(profile.accountability) ? profile.accountability : accountabilityOptions[0]}
               onChange={(event) => updateField({ accountability: event.target.value })}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
-            />
+            >
+              {accountabilityOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="grid gap-1 text-[11px] font-semibold text-slate-600">
             Оружие
-            <input
-              value={profile.armament}
+            <select
+              value={armamentOptions.includes(profile.armament) ? profile.armament : armamentOptions[0]}
               onChange={(event) => updateField({ armament: event.target.value })}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
-            />
+            >
+              {armamentOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="grid gap-1 text-[11px] font-semibold text-slate-600">
             Количество/единиц
             <input
-              value={profile.weaponUnits}
-              onChange={(event) => updateField({ weaponUnits: event.target.value })}
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={parseFirstNumber(profile.weaponUnits)}
+              onChange={(event) => updateField({ weaponUnits: sanitizeCount(event.target.value) })}
               className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs outline-none focus:border-blue-400"
             />
           </label>
@@ -101,7 +139,7 @@ export function MogCompositionEditor({ asset, profile, onChange }: MogCompositio
             />
           </label>
           <label className="grid gap-1 text-[11px] font-semibold text-slate-600">
-            Сектор/угол (параметр демо)
+            Дальность и сектор
             <input
               value={profile.sectorOrRange}
               onChange={(event) => updateField({ sectorOrRange: event.target.value })}
@@ -111,8 +149,8 @@ export function MogCompositionEditor({ asset, profile, onChange }: MogCompositio
         </div>
 
         <div className="mt-2 border-t border-slate-200 pt-2 text-[11px] text-slate-600">
-          <p>Стоимость: {formatCost(asset.pricePerUnitMln)}</p>
-          <p>Дальность/сектор: {profile.sectorOrRange || "—"}</p>
+          <p>{formatCost(asset.pricePerUnitMln)}</p>
+          <p>Дальность и сектор: {profile.sectorOrRange || "—"}</p>
         </div>
       </div>
     </aside>

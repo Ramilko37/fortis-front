@@ -189,12 +189,12 @@ const l5 = project.layers.find((layer) => layer.code === "L5");
 assert(l5, "default project must include L5");
 const withMog = placeObjectInProject(project, "l5-mobile-fire", l5.id, inside);
 assert(withMog.placedObjects[0].compoundProfile?.kind === "compound-post", "placement must include compound profile for МОГ");
-assert(withMog.placedObjects[0].compoundProfile?.postType === "Мобильный огневой пост", "МОГ profile must have default post type");
+assert(withMog.placedObjects[0].compoundProfile?.postType === "МОГ", "МОГ profile must have default post type");
 const updatedMog = updatePlacedObjectInProject(withMog, withMog.placedObjects[0].id, {
   compoundProfile: {
     ...withMog.placedObjects[0].compoundProfile,
     azimuth: 180,
-    weaponUnits: "6 единиц",
+    weaponUnits: "6",
   },
 });
 assert(updatedMog.placedObjects[0].compoundProfile?.azimuth === 180, "editor update must persist MOГ azimuth");
