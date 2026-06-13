@@ -1,5 +1,5 @@
 import type { DefensePriority } from "@/shared/types/defense-configuration";
-import type { DefenseAssetCompoundProfile } from "@/shared/types/defense-configuration";
+import type { DefenseAssetCompoundProfile, PlacedDefenseCompoundProfile } from "@/shared/types/defense-configuration";
 
 export type Coordinates = {
   lat: number;
@@ -96,10 +96,6 @@ export type DefenseAsset = {
 };
 
 export type DefenseAssetLibraryItem = DefenseAsset;
-
-export type PlacedDefenseCompoundProfile = DefenseAssetCompoundProfile & {
-  azimuth: number;
-};
 
 export type PlacedDefenseObject = {
   id: string;

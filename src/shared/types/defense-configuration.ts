@@ -13,6 +13,10 @@ export type DefenseAssetCompoundProfile = {
   sectorOrRange: string;
 };
 
+export type PlacedDefenseCompoundProfile = DefenseAssetCompoundProfile & {
+  azimuth: number;
+};
+
 export type DefenseItem = {
   id: string;
   title: string;

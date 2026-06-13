@@ -1,3 +1,5 @@
+import type { PlacedDefenseCompoundProfile } from "@/shared/types/defense-configuration";
+
 export type DefenseLayerId =
   | "layer_01_external_warning"
   | "layer_02_detection"
@@ -113,6 +115,7 @@ export type Placement = {
   environmentModifier: number;
   isSelected?: boolean;
   isConflict?: boolean;
+  compoundProfile?: PlacedDefenseCompoundProfile;
   sceneRef?: {
     x: number;
     z: number;
