@@ -97,6 +97,10 @@ export type DefenseAsset = {
 
 export type DefenseAssetLibraryItem = DefenseAsset;
 
+export type PlacedDefenseCompoundProfile = DefenseAssetCompoundProfile & {
+  azimuth: number;
+};
+
 export type PlacedDefenseObject = {
   id: string;
   assetId: string;
@@ -110,6 +114,7 @@ export type PlacedDefenseObject = {
   customPricePerUnitMln?: number;
   customCoverageRadius?: number;
   customCoverageAngle?: number;
+  compoundProfile?: PlacedDefenseCompoundProfile;
   hasGeometryConflict?: boolean;
   hasCoverageConflict?: boolean;
   hasTerrainConflict?: boolean;

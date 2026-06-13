@@ -6,6 +6,7 @@ import type {
   DefenseAssetLibraryItem,
   DefenseProject,
   EditableDefenseLayer,
+  PlacedDefenseCompoundProfile,
   DeleteLayerResult,
   LayerCost,
   LayerSummary,
@@ -539,6 +540,7 @@ export function createPlacedObject(
 ): PlacedDefenseObject {
   const asset = project.assetLibrary.find((item) => item.id === assetId);
   const timestamp = nowIso();
+  const compoundProfile = patch.compoundProfile ?? buildPlacedDefenseCompoundProfile(asset);
   return {
     id: patch.id ?? uniqueId("placed"),
     assetId,
@@ -552,6 +554,7 @@ export function createPlacedObject(
     customPricePerUnitMln: patch.customPricePerUnitMln,
     customCoverageRadius: patch.customCoverageRadius,
     customCoverageAngle: patch.customCoverageAngle,
+    compoundProfile,
     hasGeometryConflict: false,
     hasCoverageConflict: false,
     hasTerrainConflict: false,
@@ -909,8 +912,18 @@ function normalizeProjectAssetLibrary(assetLibrary: DefenseProject["assetLibrary
       unitLabel: asset.unitLabel ?? "шт",
       deploymentType: asset.deploymentType ?? "external",
       placementType: asset.placementType ?? "non-physical",
-    }));
+  }));
   return [...canonicalAssets, ...customAssets];
+}
+
+export function buildPlacedDefenseCompoundProfile(
+  asset: DefenseProject["assetLibrary"][number] | undefined,
+): PlacedDefenseCompoundProfile | undefined {
+  if (!asset?.compoundProfile) return undefined;
+  return {
+    ...asset.compoundProfile,
+    azimuth: 0,
+  };
 }
 
 export function projectToCalculatorConfiguration(project: DefenseProject): ProjectCalculatorConfiguration {

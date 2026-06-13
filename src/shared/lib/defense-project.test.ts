@@ -20,6 +20,7 @@ import {
   transferPlacedObjectToLayerInProject,
   placeObjectInProject,
   deletePlacedObjectInProject,
+  updatePlacedObjectInProject,
   applyAssetQuantityDraftsToProject,
   getPlacedObjectConflictFlags,
   syncPlacedObjectConflictFlags,
@@ -183,6 +184,22 @@ assert(withRadar.placedObjects[0].quantity === 1, "manual placement must create 
 assert(withRadar.placedObjects[0].status === "planned", "manual placement must default to planned status");
 assert(withRadar.placedObjects[0].createdAt && withRadar.placedObjects[0].updatedAt, "manual placement must persist timestamps");
 assert(withRadar.placedObjects[0].hasGeometryConflict === false, "manual placement must snapshot geometry conflict status");
+
+const l5 = project.layers.find((layer) => layer.code === "L5");
+assert(l5, "default project must include L5");
+const withMog = placeObjectInProject(project, "l5-mobile-fire", l5.id, inside);
+assert(withMog.placedObjects[0].compoundProfile?.kind === "compound-post", "placement must include compound profile for МОГ");
+assert(withMog.placedObjects[0].compoundProfile?.postType === "Мобильный огневой пост", "МОГ profile must have default post type");
+const updatedMog = updatePlacedObjectInProject(withMog, withMog.placedObjects[0].id, {
+  compoundProfile: {
+    ...withMog.placedObjects[0].compoundProfile,
+    azimuth: 180,
+    weaponUnits: "6 единиц",
+  },
+});
+assert(updatedMog.placedObjects[0].compoundProfile?.azimuth === 180, "editor update must persist MOГ azimuth");
+assert(updatedMog.placedObjects[0].compoundProfile?.weaponUnits === "6 единиц", "editor update must persist weapons count");
+
 const coordinatePlaced = placeObjectInProject(project, "mobile-radar", l2.id, { ...inside, altitude: 120 }, { notes: "координатный ввод" });
 assert(coordinatePlaced.placedObjects[0].coordinates.altitude === 120, "coordinate placement must persist altitude");
 assert(coordinatePlaced.placedObjects[0].notes === "координатный ввод", "coordinate placement must persist notes");
@@ -312,7 +329,12 @@ assert(imported.schemaVersion === withRadar.schemaVersion, "project JSON import 
 const legacyExportWithoutConflictFlags = JSON.stringify({
   ...withRadar,
   placedObjects: withRadar.placedObjects.map(
-    ({ hasGeometryConflict: _hasGeometryConflict, hasCoverageConflict: _hasCoverageConflict, hasTerrainConflict: _hasTerrainConflict, ...object }) => object,
+    ({ hasGeometryConflict, hasCoverageConflict, hasTerrainConflict, ...object }) => {
+      void hasGeometryConflict;
+      void hasCoverageConflict;
+      void hasTerrainConflict;
+      return object;
+    },
   ),
 });
 const importedLegacySnapshot = importDefenseProjectJson(legacyExportWithoutConflictFlags);
@@ -323,8 +345,11 @@ assert(
 const legacyExportWithoutAssetDisplayFields = JSON.stringify({
   ...withRadar,
   assetLibrary: withRadar.assetLibrary.map(
-    ({ coverageType: _coverageType, compatibleLayerCodes: _compatibleLayerCodes, ...asset }) =>
-      asset.id === "l1-osint" ? { ...asset, coverageRadius: 1200 } : asset,
+    ({ coverageType, compatibleLayerCodes, ...asset }) => {
+      void coverageType;
+      void compatibleLayerCodes;
+      return asset.id === "l1-osint" ? { ...asset, coverageRadius: 1200 } : asset;
+    },
   ),
 });
 const importedLegacyAssets = importDefenseProjectJson(legacyExportWithoutAssetDisplayFields);
