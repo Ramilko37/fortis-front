@@ -5,6 +5,7 @@ import { AppstoreOutlined, CloseOutlined, DownOutlined, UpOutlined } from "@ant-
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
 import { buildEchelonMapModel } from "@/modules/drone-defense/domain/echelon-map-model";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
+import { AssetLibraryManager } from "@/modules/drone-defense/ui/asset-library-manager";
 import { CoordinatePlacementPanel, type CoordinatePlacementInput } from "@/modules/drone-defense/ui/coordinate-placement-panel";
 import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
@@ -95,6 +96,11 @@ export function DroneDefensePrototype() {
     deletePlacedObject,
     validateObjectPlacement,
     restoreProjectFromLocalStorage,
+    assetLibraryLoading,
+    assetLibraryError,
+    refreshAssetLibrary,
+    upsertAssetInLibrary,
+    removeAssetFromLibrary,
   } = useDefenseProjectStore();
 
   useEffect(() => {
@@ -103,7 +109,8 @@ export function DroneDefensePrototype() {
 
   useEffect(() => {
     restoreProjectFromLocalStorage();
-  }, [restoreProjectFromLocalStorage]);
+    void refreshAssetLibrary({ isPublic: true, limit: 100 });
+  }, [refreshAssetLibrary, restoreProjectFromLocalStorage]);
 
   const selectedFacility = useMemo(
     () => facilities.find((item) => item.id === facilityId) ?? null,
@@ -638,6 +645,30 @@ export function DroneDefensePrototype() {
                 placeholder="Найти средство..."
               />
             </div>
+            <AssetLibraryManager
+              assets={project.assetLibrary}
+              placedObjects={project.placedObjects}
+              selectedAssetId={activeToolId ?? selectedPlacedObject?.assetId}
+              loading={assetLibraryLoading}
+              error={assetLibraryError}
+              onRefresh={() => refreshAssetLibrary({ isPublic: true, limit: 100 })}
+              onSelectAsset={(assetId) => {
+                setActiveToolId(assetId);
+                selectAsset(assetId);
+              }}
+              onAssetSaved={(asset) => {
+                upsertAssetInLibrary(asset);
+                setActiveToolId(asset.id);
+              }}
+              onAssetDeleted={(assetId) => {
+                const result = removeAssetFromLibrary(assetId);
+                if (result.ok) {
+                  setActiveToolId((current) => (current === assetId ? null : current));
+                }
+                return result;
+              }}
+              onMessage={setLastPlacementMessage}
+            />
             <div className="h-full overflow-y-auto p-3 pb-28">
               <DefenseToolsPanel
                 assets={filteredCatalogItems}

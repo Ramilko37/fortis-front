@@ -89,10 +89,15 @@ export type DefenseAsset = {
   score?: number;
   priority?: DefensePriority;
   compoundProfile?: DefenseAssetCompoundProfile;
+  weaponSpec?: Record<string, unknown>;
+  detectionSpec?: Record<string, unknown>;
+  ewSpec?: Record<string, unknown>;
   tags?: string[];
   legacyItemId?: string;
   calculatorAssetId?: string | null;
   mapCatalogGroupIds?: string[];
+  enterpriseId?: string | null;
+  isPublic?: boolean;
 };
 
 export type DefenseAssetLibraryItem = DefenseAsset;

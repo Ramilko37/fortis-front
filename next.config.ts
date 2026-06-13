@@ -6,6 +6,10 @@ const frontendRoot = dirname(fileURLToPath(import.meta.url));
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH?.trim() || "";
 const isStaticExport = process.env.NEXT_STATIC_EXPORT === "true";
+const fortisApiBaseUrl =
+  process.env.FORTIS_API_BASE_URL?.trim() ||
+  process.env.NEXT_PUBLIC_FORTIS_API_BASE_URL?.trim() ||
+  "http://localhost:8090";
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -13,6 +17,7 @@ const nextConfig: NextConfig = {
   },
   output: isStaticExport ? "export" : undefined,
   trailingSlash: true,
+  skipTrailingSlashRedirect: true,
   images: {
     unoptimized: true,
   },
@@ -39,6 +44,29 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+  async rewrites() {
+    if (isStaticExport) return [];
+    return {
+      beforeFiles: [
+        {
+          source: "/api/v1/assets",
+          destination: `${fortisApiBaseUrl}/api/v1/assets`,
+        },
+        {
+          source: "/api/v1/assets/get",
+          destination: `${fortisApiBaseUrl}/api/v1/assets/get`,
+        },
+        {
+          source: "/api/v1/assets/update",
+          destination: `${fortisApiBaseUrl}/api/v1/assets/update`,
+        },
+        {
+          source: "/api/v1/assets/delete",
+          destination: `${fortisApiBaseUrl}/api/v1/assets/delete`,
+        },
+      ],
+    };
   },
 };
 
