@@ -16,6 +16,7 @@ import { computeWeightedScore, priorityForScore } from "@/modules/defense-calcul
 import { fitToBudget } from "@/modules/defense-calculator/domain/budget-fit";
 import { formatMln, priorityLabel } from "@/modules/defense-calculator/domain/format";
 import { CalculatorReport } from "@/modules/defense-calculator/ui/calculator-report";
+import { buildProjectReportObjectLines, type ProjectObjectReportLine } from "@/modules/defense-calculator/domain/project-report-lines";
 import {
   calculateProjectTotalObjects,
   calculateProjectTotalUnits,
@@ -101,6 +102,8 @@ export function CalculatorPage() {
     () => estimateConfiguration(calculatorConfig, context),
     [calculatorConfig, context],
   );
+
+  const objectLines = useMemo(() => buildProjectReportObjectLines(project), [project]);
 
   const structuralProfile = useMemo(() => buildStructuralProfile(project), [project]);
 
@@ -210,6 +213,7 @@ export function CalculatorPage() {
               scoredAssets={scoredAssets}
               estimate={estimate}
               project={project}
+              objectLines={objectLines}
               layerSummaries={layerSummaries}
             />
           ) : null}
@@ -235,6 +239,7 @@ export function CalculatorPage() {
       {/* Print-only report (rendered off-screen, shown only when printing) */}
       <div className="hidden print:block">
         <CalculatorReport
+          objectLines={objectLines}
           myEstimate={estimate}
           structuralProfile={structuralProfile}
           scoredAssets={scoredAssets}
@@ -290,12 +295,15 @@ function ConfigureTab({
   estimate,
   project,
   layerSummaries,
+  objectLines,
 }: {
   scoredAssets: ScoredAsset[];
   estimate: ReturnType<typeof estimateConfiguration>;
   project: DefenseProject;
   layerSummaries: LayerSummary[];
+  objectLines: ProjectObjectReportLine[];
 }) {
+  const objectLinesById = new Map(objectLines.map((line) => [line.objectId, line]));
   const card = "rounded-2xl border border-slate-200 bg-white ";
   const statusLabel: Record<DefenseProject["placedObjects"][number]["status"], string> = {
     planned: "План",
@@ -373,6 +381,7 @@ function ConfigureTab({
 
                 {objectRows.map(({ object, projectAsset, asset, weightedScore, priority, unitPriceMln }) => {
                   const lineTotal = unitPriceMln * object.quantity;
+                  const objectLine = objectLinesById.get(object.id);
                   return (
                     <div
                       key={object.id}
@@ -406,6 +415,17 @@ function ConfigureTab({
                           <span className="mx-1.5 text-slate-300">·</span>
                           <span className="text-slate-400">{statusLabel[object.status]}</span>
                         </p>
+                        {objectLine?.isCompoundPost ? (
+                          <>
+                            {objectLine.compositionSummary ? (
+                              <p className="mt-0.5 font-mono text-[11px] text-slate-500">{objectLine.compositionSummary}</p>
+                            ) : null}
+                            <p className="mt-0.5 font-mono text-[11px] text-slate-500">
+                              {objectLine.weaponSummary ?? "—"}
+                              {objectLine.azimuthSectorSummary ? <span> · {objectLine.azimuthSectorSummary}</span> : null}
+                            </p>
+                          </>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="w-24 text-right font-mono text-xs tabular-nums text-slate-600 sm:block">

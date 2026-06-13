@@ -37,6 +37,7 @@ assert(optical, "calculator adapter must include map-only canonical assets");
 assert(optical.unitPriceMln === 12, "map-only canonical assets must carry estimated CAPEX into calculator");
 
 const calculatorPageSource = readFileSync("src/modules/defense-calculator/ui/calculator-page.tsx", "utf8");
+const calculatorReportSource = readFileSync("src/modules/defense-calculator/ui/calculator-report.tsx", "utf8");
 assert(
   !calculatorPageSource.includes("@/shared/config/defense-catalog"),
   "calculator page must not import the legacy defenseItems catalog directly",
@@ -52,6 +53,18 @@ assert(
 assert(
   calculatorPageSource.includes("project.placedObjects"),
   "calculator page must render read-only rows from placedObjects",
+);
+assert(
+  calculatorPageSource.includes("buildProjectReportObjectLines"),
+  "calculator page should use object-level report lines helper for calculator/report handoff",
+);
+assert(
+  calculatorReportSource.includes("objectLines"),
+  "calculator report should receive object-level lines for report rendering",
+);
+assert(
+  calculatorReportSource.includes("Размещённые объекты по эшелонам и типам"),
+  "calculator report should include placed objects section for compound-aware output",
 );
 
 console.log("project-asset-adapter.test.ts: calculator reads canonical project asset library");
