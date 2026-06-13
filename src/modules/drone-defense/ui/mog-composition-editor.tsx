@@ -2,7 +2,8 @@
 
 import { DragOutlined } from "@ant-design/icons";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import type { DefenseAsset, PlacedDefenseCompoundProfile, PlacedDefenseObject } from "@/shared/types/defense-project";
+import type { DefenseAsset, PlacedDefenseObject } from "@/shared/types/defense-project";
+import type { PlacedDefenseCompoundProfile } from "@/shared/types/defense-configuration";
 
 type MogCompositionEditorProps = {
   asset: DefenseAsset;
@@ -46,15 +47,16 @@ export function MogCompositionEditor({ asset, profile, onChange, onClose }: MogC
 
   const editorRef = useRef<HTMLDivElement | null>(null);
   const dragState = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
-  const [dragPosition, setDragPosition] = useState({ left: 16, top: 16 });
-  const [isDragging, setIsDragging] = useState(false);
-
-  useEffect(() => {
+  const [dragPosition, setDragPosition] = useState(() => {
+    if (typeof window === "undefined") {
+      return { left: 16, top: 16 };
+    }
     const width = 320;
     const left = Math.max(16, window.innerWidth - width - 16);
     const top = 16;
-    setDragPosition({ left, top });
-  }, []);
+    return { left, top };
+  });
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (!isDragging) return;
@@ -90,7 +92,7 @@ export function MogCompositionEditor({ asset, profile, onChange, onClose }: MogC
     };
   }, [isDragging]);
 
-  const handleDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const handleDragStart = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
     event.preventDefault();
 

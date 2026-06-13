@@ -6,7 +6,6 @@ import type {
   DefenseAssetLibraryItem,
   DefenseProject,
   EditableDefenseLayer,
-  PlacedDefenseCompoundProfile,
   DeleteLayerResult,
   LayerCost,
   LayerSummary,
@@ -14,6 +13,7 @@ import type {
   PlacementValidationResult,
   ProjectCalculatorConfiguration,
 } from "@/shared/types/defense-project";
+import type { PlacedDefenseCompoundProfile } from "@/shared/types/defense-configuration";
 import type { SelectedConfiguration } from "@/shared/types/defense-configuration";
 
 const PROJECT_SCHEMA_VERSION = 1;
