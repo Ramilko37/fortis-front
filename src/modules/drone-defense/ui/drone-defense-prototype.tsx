@@ -584,9 +584,6 @@ export function DroneDefensePrototype() {
                 <p className="truncate text-xs text-slate-500">Defense Configuration Studio</p>
               </div>
             </div>
-            <div className="mt-3">
-              <VariantSelector />
-            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
@@ -636,6 +633,11 @@ export function DroneDefensePrototype() {
       ) : null}
 
       <main className="relative min-w-0 flex-1 overflow-hidden">
+        <div className="pointer-events-none absolute inset-x-0 top-4 z-30 flex justify-center">
+          <div className="pointer-events-auto rounded-2xl border border-slate-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur">
+            <VariantSelector />
+          </div>
+        </div>
         {error ? (
           <div className="absolute left-4 top-4 z-30 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 shadow">
             {error}
