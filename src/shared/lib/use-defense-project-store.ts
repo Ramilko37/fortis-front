@@ -25,9 +25,11 @@ import {
   validateObjectPlacement,
 } from "@/shared/lib/defense-project";
 import { loadPresetIntoConfiguration } from "@/shared/lib/defense-configuration";
+import { fetchAssetLibrary, type FetchAssetLibraryOptions } from "@/modules/drone-defense/infra/asset-library-api";
 import { FORTIS_CONFIGURATION_STORAGE_KEY } from "@/shared/lib/use-defense-configuration-store";
 import type {
   Coordinates,
+  DefenseAsset,
   DefenseProject,
   DeleteLayerResult,
   EditableDefenseLayer,
@@ -43,6 +45,8 @@ type DefenseProjectState = {
   project: DefenseProject;
   hydrated: boolean;
   budgetApplied: boolean;
+  assetLibraryLoading: boolean;
+  assetLibraryError: string | null;
   activeLayerId?: string;
   selectedAssetId?: string;
   selectedObjectId?: string;
@@ -80,6 +84,11 @@ type DefenseProjectState = {
   loadPresetProject: (presetId: string) => void;
   replaceProject: (project: DefenseProject) => void;
   applyBudgetSelection: (picks: Array<{ assetId: string; included: boolean }>) => void;
+  refreshAssetLibrary: (
+    options?: FetchAssetLibraryOptions & { loader?: () => Promise<DefenseProject["assetLibrary"]> },
+  ) => Promise<void>;
+  upsertAssetInLibrary: (asset: DefenseAsset) => void;
+  removeAssetFromLibrary: (assetId: string) => { ok: true } | { ok: false; reason: "asset-in-use"; message: string };
   clearProject: () => void;
   saveProjectToLocalStorage: () => void;
   restoreProjectFromLocalStorage: () => void;
@@ -139,6 +148,8 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     project: initialProject,
     hydrated: false,
     budgetApplied: false,
+    assetLibraryLoading: false,
+    assetLibraryError: null,
     ...syncSelection(initialProject),
     createLayer: (data) => {
       if (get().project.layers.length >= MAX_DEFENSE_PROJECT_LAYERS) return;
@@ -319,10 +330,67 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       applyProject({ ...applyAssetQuantityDraftsToProject(get().project, lines), source: "custom" }, set);
       set({ budgetApplied: true });
     },
+    refreshAssetLibrary: async (options = {}) => {
+      const { loader, ...query } = options;
+      set({ assetLibraryLoading: true, assetLibraryError: null });
+      try {
+        const assets = loader ? await loader() : await fetchAssetLibrary(query);
+        const project = {
+          ...get().project,
+          assetLibrary: assets,
+          updatedAt: new Date().toISOString(),
+        };
+        persist(project);
+        set({
+          project,
+          budgetApplied: false,
+          assetLibraryLoading: false,
+          assetLibraryError: null,
+          ...syncSelection(project),
+        });
+      } catch {
+        set({
+          assetLibraryLoading: false,
+          assetLibraryError: "Не удалось загрузить библиотеку с сервера, используется локальный каталог.",
+        });
+      }
+    },
+    upsertAssetInLibrary: (asset) => {
+      const current = get().project.assetLibrary;
+      const exists = current.some((item) => item.id === asset.id);
+      const project = {
+        ...get().project,
+        assetLibrary: exists
+          ? current.map((item) => (item.id === asset.id ? asset : item))
+          : [...current, asset],
+        selectedAssetId: asset.id,
+        updatedAt: new Date().toISOString(),
+      };
+      applyProject(project, set);
+      set({ assetLibraryError: null });
+    },
+    removeAssetFromLibrary: (assetId) => {
+      if (get().project.placedObjects.some((object) => object.assetId === assetId)) {
+        return {
+          ok: false,
+          reason: "asset-in-use",
+          message: "Средство уже размещено на карте. Сначала удалите или замените размещённые объекты.",
+        };
+      }
+      const project = {
+        ...get().project,
+        assetLibrary: get().project.assetLibrary.filter((asset) => asset.id !== assetId),
+        selectedAssetId: get().project.selectedAssetId === assetId ? undefined : get().project.selectedAssetId,
+        updatedAt: new Date().toISOString(),
+      };
+      applyProject(project, set);
+      set({ assetLibraryError: null });
+      return { ok: true };
+    },
     clearProject: () => {
       const project = createDefaultDefenseProject();
       persist(project);
-      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
+      set({ project, hydrated: true, budgetApplied: false, assetLibraryError: null, ...syncSelection(project) });
     },
     saveProjectToLocalStorage: () => persist(get().project),
     restoreProjectFromLocalStorage: () => {

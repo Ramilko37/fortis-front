@@ -291,4 +291,68 @@ useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
 
 console.log("budgetApplied flag: OK");
 
-console.log("use-defense-project-store.test.ts: project store contracts passed");
+async function runAssetLibraryRefreshContracts() {
+  // ── asset library refresh (FRT-48) ─────────────────────────────────────────
+  storage.clear();
+  useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+
+  const st = useDefenseProjectStore.getState();
+  const l2 = st.project.layers.find((layer) => layer.code === "L2");
+  assert(l2, "store project must include L2 before asset library refresh");
+  st.placeObject("mobile-radar", l2.id, { lat: 55.44, lng: 37.1 });
+  assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "precondition: placed object exists");
+
+  await useDefenseProjectStore.getState().refreshAssetLibrary({
+    loader: async () => [
+      {
+        id: "server-radar",
+        name: "Серверная РЛС",
+        shortName: "СРЛС",
+        category: "detection",
+        roles: ["detect"],
+        pricePerUnitMln: 42,
+        currency: "RUB",
+        unitLabel: "шт",
+        recommendedLayerCodes: ["L2"],
+        coverageType: "circle",
+        coverageRadius: 75000,
+        deploymentType: "mobile",
+        placementType: "map-object",
+      },
+    ],
+  });
+
+  const refreshed = useDefenseProjectStore.getState();
+  assert(refreshed.assetLibraryLoading === false, "refreshAssetLibrary must clear loading after success");
+  assert(refreshed.assetLibraryError === null, "refreshAssetLibrary must clear stale errors after success");
+  assert(refreshed.project.assetLibrary.length === 1, "refreshAssetLibrary must replace project assetLibrary with server items");
+  assert(refreshed.project.assetLibrary[0].id === "server-radar", "refreshAssetLibrary must use server asset ids");
+  assert(refreshed.project.placedObjects.length === 1, "refreshAssetLibrary must not delete placed objects");
+  assert(
+    refreshed.project.placedObjects[0].assetId === "mobile-radar",
+    "refreshAssetLibrary must keep placed objects even when their asset id is missing in fresh library",
+  );
+
+  const beforeFailure = useDefenseProjectStore.getState().project.assetLibrary;
+  await useDefenseProjectStore.getState().refreshAssetLibrary({
+    loader: async () => {
+      throw new Error("backend unavailable");
+    },
+  });
+  const failed = useDefenseProjectStore.getState();
+  assert(failed.assetLibraryLoading === false, "refreshAssetLibrary must clear loading after failure");
+  assert(
+    failed.assetLibraryError?.includes("локальный каталог"),
+    "refreshAssetLibrary must expose a soft fallback message after failure",
+  );
+  assert(failed.project.assetLibrary === beforeFailure, "failed refresh must keep the existing/local asset library");
+  assert(failed.project.placedObjects.length === 1, "failed refresh must not delete placed objects");
+}
+
+runAssetLibraryRefreshContracts()
+  .then(() => {
+    console.log("use-defense-project-store.test.ts: project store contracts passed");
+  })
+  .catch((error) => {
+    throw error;
+  });

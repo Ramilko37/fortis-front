@@ -16,7 +16,7 @@ type LayersQuery = {
   scenarioId: string;
 };
 
-async function readJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+export async function readJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, init);
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);
@@ -102,3 +102,13 @@ export function deleteVariant(id: string): Promise<{ status: string }> {
     method: "DELETE",
   });
 }
+
+export {
+  buildAssetLibraryUrl,
+  createDefenseAsset,
+  deleteDefenseAsset,
+  fetchAssetLibrary,
+  getDefenseAsset,
+  normalizeDefenseAssetPayload,
+  updateDefenseAsset,
+} from "@/modules/drone-defense/infra/asset-library-api";

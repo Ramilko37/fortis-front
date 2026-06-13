@@ -136,6 +136,35 @@ function parseRangeLabel(rangeLabel?: string) {
   return {};
 }
 
+const assetIconUrlByItemId: Partial<Record<string, string>> = {
+  "l2-optical": "/drone-defense/assets/optical-detection.avif",
+  "l2-acoustic": "/drone-defense/assets/acoustic-detection.avif",
+  "l2-rf-passive": "/drone-defense/assets/rf-detection.avif",
+  "l4-gps-spoof": "/drone-defense/assets/spoofers.avif",
+  "l4-microwave": "/drone-defense/assets/microwave-weapon.avif",
+  "l5-mobile-fire": "/drone-defense/assets/automatic-weapons.avif",
+  "l5-bars": "/drone-defense/assets/bars.avif",
+  "l6-pzrk": "/drone-defense/assets/pzrk.avif",
+  "l7-camouflage": "/drone-defense/assets/camouflage-nets.avif",
+  "l7-smoke": "/drone-defense/assets/smoke-generation.avif",
+  "l7-thermal-decoy": "/drone-defense/assets/thermal-decoys.avif",
+  "l7-decoys": "/drone-defense/assets/decoys.avif",
+  "l7-contrast": "/drone-defense/assets/contrast-reduction.avif",
+  "l8-domes": "/drone-defense/assets/domes-aerostats.avif",
+  "mobile-radar": "/drone-defense/assets/radar.avif",
+  "ew-narrowband": "/drone-defense/assets/jamming-generator.avif",
+  "ew-broadband": "/drone-defense/assets/jamming-generator.avif",
+  "interceptor-drones": "/drone-defense/assets/interceptor-drones.avif",
+  aircraft: "/drone-defense/assets/aircraft.avif",
+  "turret-complex": "/drone-defense/assets/mog-mounted-system.avif",
+  "armored-vehicle": "/drone-defense/assets/armored-vehicle.avif",
+  laser: "/drone-defense/assets/laser.avif",
+  "barrel-aa": "/drone-defense/assets/zak.avif",
+  "pantsir-zrpk": "/drone-defense/assets/zrpk.avif",
+  "passive-itz-bundle": "/drone-defense/assets/passive-itz-bundle.avif",
+  "atz-bundle": "/drone-defense/assets/atz-personnel-protection.avif",
+};
+
 export const defenseAssetLibrary: DefenseAsset[] = defenseItems.map((item) => {
   const category = categoryForItem(item.id);
   const seedLayerCode = layerCodeFromLayerId(item.layerId);
@@ -168,6 +197,7 @@ export const defenseAssetLibrary: DefenseAsset[] = defenseItems.map((item) => {
     coverageAngle: category === "jamming" || category === "spoofing" ? 90 : undefined,
     deploymentType: isNonPhysical ? "external" : "static",
     placementType,
+    iconUrl: assetIconUrlByItemId[item.id],
     score: item.score,
     priority: item.priority,
     compoundProfile: item.compoundProfile,
