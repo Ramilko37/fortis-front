@@ -1,3 +1,4 @@
+import { exportDefenseProjectJson } from "@/shared/lib/defense-project";
 import type {
   Configuration,
   DefenseCatalogResponse,
@@ -8,6 +9,7 @@ import type {
   RecommendRequest,
   Recommendation,
 } from "@/shared/types/drone-defense";
+import type { DefenseProject, VariantListResponse, VariantSummary } from "@/shared/types/defense-project";
 
 type LayersQuery = {
   facilityId: string;
@@ -53,5 +55,35 @@ export function recommendConfigurationRequest(configuration: Configuration, budg
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+export function listVariants(): Promise<VariantListResponse> {
+  return readJson<VariantListResponse>("/api/defense/projects");
+}
+
+export function loadVariant(id: string): Promise<DefenseProject> {
+  return readJson<DefenseProject>(`/api/defense/projects/${encodeURIComponent(id)}`);
+}
+
+export function saveVariantAsNew(args: { name: string; project: DefenseProject }): Promise<VariantSummary> {
+  return readJson<VariantSummary>("/api/defense/projects", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: args.name, projectJson: exportDefenseProjectJson(args.project) }),
+  });
+}
+
+export function overwriteVariant(args: { id: string; name: string; project: DefenseProject }): Promise<VariantSummary> {
+  return readJson<VariantSummary>(`/api/defense/projects/${encodeURIComponent(args.id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: args.name, projectJson: exportDefenseProjectJson(args.project) }),
+  });
+}
+
+export function deleteVariant(id: string): Promise<{ status: string }> {
+  return readJson<{ status: string }>(`/api/defense/projects/${encodeURIComponent(id)}`, {
+    method: "DELETE",
   });
 }
