@@ -42,6 +42,8 @@ assert(useDefenseProjectStore.getState().project.placedObjects[0].coordinates.la
 
 useDefenseProjectStore.getState().selectObject(placed[0].id);
 assert(useDefenseProjectStore.getState().selectedObjectId === placed[0].id, "selectObject must expose object selection");
+useDefenseProjectStore.getState().selectObject(null);
+assert(useDefenseProjectStore.getState().selectedObjectId === undefined, "selectObject(null) must clear selected object");
 
 useDefenseProjectStore.getState().duplicatePlacedObject(placed[0].id);
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 2, "duplicatePlacedObject must add a second object");

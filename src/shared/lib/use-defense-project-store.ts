@@ -63,7 +63,7 @@ type DefenseProjectState = {
   selectLayer: (layerId: string) => void;
   setBaseObjectCenter: (center: Coordinates) => void;
   selectAsset: (assetId: string) => void;
-  selectObject: (objectId: string) => void;
+  selectObject: (objectId: string | null) => void;
   setAssetQuantity: (assetId: string, quantity: number) => void;
   placeObject: (
     assetId: string,
@@ -264,13 +264,13 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       set({ project, ...syncSelection(project) });
     },
     selectObject: (objectId) => {
-      const object = get().project.placedObjects.find((item) => item.id === objectId);
-      if (!object) return;
+      const object = objectId ? get().project.placedObjects.find((item) => item.id === objectId) : null;
+      if (!object && objectId) return;
       const project = {
         ...get().project,
-        selectedObjectId: objectId,
-        activeLayerId: object.layerId,
-        layers: get().project.layers.map((layer) => ({ ...layer, isActive: layer.id === object.layerId })),
+        selectedObjectId: object?.id,
+        activeLayerId: object ? object.layerId : get().project.activeLayerId,
+        layers: get().project.layers.map((layer) => ({ ...layer, isActive: object ? layer.id === object.layerId : layer.id === get().project.activeLayerId })),
       };
       persist(project);
       set({ project, ...syncSelection(project) });

@@ -6,6 +6,7 @@ type MogCompositionEditorProps = {
   asset: DefenseAsset;
   profile: PlacedDefenseCompoundProfile;
   onChange: (patch: Partial<PlacedDefenseObject>) => void;
+  onClose: () => void;
 };
 
 function formatCost(pricePerUnitMln: number | null): string {
@@ -31,7 +32,7 @@ const postTypeOptions = ["МОГ", "ПВН", "ГОР", "КПП", "Другой �
 const accountabilityOptions = ["Росгвардия", "МО", "ЧОП"];
 const armamentOptions = ["Огнестрел", "Антидроновые ружья", "Дроны-перехватчики", "Автомат/пулемёт/ПБС"];
 
-export function MogCompositionEditor({ asset, profile, onChange }: MogCompositionEditorProps) {
+export function MogCompositionEditor({ asset, profile, onChange, onClose }: MogCompositionEditorProps) {
   const updateField = (patch: Partial<PlacedDefenseCompoundProfile>) => {
     onChange({ compoundProfile: { ...profile, ...patch } });
   };
@@ -49,10 +50,18 @@ export function MogCompositionEditor({ asset, profile, onChange }: MogCompositio
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-500">Редактор МОГ</p>
             <p className="truncate text-sm font-semibold text-slate-950">Составной пост</p>
           </div>
-          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-700">
-            Композиция
-          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-7 w-7 rounded-md bg-slate-100 px-0 py-0 text-[11px] font-bold text-slate-600 transition hover:bg-slate-200"
+            aria-label="Закрыть редактор МОГ"
+          >
+            ×
+          </button>
         </div>
+        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-700">
+          Композиция
+        </span>
 
         <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-700">
           <p className="font-semibold">Тип поста: {profile.postType}</p>

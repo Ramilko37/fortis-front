@@ -755,6 +755,7 @@ export function DroneDefensePrototype() {
                 asset={selectedPlacedAsset}
                 profile={selectedMogObject.compoundProfile}
                 onChange={(patch) => updatePlacedObject(selectedMogObject.id, patch)}
+                onClose={() => selectObject(null)}
               />
             ) : null}
 
