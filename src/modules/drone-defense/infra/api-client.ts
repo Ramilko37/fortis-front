@@ -8,19 +8,12 @@ import type {
   RecommendRequest,
   Recommendation,
 } from "@/shared/types/drone-defense";
+import { readJson } from "@/shared/lib/api-client";
 
 type LayersQuery = {
   facilityId: string;
   scenarioId: string;
 };
-
-export async function readJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init);
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-  return (await response.json()) as T;
-}
 
 export function fetchCatalog() {
   return readJson<DefenseCatalogResponse>("/api/defense/catalog");
