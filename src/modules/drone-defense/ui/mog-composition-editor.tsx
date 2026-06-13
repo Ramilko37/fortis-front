@@ -1,5 +1,7 @@
 "use client";
 
+import { DragOutlined } from "@ant-design/icons";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { DefenseAsset, PlacedDefenseCompoundProfile, PlacedDefenseObject } from "@/shared/types/defense-project";
 
 type MogCompositionEditorProps = {
@@ -42,14 +44,86 @@ export function MogCompositionEditor({ asset, profile, onChange, onClose }: MogC
     updateField({ azimuth: clampAzimuth(numeric) });
   };
 
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const dragState = useRef<{ startX: number; startY: number; startLeft: number; startTop: number } | null>(null);
+  const [dragPosition, setDragPosition] = useState({ left: 16, top: 16 });
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const width = 320;
+    const left = Math.max(16, window.innerWidth - width - 16);
+    const top = 16;
+    setDragPosition({ left, top });
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!dragState.current) return;
+      const editor = editorRef.current;
+      if (!editor) return;
+
+      const width = editor.getBoundingClientRect().width;
+      const height = editor.getBoundingClientRect().height;
+      const maxLeft = Math.max(16, window.innerWidth - width - 16);
+      const maxTop = Math.max(16, window.innerHeight - height - 16);
+      const nextLeft = Math.min(Math.max(dragState.current.startLeft + (event.clientX - dragState.current.startX), 16), maxLeft);
+      const nextTop = Math.min(Math.max(dragState.current.startTop + (event.clientY - dragState.current.startY), 16), maxTop);
+
+      setDragPosition({ left: nextLeft, top: nextTop });
+    };
+
+    const stopDrag = () => {
+      setIsDragging(false);
+      dragState.current = null;
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopDrag);
+    window.addEventListener("pointercancel", stopDrag);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopDrag);
+      window.removeEventListener("pointercancel", stopDrag);
+    };
+  }, [isDragging]);
+
+  const handleDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+
+    dragState.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: dragPosition.left,
+      startTop: dragPosition.top,
+    };
+    setIsDragging(true);
+  };
+
   return (
-    <aside className="pointer-events-none absolute right-4 top-4 z-30 w-[320px] max-w-[calc(100vw-2rem)] max-h-[min(70vh,calc(100vh-2rem))] overflow-y-auto rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur">
+    <aside
+      ref={editorRef}
+      className="pointer-events-none fixed z-30 w-[320px] max-w-[calc(100vw-2rem)] max-h-[min(70vh,calc(100vh-2rem))] overflow-y-auto rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur"
+      style={{ left: dragPosition.left, top: dragPosition.top }}
+    >
       <div className="pointer-events-auto">
         <div className="mb-2 flex items-center justify-between">
-          <div>
+          <button
+            type="button"
+            title="Перетащить редактор"
+            onPointerDown={handleDragStart}
+            onClick={(event) => event.preventDefault()}
+            className={`flex min-h-7 items-center justify-between gap-2 select-none rounded-md pr-1 text-left ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-500">Редактор МОГ</p>
             <p className="truncate text-sm font-semibold text-slate-950">Составной пост</p>
-          </div>
+            <DragOutlined className="text-slate-400" />
+          </button>
           <button
             type="button"
             onClick={onClose}
