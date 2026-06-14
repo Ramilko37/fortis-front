@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
   canPlaceCatalogGroupInSlot,
@@ -25,6 +25,14 @@ for (const group of echelonCatalogGroups) {
 
   if (!existsSync(join(publicRoot, asset.imageUrl))) {
     throw new Error(`${group.id} icon file must exist at public/${asset.imageUrl}`);
+  }
+
+  if (!asset.isPlaceholder && !existsSync(join(publicRoot, asset.previewImageUrl))) {
+    throw new Error(`${group.id} preview icon file must exist at public/${asset.previewImageUrl}`);
+  }
+
+  if (!asset.isPlaceholder && statSync(join(publicRoot, asset.previewImageUrl)).size > 150 * 1024) {
+    throw new Error(`${group.id} preview icon exceeds 150KB: public/${asset.previewImageUrl}`);
   }
 }
 
@@ -92,14 +100,24 @@ const l4Slot: EchelonMapSlot = {
   status: "empty",
   color: [255, 255, 255, 235],
 };
-const placeholderOption = getBuildOptionForSlot({
-  slot: l4Slot,
+const l7Slot: EchelonMapSlot = {
+  ...l4Slot,
+  id: "layer_07_accuracy_disruption-slot-01",
+  layerId: "layer_07_accuracy_disruption",
+};
+const finalArtOption = getBuildOptionForSlot({
+  slot: l7Slot,
   catalogGroups: echelonCatalogGroups,
   placements: [],
 });
 
-if (placeholderOption?.groupId !== "l4-ew-gnss" || !placeholderOption.imageUrl.includes("placeholders/l4.svg")) {
-  throw new Error("Layers without final art must still expose placeholder build icons");
+if (
+  finalArtOption?.groupId !== "l7-camouflage" ||
+  finalArtOption.isPlaceholder ||
+  !finalArtOption.imageUrl.includes("/drone-defense/assets/camouflage-nets.avif") ||
+  !finalArtOption.previewImageUrl.includes("/drone-defense/assets/thumbs/camouflage-nets.avif")
+) {
+  throw new Error("Former placeholder layers must expose newly added final art");
 }
 
 const directOption = getBuildOptionForCatalogGroup({

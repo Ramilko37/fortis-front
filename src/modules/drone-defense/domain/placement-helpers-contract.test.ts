@@ -112,6 +112,33 @@ if (radarShape.kind !== "sector") {
   throw new Error(`detection/optical assets should default to a sector coverage; got ${radarShape.kind}`);
 }
 
+const mogPlacement = {
+  ...readyPlacement,
+  compoundProfile: {
+    kind: "compound-post",
+    postType: "МОГ",
+    personnelCount: "4",
+    accountability: "МО",
+    armament: "Автомат/пулемёт/ПБС",
+    weaponUnits: "2",
+    sectorOrRange: "до 4–8 км, сектор 90–360°",
+    azimuth: 180,
+  },
+} as const;
+const mogShape = getCoverageShape(mogPlacement);
+if (mogShape.kind !== "sector") {
+  throw new Error(`МOГ placement should be rendered as sector coverage; got ${mogShape.kind}`);
+}
+if (mogShape.radiusM !== 8000) {
+  throw new Error(`МОГ range should be parsed from profile as 8000m; got ${mogShape.radiusM}`);
+}
+if (mogShape.halfAngleDeg !== 45) {
+  throw new Error(`МОГ coverage should use demo half-angle 45°, got ${mogShape.halfAngleDeg}`);
+}
+if (mogShape.azimuthDeg !== 180) {
+  throw new Error(`МОГ azimuth must be preserved from profile; got ${mogShape.azimuthDeg}`);
+}
+
 // kinetic group -> circle
 const kineticPlacement = buildCatalogPlacement({
   facilityId: facility.id,

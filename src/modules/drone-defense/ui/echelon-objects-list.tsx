@@ -1,9 +1,9 @@
 "use client";
 
 import { describePlacement } from "@/modules/drone-defense/domain/placement-helpers";
-import { defenseLayers } from "@/modules/drone-defense/infra/mock-defense-data";
 import type {
   DefenseCatalogResponse,
+  DefenseLayer,
   DefenseLayerId,
   Placement,
 } from "@/shared/types/drone-defense";
@@ -29,6 +29,8 @@ export function EchelonObjectsList({
   layerId,
   placements,
   catalog,
+  layers,
+  hiddenPlacementIds,
   selectedPlacementId,
   onSelect,
   onLocate,
@@ -37,6 +39,8 @@ export function EchelonObjectsList({
   layerId: DefenseLayerId;
   placements: Placement[];
   catalog: DefenseCatalogResponse | null;
+  layers: DefenseLayer[];
+  hiddenPlacementIds: Set<string>;
   selectedPlacementId: string | null;
   onSelect: (placementId: string) => void;
   onLocate: (placement: Placement) => void;
@@ -56,8 +60,9 @@ export function EchelonObjectsList({
   return (
     <ul className="space-y-2">
       {layerPlacements.map((placement) => {
-        const summary = describePlacement({ placement, catalog, layers: defenseLayers });
+        const summary = describePlacement({ placement, catalog, layers });
         const isSelected = placement.id === selectedPlacementId;
+        const isHidden = hiddenPlacementIds.has(placement.id);
         return (
           <li
             key={placement.id}
@@ -68,6 +73,11 @@ export function EchelonObjectsList({
             <button type="button" className="block w-full text-left" onClick={() => onSelect(placement.id)}>
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium text-slate-900">{summary.name}</p>
+                {isHidden ? (
+                  <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                    скрыт на карте
+                  </span>
+                ) : null}
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusStyles[summary.status]}`}>
                   {statusLabel[summary.status]}
                 </span>

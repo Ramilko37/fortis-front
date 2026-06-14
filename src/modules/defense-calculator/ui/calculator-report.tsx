@@ -12,6 +12,7 @@ import type {
   PriorityColor,
 } from "@/modules/defense-calculator/domain/calculator-types";
 import type { StructuralProfile } from "@/modules/defense-calculator/domain/structural-profile";
+import type { ProjectObjectReportLine } from "@/modules/defense-calculator/domain/project-report-lines";
 import type { fitToBudget } from "@/modules/defense-calculator/domain/budget-fit";
 import type { LayerSummary } from "@/shared/types/defense-project";
 
@@ -35,6 +36,7 @@ export function CalculatorReport({
   budgetApplied,
   generatedAt,
   layerSummaries,
+  objectLines,
 }: {
   myEstimate: ConfigurationEstimate;
   structuralProfile: StructuralProfile;
@@ -43,10 +45,12 @@ export function CalculatorReport({
   budgetApplied: boolean;
   generatedAt?: Date;
   layerSummaries?: LayerSummary[];
+  objectLines: ProjectObjectReportLine[];
 }) {
   const weightsSummary = criteria.map((c) => `${c.name} ${c.weight}`).join(" · ");
   const picksIncludedCount = budgetResult.picks.filter((pick) => pick.included).length;
   const generatedAtLabel = (generatedAt ?? new Date()).toLocaleString("ru-RU");
+  const hasEstimateLines = myEstimate.echelons.some((echelon) => echelon.lines.length > 0);
 
   return (
     <div className="report-root">
@@ -104,45 +108,49 @@ export function CalculatorReport({
 
       <section className="report-section">
         <h2>1. Смета выбранной конфигурации — {myEstimate.configurationName}</h2>
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th>Эшелон</th>
-              <th>Средство</th>
-              <th className="num">Кол-во</th>
-              <th className="num">Цена/ед.</th>
-              <th className="num">Стоимость</th>
-            </tr>
-          </thead>
-          <tbody>
-            {myEstimate.echelons.flatMap((echelon) =>
-              echelon.lines.map((line, idx) => (
-                <tr key={line.assetId}>
-                  {idx === 0 ? (
-                    <td rowSpan={echelon.lines.length} className="echelon-cell">
-                      {echelon.echelonName}
+        {hasEstimateLines ? (
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th>Эшелон</th>
+                <th>Средство</th>
+                <th className="num">Кол-во</th>
+                <th className="num">Цена/ед.</th>
+                <th className="num">Стоимость</th>
+              </tr>
+            </thead>
+            <tbody>
+              {myEstimate.echelons.flatMap((echelon) =>
+                echelon.lines.map((line, idx) => (
+                  <tr key={line.assetId}>
+                    {idx === 0 ? (
+                      <td rowSpan={echelon.lines.length} className="echelon-cell">
+                        {echelon.echelonName}
+                      </td>
+                    ) : null}
+                    <td>
+                      <span className="dot" style={{ background: PRINT_PRIORITY_COLOR[line.priority] }} />
+                      {line.assetName}
                     </td>
-                  ) : null}
-                  <td>
-                    <span className="dot" style={{ background: PRINT_PRIORITY_COLOR[line.priority] }} />
-                    {line.assetName}
-                  </td>
-                  <td className="num">{line.quantity}</td>
-                  <td className="num">{line.unitPriceMln > 0 ? formatMln(line.unitPriceMln) : "—"}</td>
-                  <td className="num strong">{formatMln(line.lineTotalMln)}</td>
-                </tr>
-              )),
-            )}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={4} className="num">
-                ИТОГО
-              </td>
-              <td className="num total">{formatMln(myEstimate.totalMln)}</td>
-            </tr>
-          </tfoot>
-        </table>
+                    <td className="num">{line.quantity}</td>
+                    <td className="num">{line.unitPriceMln > 0 ? formatMln(line.unitPriceMln) : "—"}</td>
+                    <td className="num strong">{formatMln(line.lineTotalMln)}</td>
+                  </tr>
+                )),
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={4} className="num">
+                  ИТОГО
+                </td>
+                <td className="num total">{formatMln(myEstimate.totalMln)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        ) : (
+          <p className="report-note">Конфигурация пуста: добавьте средства защиты на карте и сохраните её в текущий проект.</p>
+        )}
       </section>
 
       {layerSummaries?.length ? (
@@ -174,6 +182,41 @@ export function CalculatorReport({
                   <td className="num">{layer.coverageScore}</td>
                   <td className="num">{layer.conflictCount > 0 ? layer.conflictCount : "—"}</td>
                   <td className="num strong">{layer.totalMln > 0 ? formatMln(layer.totalMln) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
+
+      {objectLines.length > 0 ? (
+        <section className="report-section">
+          <h2>1.2. Размещённые объекты по эшелонам и типам</h2>
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th>Эшелон</th>
+                <th>Тип</th>
+                <th>Объект</th>
+                <th>Состав/вооружение</th>
+                <th>Азимут/сектор</th>
+                <th className="num">Стоимость</th>
+              </tr>
+            </thead>
+            <tbody>
+              {objectLines.map((line) => (
+                <tr key={line.objectId}>
+                  <td>
+                    {line.layerCode} · {line.layerName}
+                  </td>
+                  <td>{line.protectionType || "—"}</td>
+                  <td>{line.assetName}</td>
+                  <td>
+                    {line.compositionSummary ? <span>{line.compositionSummary}</span> : <span>—</span>}
+                    {line.weaponSummary ? <span> · {line.weaponSummary}</span> : null}
+                  </td>
+                  <td>{line.azimuthSectorSummary ?? "—"}</td>
+                  <td className="num strong">{formatMln(line.lineTotalMln)}</td>
                 </tr>
               ))}
             </tbody>

@@ -40,6 +40,7 @@ export function placedObjectsToMapPlacements({
         criticalityBoost: 1.05,
         feasibility: 0.82,
         environmentModifier: 0.92,
+        compoundProfile: object.compoundProfile,
         isSelected: object.id === project.selectedObjectId,
         isConflict: false,
       },

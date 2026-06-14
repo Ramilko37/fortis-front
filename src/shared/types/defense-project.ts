@@ -1,4 +1,5 @@
 import type { DefensePriority } from "@/shared/types/defense-configuration";
+import type { DefenseAssetCompoundProfile, PlacedDefenseCompoundProfile } from "@/shared/types/defense-configuration";
 
 export type Coordinates = {
   lat: number;
@@ -75,6 +76,7 @@ export type DefenseAsset = {
   recommendedLayerCodes?: string[];
   compatibleLayerCodes?: string[];
   incompatibleLayerCodes?: string[];
+  protectionType?: string;
   minEffectiveDistance?: number;
   maxEffectiveDistance?: number;
   coverageType: DefenseAssetCoverageType;
@@ -86,10 +88,16 @@ export type DefenseAsset = {
   modelUrl?: string;
   score?: number;
   priority?: DefensePriority;
+  compoundProfile?: DefenseAssetCompoundProfile;
+  weaponSpec?: Record<string, unknown>;
+  detectionSpec?: Record<string, unknown>;
+  ewSpec?: Record<string, unknown>;
   tags?: string[];
   legacyItemId?: string;
   calculatorAssetId?: string | null;
   mapCatalogGroupIds?: string[];
+  enterpriseId?: string | null;
+  isPublic?: boolean;
 };
 
 export type DefenseAssetLibraryItem = DefenseAsset;
@@ -107,6 +115,7 @@ export type PlacedDefenseObject = {
   customPricePerUnitMln?: number;
   customCoverageRadius?: number;
   customCoverageAngle?: number;
+  compoundProfile?: PlacedDefenseCompoundProfile;
   hasGeometryConflict?: boolean;
   hasCoverageConflict?: boolean;
   hasTerrainConflict?: boolean;
@@ -119,6 +128,15 @@ export type ProtectedObject = {
   id: string;
   name: string;
   center: Coordinates;
+};
+
+export type EnterpriseStatus = "active" | "configuring" | "offline";
+
+export type ProtectedObjectOption = ProtectedObject & {
+  enterpriseId: string;
+  address?: string;
+  status?: EnterpriseStatus;
+  source: "backend" | "fallback";
 };
 
 export type DefenseProjectMode = "view" | "edit-layers" | "place-object" | "move-object" | "measure";

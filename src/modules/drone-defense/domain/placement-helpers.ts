@@ -80,6 +80,49 @@ export type CoverageShape =
   | { kind: "zone" };
 
 const COVERAGE_DEFAULT_RADIUS_M = 1200;
+const COMPOUND_POST_DEFAULT_RADIUS_M = 8000;
+const COMPOUND_POST_HALF_ANGLE_DEG = 45;
+
+function normalizeAzimuth(value: number): number {
+  const normalized = ((value % 360) + 360) % 360;
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
+const DASH_TO_HYPHEN_PATTERN = /[–—−]/g;
+
+function parseMaxDistanceMFromProfile(profile: string): number | null {
+  const normalized = profile.replace(DASH_TO_HYPHEN_PATTERN, "-");
+  const rangeMatch = normalized.match(/до\s*(\d+)\s*-\s*(\d+)\s*км/i);
+  if (rangeMatch) {
+    return Number(rangeMatch[2]) * 1000;
+  }
+  const singleMatch = normalized.match(/до\s*(\d+)\s*км/i);
+  if (singleMatch) {
+    return Number(singleMatch[1]) * 1000;
+  }
+  return null;
+}
+
+function parseSectorHalfAngle(profile: string): number | null {
+  const normalized = profile.replace(DASH_TO_HYPHEN_PATTERN, "-");
+  const sectorRangeMatch = normalized.match(/сектор\s*(\d+)\s*-\s*(\d+)/i);
+  if (sectorRangeMatch) {
+    return Number(sectorRangeMatch[1]) / 2;
+  }
+  const sectorSingleMatch = normalized.match(/сектор\s*(\d+)\s*°?/i);
+  if (sectorSingleMatch) {
+    return Number(sectorSingleMatch[1]) / 2;
+  }
+  return null;
+}
+
+export function getCompoundPostCoverageShape(profile: { azimuth: number; sectorOrRange: string }): CoverageShape {
+  const radiusFromProfile = parseMaxDistanceMFromProfile(profile.sectorOrRange);
+  const azimuthDeg = normalizeAzimuth(profile.azimuth);
+  const halfAngleDeg = parseSectorHalfAngle(profile.sectorOrRange) ?? COMPOUND_POST_HALF_ANGLE_DEG;
+  const radiusM = radiusFromProfile ?? COMPOUND_POST_DEFAULT_RADIUS_M;
+  return { kind: "sector", azimuthDeg, halfAngleDeg, radiusM };
+}
 
 // Layers whose assets are directional sensors/emitters -> sector by default.
 const SECTOR_LAYER_IDS: Set<string> = new Set([
@@ -97,6 +140,9 @@ const CIRCLE_LAYER_IDS: Set<string> = new Set([
 ]);
 
 export function getCoverageShape(placement: Placement): CoverageShape {
+  if (placement.compoundProfile?.kind === "compound-post") {
+    return getCompoundPostCoverageShape(placement.compoundProfile);
+  }
   const layerId = placement.layerId;
   if (!layerId) return { kind: "none" };
   if (SECTOR_LAYER_IDS.has(layerId)) {

@@ -11,6 +11,8 @@ import styles from "./drone-defense-prototype.module.css";
 import { useDefenseStudioStore } from "../domain/use-defense-studio-store";
 import type { DefenseAssetKind } from "@/shared/types/drone-defense";
 
+function noopDetails() {}
+
 // Маппинг режимов размещения для разных типов объектов
 const placementModeByKind: Record<DefenseAssetKind, PlacementMode> = {
   operator_substation: "point",
@@ -93,7 +95,7 @@ export function AssetsPanel({
               placedCount={placedCount}
               maxQuantity={maxQuantity}
               compatibleWithEchelon={true} // TODO: проверять совместимость с эшелоном
-              onOpenDetails={() => console.log("Open details for", asset.id)}
+              onOpenDetails={noopDetails}
               onDragStart={() => {
                 onSelectAsset(asset.kind);
               }}

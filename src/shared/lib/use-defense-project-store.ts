@@ -15,6 +15,7 @@ import {
   movePlacedObjectInProject,
   placeObjectInProject,
   recenterProject,
+  setProjectBaseObject,
   setAssetQuantityInProject,
   syncPlacedObjectConflictFlags,
   transferPlacedObjectToLayerInProject,
@@ -25,14 +26,19 @@ import {
   validateObjectPlacement,
 } from "@/shared/lib/defense-project";
 import { loadPresetIntoConfiguration } from "@/shared/lib/defense-configuration";
+import { fetchAssetLibrary, type FetchAssetLibraryOptions } from "@/modules/drone-defense/infra/asset-library-api";
+import { fetchEnterprises, type FetchEnterprisesOptions } from "@/modules/drone-defense/infra/enterprise-api";
 import { FORTIS_CONFIGURATION_STORAGE_KEY } from "@/shared/lib/use-defense-configuration-store";
 import type {
   Coordinates,
+  DefenseAsset,
   DefenseProject,
   DeleteLayerResult,
   EditableDefenseLayer,
   PlacedDefenseObject,
   PlacementValidationResult,
+  ProtectedObject,
+  ProtectedObjectOption,
 } from "@/shared/types/defense-project";
 import type { LayerGeometryValidationResult } from "@/shared/lib/defense-project";
 
@@ -43,6 +49,11 @@ type DefenseProjectState = {
   project: DefenseProject;
   hydrated: boolean;
   budgetApplied: boolean;
+  assetLibraryLoading: boolean;
+  assetLibraryError: string | null;
+  protectedObjects: ProtectedObjectOption[];
+  protectedObjectsLoading: boolean;
+  protectedObjectsError: string | null;
   activeLayerId?: string;
   selectedAssetId?: string;
   selectedObjectId?: string;
@@ -62,8 +73,9 @@ type DefenseProjectState = {
   setLayerLocked: (layerId: string, isLocked: boolean) => void;
   selectLayer: (layerId: string) => void;
   setBaseObjectCenter: (center: Coordinates) => void;
+  selectBaseObject: (baseObject: ProtectedObject) => void;
   selectAsset: (assetId: string) => void;
-  selectObject: (objectId: string) => void;
+  selectObject: (objectId: string | null) => void;
   setAssetQuantity: (assetId: string, quantity: number) => void;
   placeObject: (
     assetId: string,
@@ -79,6 +91,14 @@ type DefenseProjectState = {
   validateObjectPlacement: (assetId: string, layerId: string, coordinates: Coordinates) => PlacementValidationResult;
   loadPresetProject: (presetId: string) => void;
   applyBudgetSelection: (picks: Array<{ assetId: string; included: boolean }>) => void;
+  refreshAssetLibrary: (
+    options?: FetchAssetLibraryOptions & { loader?: () => Promise<DefenseProject["assetLibrary"]> },
+  ) => Promise<void>;
+  refreshProtectedObjects: (
+    options?: FetchEnterprisesOptions & { loader?: () => Promise<ProtectedObjectOption[]> },
+  ) => Promise<void>;
+  upsertAssetInLibrary: (asset: DefenseAsset) => void;
+  removeAssetFromLibrary: (assetId: string) => { ok: true } | { ok: false; reason: "asset-in-use"; message: string };
   clearProject: () => void;
   saveProjectToLocalStorage: () => void;
   restoreProjectFromLocalStorage: () => void;
@@ -127,6 +147,37 @@ function syncSelection(project: DefenseProject) {
   };
 }
 
+function createFallbackProtectedObjectOption(baseObject: ProtectedObject): ProtectedObjectOption {
+  return {
+    ...baseObject,
+    enterpriseId: baseObject.id,
+    source: "fallback",
+  };
+}
+
+function mergeProtectedObjectOptions(
+  baseObject: ProtectedObject,
+  nextOptions: ProtectedObjectOption[],
+  currentOptions: ProtectedObjectOption[] = [],
+) {
+  const merged = [...nextOptions];
+  if (!merged.some((item) => item.id === baseObject.id)) {
+    merged.push(
+      currentOptions.find((item) => item.id === baseObject.id) ?? createFallbackProtectedObjectOption(baseObject),
+    );
+  }
+
+  const seen = new Set<string>();
+  const deduped: ProtectedObjectOption[] = [];
+  for (const item of merged) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    deduped.push(item);
+  }
+
+  return deduped.length > 0 ? deduped : [createFallbackProtectedObjectOption(baseObject)];
+}
+
 function applyProject(project: DefenseProject, set: (state: Partial<DefenseProjectState>) => void) {
   persist(project);
   set({ project, budgetApplied: false, ...syncSelection(project) });
@@ -138,6 +189,11 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     project: initialProject,
     hydrated: false,
     budgetApplied: false,
+    assetLibraryLoading: false,
+    assetLibraryError: null,
+    protectedObjects: [createFallbackProtectedObjectOption(initialProject.baseObject)],
+    protectedObjectsLoading: false,
+    protectedObjectsError: null,
     ...syncSelection(initialProject),
     createLayer: (data) => {
       if (get().project.layers.length >= MAX_DEFENSE_PROJECT_LAYERS) return;
@@ -256,7 +312,19 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     setBaseObjectCenter: (center) => {
       const current = get().project.baseObject.center;
       if (current.lat === center.lat && current.lng === center.lng) return;
-      applyProject(recenterProject(get().project, center), set);
+      const project = recenterProject(get().project, center);
+      applyProject(project, set);
+      set({
+        protectedObjects: mergeProtectedObjectOptions(project.baseObject, get().protectedObjects, get().protectedObjects),
+      });
+    },
+    selectBaseObject: (baseObject) => {
+      const project = setProjectBaseObject(get().project, baseObject);
+      applyProject(project, set);
+      set({
+        protectedObjects: mergeProtectedObjectOptions(project.baseObject, get().protectedObjects, get().protectedObjects),
+        protectedObjectsError: null,
+      });
     },
     selectAsset: (assetId) => {
       const project = { ...get().project, selectedAssetId: assetId, mode: "place-object" as const };
@@ -264,13 +332,13 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       set({ project, ...syncSelection(project) });
     },
     selectObject: (objectId) => {
-      const object = get().project.placedObjects.find((item) => item.id === objectId);
-      if (!object) return;
+      const object = objectId ? get().project.placedObjects.find((item) => item.id === objectId) : null;
+      if (!object && objectId) return;
       const project = {
         ...get().project,
-        selectedObjectId: objectId,
-        activeLayerId: object.layerId,
-        layers: get().project.layers.map((layer) => ({ ...layer, isActive: layer.id === object.layerId })),
+        selectedObjectId: object?.id,
+        activeLayerId: object ? object.layerId : get().project.activeLayerId,
+        layers: get().project.layers.map((layer) => ({ ...layer, isActive: object ? layer.id === object.layerId : layer.id === get().project.activeLayerId })),
       };
       persist(project);
       set({ project, ...syncSelection(project) });
@@ -317,15 +385,112 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       applyProject({ ...applyAssetQuantityDraftsToProject(get().project, lines), source: "custom" }, set);
       set({ budgetApplied: true });
     },
+    refreshAssetLibrary: async (options = {}) => {
+      const { loader, ...query } = options;
+      set({ assetLibraryLoading: true, assetLibraryError: null });
+      try {
+        const assets = loader ? await loader() : await fetchAssetLibrary(query);
+        if (assets.length === 0) {
+          set({
+            assetLibraryLoading: false,
+            assetLibraryError: "Сервер вернул пустую библиотеку, используется локальный каталог.",
+          });
+          return;
+        }
+        const project = {
+          ...get().project,
+          assetLibrary: assets,
+          updatedAt: new Date().toISOString(),
+        };
+        persist(project);
+        set({
+          project,
+          budgetApplied: false,
+          assetLibraryLoading: false,
+          assetLibraryError: null,
+          ...syncSelection(project),
+        });
+      } catch {
+        set({
+          assetLibraryLoading: false,
+          assetLibraryError: "Не удалось загрузить библиотеку с сервера, используется локальный каталог.",
+        });
+      }
+    },
+    refreshProtectedObjects: async (options = {}) => {
+      const { loader, ...query } = options;
+      set({ protectedObjectsLoading: true, protectedObjectsError: null });
+      try {
+        const objects = loader ? await loader() : await fetchEnterprises(query);
+        set({
+          protectedObjects: mergeProtectedObjectOptions(get().project.baseObject, objects, get().protectedObjects),
+          protectedObjectsLoading: false,
+          protectedObjectsError: null,
+        });
+      } catch {
+        set({
+          protectedObjects: mergeProtectedObjectOptions(get().project.baseObject, [], get().protectedObjects),
+          protectedObjectsLoading: false,
+          protectedObjectsError: "Не удалось загрузить объекты защиты с сервера, используется локальный объект.",
+        });
+      }
+    },
+    upsertAssetInLibrary: (asset) => {
+      const current = get().project.assetLibrary;
+      const exists = current.some((item) => item.id === asset.id);
+      const project = {
+        ...get().project,
+        assetLibrary: exists
+          ? current.map((item) => (item.id === asset.id ? asset : item))
+          : [...current, asset],
+        selectedAssetId: asset.id,
+        updatedAt: new Date().toISOString(),
+      };
+      applyProject(project, set);
+      set({ assetLibraryError: null });
+    },
+    removeAssetFromLibrary: (assetId) => {
+      if (get().project.placedObjects.some((object) => object.assetId === assetId)) {
+        return {
+          ok: false,
+          reason: "asset-in-use",
+          message: "Средство уже размещено на карте. Сначала удалите или замените размещённые объекты.",
+        };
+      }
+      const project = {
+        ...get().project,
+        assetLibrary: get().project.assetLibrary.filter((asset) => asset.id !== assetId),
+        selectedAssetId: get().project.selectedAssetId === assetId ? undefined : get().project.selectedAssetId,
+        updatedAt: new Date().toISOString(),
+      };
+      applyProject(project, set);
+      set({ assetLibraryError: null });
+      return { ok: true };
+    },
     clearProject: () => {
       const project = createDefaultDefenseProject();
       persist(project);
-      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
+      set({
+        project,
+        hydrated: true,
+        budgetApplied: false,
+        assetLibraryError: null,
+        protectedObjects: [createFallbackProtectedObjectOption(project.baseObject)],
+        protectedObjectsError: null,
+        ...syncSelection(project),
+      });
     },
     saveProjectToLocalStorage: () => persist(get().project),
     restoreProjectFromLocalStorage: () => {
       const project = readProject() ?? readLegacyConfigurationProject() ?? createDefaultDefenseProject();
-      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
+      set({
+        project,
+        hydrated: true,
+        budgetApplied: false,
+        protectedObjects: mergeProtectedObjectOptions(project.baseObject, [], get().protectedObjects),
+        protectedObjectsError: null,
+        ...syncSelection(project),
+      });
     },
     exportProjectJson: () => exportDefenseProjectJson(get().project),
     importProjectJson: (raw) => {

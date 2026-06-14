@@ -42,6 +42,8 @@ assert(useDefenseProjectStore.getState().project.placedObjects[0].coordinates.la
 
 useDefenseProjectStore.getState().selectObject(placed[0].id);
 assert(useDefenseProjectStore.getState().selectedObjectId === placed[0].id, "selectObject must expose object selection");
+useDefenseProjectStore.getState().selectObject(null);
+assert(useDefenseProjectStore.getState().selectedObjectId === undefined, "selectObject(null) must clear selected object");
 
 useDefenseProjectStore.getState().duplicatePlacedObject(placed[0].id);
 assert(useDefenseProjectStore.getState().project.placedObjects.length === 2, "duplicatePlacedObject must add a second object");
@@ -289,4 +291,147 @@ useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
 
 console.log("budgetApplied flag: OK");
 
-console.log("use-defense-project-store.test.ts: project store contracts passed");
+async function runAssetLibraryRefreshContracts() {
+  // ── asset library refresh (FRT-48) ─────────────────────────────────────────
+  storage.clear();
+  useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+
+  const st = useDefenseProjectStore.getState();
+  const l2 = st.project.layers.find((layer) => layer.code === "L2");
+  assert(l2, "store project must include L2 before asset library refresh");
+  st.placeObject("mobile-radar", l2.id, { lat: 55.44, lng: 37.1 });
+  assert(useDefenseProjectStore.getState().project.placedObjects.length === 1, "precondition: placed object exists");
+
+  await useDefenseProjectStore.getState().refreshAssetLibrary({
+    loader: async () => [
+      {
+        id: "server-radar",
+        name: "Серверная РЛС",
+        shortName: "СРЛС",
+        category: "detection",
+        roles: ["detect"],
+        pricePerUnitMln: 42,
+        currency: "RUB",
+        unitLabel: "шт",
+        recommendedLayerCodes: ["L2"],
+        coverageType: "circle",
+        coverageRadius: 75000,
+        deploymentType: "mobile",
+        placementType: "map-object",
+      },
+    ],
+  });
+
+  const refreshed = useDefenseProjectStore.getState();
+  assert(refreshed.assetLibraryLoading === false, "refreshAssetLibrary must clear loading after success");
+  assert(refreshed.assetLibraryError === null, "refreshAssetLibrary must clear stale errors after success");
+  assert(refreshed.project.assetLibrary.length === 1, "refreshAssetLibrary must replace project assetLibrary with server items");
+  assert(refreshed.project.assetLibrary[0].id === "server-radar", "refreshAssetLibrary must use server asset ids");
+  assert(refreshed.project.placedObjects.length === 1, "refreshAssetLibrary must not delete placed objects");
+  assert(
+    refreshed.project.placedObjects[0].assetId === "mobile-radar",
+    "refreshAssetLibrary must keep placed objects even when their asset id is missing in fresh library",
+  );
+
+  const beforeEmpty = useDefenseProjectStore.getState().project.assetLibrary;
+  await useDefenseProjectStore.getState().refreshAssetLibrary({
+    loader: async () => [],
+  });
+  const emptyState = useDefenseProjectStore.getState();
+  assert(emptyState.assetLibraryLoading === false, "empty asset refresh must clear loading");
+  assert(
+    emptyState.assetLibraryError?.includes("локальный каталог"),
+    "empty asset refresh must expose a soft fallback message instead of blanking the UI",
+  );
+  assert(emptyState.project.assetLibrary === beforeEmpty, "empty asset refresh must keep the existing/local asset library");
+
+  const beforeFailure = useDefenseProjectStore.getState().project.assetLibrary;
+  await useDefenseProjectStore.getState().refreshAssetLibrary({
+    loader: async () => {
+      throw new Error("backend unavailable");
+    },
+  });
+  const failed = useDefenseProjectStore.getState();
+  assert(failed.assetLibraryLoading === false, "refreshAssetLibrary must clear loading after failure");
+  assert(
+    failed.assetLibraryError?.includes("локальный каталог"),
+    "refreshAssetLibrary must expose a soft fallback message after failure",
+  );
+  assert(failed.project.assetLibrary === beforeFailure, "failed refresh must keep the existing/local asset library");
+  assert(failed.project.placedObjects.length === 1, "failed refresh must not delete placed objects");
+}
+
+async function runProtectedObjectContracts() {
+  storage.clear();
+  useDefenseProjectStore.setState(useDefenseProjectStore.getInitialState(), true);
+
+  const initialBaseObject = useDefenseProjectStore.getState().project.baseObject;
+  assert(
+    useDefenseProjectStore.getState().protectedObjects.some((item) => item.id === initialBaseObject.id),
+    "store must expose current local baseObject as a fallback option before backend sync",
+  );
+
+  await useDefenseProjectStore.getState().refreshProtectedObjects({
+    loader: async () => [
+      {
+        id: "enterprise-1",
+        enterpriseId: "enterprise-1",
+        name: "АО Северный терминал",
+        center: { lat: 56.8389, lng: 60.6057 },
+        address: "Екатеринбург",
+        status: "active",
+        source: "backend",
+      },
+    ],
+  });
+
+  const refreshed = useDefenseProjectStore.getState();
+  assert(refreshed.protectedObjectsLoading === false, "refreshProtectedObjects must clear loading after success");
+  assert(refreshed.protectedObjectsError === null, "refreshProtectedObjects must clear stale errors after success");
+  assert(refreshed.protectedObjects[0]?.id === "enterprise-1", "refreshProtectedObjects must replace options with backend objects");
+
+  useDefenseProjectStore.getState().selectBaseObject(refreshed.protectedObjects[0]!);
+  const selectedProject = useDefenseProjectStore.getState().project;
+  const selectedL2 = selectedProject.layers.find((layer) => layer.code === "L2");
+  assert(selectedProject.baseObject.id === "enterprise-1", "selectBaseObject must sync DefenseProject.baseObject id");
+  assert(selectedProject.baseObject.name === "АО Северный терминал", "selectBaseObject must sync DefenseProject.baseObject name");
+  assert(selectedProject.baseObject.center.lat === 56.8389, "selectBaseObject must sync DefenseProject.baseObject center");
+  assert(
+    selectedL2?.geometry.type === "ring" && selectedL2.geometry.center.lng === 60.6057,
+    "selectBaseObject must keep editable ring layers aligned with selected backend object",
+  );
+
+  await useDefenseProjectStore.getState().refreshProtectedObjects({
+    loader: async () => [],
+  });
+  const emptyResponseState = useDefenseProjectStore.getState();
+  assert(
+    emptyResponseState.protectedObjects.some((item) => item.id === selectedProject.baseObject.id),
+    "empty protected object response must keep current baseObject option so UI still works",
+  );
+
+  await useDefenseProjectStore.getState().refreshProtectedObjects({
+    loader: async () => {
+      throw new Error("backend unavailable");
+    },
+  });
+  const failed = useDefenseProjectStore.getState();
+  assert(failed.protectedObjectsLoading === false, "refreshProtectedObjects must clear loading after failure");
+  assert(
+    failed.protectedObjectsError?.includes("локальный"),
+    "refreshProtectedObjects must expose a soft fallback message after backend failure",
+  );
+  assert(
+    failed.protectedObjects.some((item) => item.id === selectedProject.baseObject.id),
+    "failed protected object refresh must keep current local/base object option",
+  );
+}
+
+runAssetLibraryRefreshContracts()
+  .then(() => runProtectedObjectContracts())
+  .then(() => {
+    console.log("use-defense-project-store.test.ts: project store contracts passed");
+  })
+  .catch((error) => {
+    throw error;
+  });

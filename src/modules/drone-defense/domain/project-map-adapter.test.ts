@@ -1,6 +1,12 @@
 // Run: npx tsx src/modules/drone-defense/domain/project-map-adapter.test.ts
 
-import { applyAssetQuantityDraftsToProject, createDefaultDefenseProject, placeObjectInProject, updateLayerGeometryFromRadii } from "@/shared/lib/defense-project";
+import {
+  applyAssetQuantityDraftsToProject,
+  createDefaultDefenseProject,
+  placeObjectInProject,
+  updateLayerGeometryFromRadii,
+  updatePlacedObjectInProject,
+} from "@/shared/lib/defense-project";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -64,5 +70,28 @@ const fallbackPlacements = placedObjectsToMapPlacements({
 assert(fallbackPlacements.length === 1, "assets without map catalog groups must still produce fallback map placements");
 assert(fallbackPlacements[0].catalogGroupId === undefined, "fallback map placements must not pretend to have a legacy group");
 assert(fallbackPlacements[0].catalogGroupName === "Самолёты", "fallback map placement must keep the asset name");
+
+const mogProject = placeObjectInProject(project, "l5-mobile-fire", l5.id, { lat: 55.16, lng: 37.16 });
+const mogPlacedObject = mogProject.placedObjects[0];
+assert(mogPlacedObject.compoundProfile?.kind === "compound-post", "l5 mobile-fire should be placed with compound profile");
+const mogCompoundProfile = mogPlacedObject.compoundProfile;
+if (!mogCompoundProfile) {
+  throw new Error("compound profile must exist for l5 mobile-fire");
+}
+const mogPlacement = placedObjectsToMapPlacements({
+  project: { ...mogProject, selectedObjectId: mogPlacedObject.id },
+  facilityId: "facility-alpha",
+  scenarioId: "baseline",
+})[0];
+assert(Boolean(mogPlacement?.compoundProfile), "map placement for compound profile should preserve compound profile");
+const updatedMogProject = updatePlacedObjectInProject(mogProject, mogProject.placedObjects[0].id, {
+  compoundProfile: { ...mogCompoundProfile, azimuth: 180 },
+});
+const updatedMogPlacement = placedObjectsToMapPlacements({
+  project: updatedMogProject,
+  facilityId: "facility-alpha",
+  scenarioId: "baseline",
+})[0];
+assert(updatedMogPlacement?.compoundProfile?.azimuth === 180, "updated azimuth in compound profile should be preserved in map placement");
 
 console.log("project-map-adapter.test.ts: placed objects map adapter passed");

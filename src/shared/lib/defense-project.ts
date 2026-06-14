@@ -13,6 +13,7 @@ import type {
   PlacementValidationResult,
   ProjectCalculatorConfiguration,
 } from "@/shared/types/defense-project";
+import type { PlacedDefenseCompoundProfile } from "@/shared/types/defense-configuration";
 import type { SelectedConfiguration } from "@/shared/types/defense-configuration";
 
 const PROJECT_SCHEMA_VERSION = 1;
@@ -82,6 +83,7 @@ export type AssetCatalogItem = {
   score: number;
   priority: DefenseAssetLibraryItem["priority"];
   imageUrl: string;
+  protectionType?: string;
   isRecommendedForActiveLayer: boolean;
   compatibilityStatus: "recommended" | "compatible" | "warning" | "incompatible";
   compatibilityLabel: string;
@@ -90,6 +92,7 @@ export type AssetCatalogItem = {
   maxQuantity: number;
   placementType: DefenseAssetLibraryItem["placementType"];
   tags: string[];
+  compoundProfile?: DefenseAssetLibraryItem["compoundProfile"];
 };
 
 function nowIso() {
@@ -158,6 +161,8 @@ const coverageTypeLabels: Record<DefenseAssetLibraryItem["coverageType"], string
   none: "Без покрытия на карте",
 };
 
+const compoundCoverageTypeLabel = "Дальность/сектор";
+
 function formatAssetDistance(meters: number | undefined) {
   if (meters === undefined) return null;
   if (meters >= 1000) return `${(meters / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км`;
@@ -180,6 +185,9 @@ function assetPriceLabel(asset: DefenseAssetLibraryItem) {
 }
 
 function assetCoverageLabel(asset: DefenseAssetLibraryItem) {
+  if (asset.compoundProfile?.kind === "compound-post" && asset.compoundProfile.sectorOrRange) {
+    return `${compoundCoverageTypeLabel}: ${asset.compoundProfile.sectorOrRange}`;
+  }
   const radius = formatAssetDistance(asset.coverageRadius);
   const typeLabel = coverageTypeLabels[asset.coverageType];
   if (radius && asset.coverageAngle) return `${typeLabel}: ${radius}, ${asset.coverageAngle}°`;
@@ -187,6 +195,11 @@ function assetCoverageLabel(asset: DefenseAssetLibraryItem) {
   if (asset.placementType === "zone-object") return `${typeLabel}: зона`;
   if (asset.placementType === "non-physical") return typeLabel;
   return `${typeLabel}: точка`;
+}
+
+function assetCoverageTypeLabel(asset: DefenseAssetLibraryItem) {
+  if (asset.compoundProfile?.kind === "compound-post") return compoundCoverageTypeLabel;
+  return coverageTypeLabels[asset.coverageType];
 }
 
 function assetCompatibility(
@@ -216,6 +229,7 @@ export function getAssetCatalogItems(
     return {
       assetId: asset.id,
       title: asset.name,
+      protectionType: asset.protectionType,
       subtitle: assetSubtitle(asset),
       category: asset.category,
       categoryLabel: categoryLabels[asset.category],
@@ -224,7 +238,7 @@ export function getAssetCatalogItems(
       priceLabel: assetPriceLabel(asset),
       rangeLabel: assetRangeLabel(asset),
       coverageType: asset.coverageType,
-      coverageTypeLabel: coverageTypeLabels[asset.coverageType],
+      coverageTypeLabel: assetCoverageTypeLabel(asset),
       coverageLabel: assetCoverageLabel(asset),
       score: asset.score ?? 0,
       priority: asset.priority,
@@ -233,6 +247,7 @@ export function getAssetCatalogItems(
       placedCount,
       maxQuantity: 0,
       placementType: asset.placementType,
+      compoundProfile: asset.compoundProfile,
       tags: asset.tags ?? [],
     };
   });
@@ -437,6 +452,16 @@ export function recenterProject(project: DefenseProject, center: Coordinates): D
   });
 }
 
+export function setProjectBaseObject(project: DefenseProject, baseObject: DefenseProject["baseObject"]): DefenseProject {
+  const recenteredProject = recenterProject(project, baseObject.center);
+  return withUpdatedAt({
+    ...recenteredProject,
+    baseObject: {
+      ...baseObject,
+    },
+  });
+}
+
 export function updateLayerGeometryFromRadii(
   layer: EditableDefenseLayer,
   radii: { innerRadiusM?: number; widthM?: number; center?: Coordinates },
@@ -535,6 +560,7 @@ export function createPlacedObject(
 ): PlacedDefenseObject {
   const asset = project.assetLibrary.find((item) => item.id === assetId);
   const timestamp = nowIso();
+  const compoundProfile = patch.compoundProfile ?? buildPlacedDefenseCompoundProfile(asset);
   return {
     id: patch.id ?? uniqueId("placed"),
     assetId,
@@ -548,6 +574,7 @@ export function createPlacedObject(
     customPricePerUnitMln: patch.customPricePerUnitMln,
     customCoverageRadius: patch.customCoverageRadius,
     customCoverageAngle: patch.customCoverageAngle,
+    compoundProfile,
     hasGeometryConflict: false,
     hasCoverageConflict: false,
     hasTerrainConflict: false,
@@ -905,8 +932,18 @@ function normalizeProjectAssetLibrary(assetLibrary: DefenseProject["assetLibrary
       unitLabel: asset.unitLabel ?? "шт",
       deploymentType: asset.deploymentType ?? "external",
       placementType: asset.placementType ?? "non-physical",
-    }));
+  }));
   return [...canonicalAssets, ...customAssets];
+}
+
+export function buildPlacedDefenseCompoundProfile(
+  asset: DefenseProject["assetLibrary"][number] | undefined,
+): PlacedDefenseCompoundProfile | undefined {
+  if (!asset?.compoundProfile) return undefined;
+  return {
+    ...asset.compoundProfile,
+    azimuth: 0,
+  };
 }
 
 export function projectToCalculatorConfiguration(project: DefenseProject): ProjectCalculatorConfiguration {

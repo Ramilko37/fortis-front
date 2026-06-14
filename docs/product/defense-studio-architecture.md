@@ -1,6 +1,6 @@
 # Defense Studio: архитектура, модель данных и рабочие сценарии
 
-> Статус: актуальный инженерный обзор по состоянию на 2026-06-04.  
+> Статус: актуальный инженерный обзор по состоянию на 2026-06-11.  
 > Аудитория: продукт, дизайн, разработка и будущие агенты Codex.  
 > Связанные документы: `docs/product/defense-calculator-spec.md`, `docs/product/defense-studio-remediation-spec.md`.
 
@@ -66,9 +66,14 @@ src/
 
 Пример текущих тонких страниц:
 
+- `src/app/page.tsx` рендерит `LandingPage` из `src/modules/landing/ui/landing-page.tsx`.
 - `src/app/(defense-studio)/prototype/page.tsx` рендерит `DroneDefensePrototype`.
 - `src/app/(defense-studio)/calculator/page.tsx` рендерит `CalculatorPage`.
 - `src/app/(defense-studio)/layout.tsx` оборачивает оба route в `DefenseStudioShell`.
+
+Shared UI primitives имеют canonical exports в `src/shared/ui/*`. Старые `src/components/ui/*`
+оставлены как совместимые shadcn-style implementation files, но новые module/shared imports
+должны идти через `src/shared/ui`.
 
 ## 4. Route shell и навигация
 
@@ -296,6 +301,10 @@ fortis-current-configuration
 - rollup по эшелонам;
 - greedy budget fit.
 
+Workflow helpers прототипа, не завязанные на React state, вынесены в
+`src/modules/drone-defense/domain/prototype-workflow.ts`: форматирование дистанций,
+адаптация editable layer к map layer, парсинг координат и draft layer wizard.
+
 ## 9. Карта `/prototype`
 
 Корневой UI: `src/modules/drone-defense/ui/drone-defense-prototype.tsx`.
@@ -307,6 +316,9 @@ fortis-current-configuration
 - `GisBoard` как карту;
 - нижнюю панель эшелонов;
 - `FacilityDrilldown` для 3D режима.
+
+`FacilityDrilldown` грузит тяжёлую 3D-сцену через `next/dynamic` с `ssr: false`, чтобы
+основной маршрут карты не тащил сцену в стартовый client chunk до перехода в drill-down.
 
 ### 9.1. Нижняя панель эшелонов
 
@@ -519,6 +531,23 @@ npx tsx src/modules/drone-defense/domain/echelon-slot-contract.test.ts
 npx tsx src/modules/drone-defense/domain/layer-distance-contract.test.ts
 ```
 
+Baseline-проверки frontend после архитектурных изменений:
+
+```bash
+pnpm lint
+pnpm exec tsc --noEmit --incremental false
+pnpm build
+```
+
+E2E smoke для `/prototype` оформлен как Playwright-тест:
+
+```bash
+pnpm test:e2e
+```
+
+Playwright ограничен `test/playwright` через `playwright.config.ts`, чтобы E2E smoke
+не подхватывал contract/unit tests из `src/**/*.test.ts`.
+
 Quality gates перед деплоем:
 
 ```bash
@@ -526,7 +555,12 @@ pnpm lint
 pnpm build
 ```
 
-На момент написания `pnpm build` проходит, но Next.js показывает warning про inferred workspace root из-за нескольких lockfile. Это инфраструктурное предупреждение, не runtime ошибка.
+Turbopack root задаётся в `next.config.ts` через `process.cwd()`, потому что в локальном
+workspace выше `frontend` могут существовать чужие lockfile. Это удерживает dev/build
+резолвинг внутри `frontend`, где находятся `package.json`, `pnpm-lock.yaml` и `node_modules`.
+
+Глобальные font variables определены локально в `src/app/globals.css`. `next/font/google`
+не используется, чтобы `pnpm build` не зависел от доступности Google Fonts во время сборки.
 
 ## 14. Локальный запуск и smoke checklist
 
@@ -591,3 +625,24 @@ Smoke `/calculator`:
 - Preset / reference configuration — эталонная конфигурация `НАК`, `НЕВ`, `ФОСФОРИТ`, `БМУ`.
 - Map-only item — средство из карты без исходного calculator asset; сейчас имеет ориентировочный CAPEX и synthetic scoring.
 - Conflict — placed object, который после изменения геометрии слоя оказался вне границ своего эшелона.
+
+## 18. Памятка по P0 MVP Ramil (FRT-5…FRT-9)
+
+Дата фиксации: 2026-06-11.
+
+Выполнено:
+
+- FRT-8: `/prototype` очищен от debug/runtime side effects, оставлен production entrypoint
+- FRT-5: `/calculator` стал live summary для текущей карты и `DefenseProject`
+- FRT-6: для пустой карты/конфига показываются нули, пустые списки и пустая структура
+- FRT-7: базовый отчёт формируется из текущего `DefenseProject`, совпадает со структурой карты
+- FRT-9: baseline-пакет прогнан после сводки задач
+
+Подтверждённый baseline-результат (команда/результат):
+
+1. `pnpm lint` — PASS
+2. `pnpm build` — PASS
+3. `pnpm test:e2e` — PASS (`prototype page loads and shows title`, 1 passed)
+4. `node test/route-contract.test.mjs` — PASS
+
+Важно: эти задачи выполняют контрактную миграцию на `DefenseProject` как источник правды и не меняют бизнес-логику размещений.

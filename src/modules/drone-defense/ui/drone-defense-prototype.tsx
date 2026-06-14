@@ -1,142 +1,62 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppstoreOutlined, CloseOutlined, DownOutlined, UpOutlined } from "@ant-design/icons";
 import { useDefenseStudioStore, studioPreviewData } from "@/modules/drone-defense/domain/use-defense-studio-store";
 import { buildEchelonMapModel } from "@/modules/drone-defense/domain/echelon-map-model";
 import { placedObjectsToMapPlacements } from "@/modules/drone-defense/domain/project-map-adapter";
+import { AssetLibraryManager } from "@/modules/drone-defense/ui/asset-library-manager";
 import { CoordinatePlacementPanel, type CoordinatePlacementInput } from "@/modules/drone-defense/ui/coordinate-placement-panel";
 import { DefenseToolsPanel } from "@/modules/drone-defense/ui/defense-tools-panel";
 import { FacilityDrilldown } from "@/modules/drone-defense/ui/facility-drilldown";
 import { GisBoard } from "@/modules/drone-defense/ui/gis-board";
 import { EchelonObjectsList } from "@/modules/drone-defense/ui/echelon-objects-list";
+import { MogCompositionEditor } from "@/modules/drone-defense/ui/mog-composition-editor";
 import {
   type AssetCatalogItem,
+  buildPlacedDefenseCompoundProfile,
   calculateLayerSummaries,
   findLayerInsertOptions,
   getAssetCatalogItems,
   getLayerRadii,
   validateLayerGeometry,
 } from "@/shared/lib/defense-project";
+import {
+  buildWizardLayer,
+  formatDistance,
+  formatWizardRange,
+  layerInsertOptionKey,
+  parseCoordinatePlacementInput,
+  projectLayerToMapLayer,
+  type CoordinatePlacementValidationState,
+  type LayerWizardDraft,
+  type LayerWizardState,
+} from "@/modules/drone-defense/domain/prototype-workflow";
+import {
+  DEFAULT_PROTECTION_TYPE_VISIBILITY,
+  isMogVisibleInMap,
+  type ProtectionTypeVisibility,
+} from "@/modules/drone-defense/domain/protection-visibility";
 import { MAX_DEFENSE_PROJECT_LAYERS, useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
-import type { Coordinates, DefenseProject, EditableDefenseLayer, PlacementValidationResult } from "@/shared/types/defense-project";
 import type { LayerInsertOption } from "@/shared/lib/defense-project";
-import type { DefenseLayer, DefenseLayerId } from "@/shared/types/drone-defense";
+import type { DefenseLayer, DefenseLayerId, Placement } from "@/shared/types/drone-defense";
+import type { ProtectedObjectOption } from "@/shared/types/defense-project";
 import type { DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
-
-function formatDistance(meters: number) {
-  if (meters >= 1000) return `${(meters / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} км`;
-  return `${meters.toLocaleString("ru-RU")} м`;
-}
-
-function projectLayerToMapLayer(layer: EditableDefenseLayer): DefenseLayer {
-  const radii = getLayerRadii(layer);
-  return {
-    id: layer.id as DefenseLayer["id"],
-    order: layer.order,
-    name: layer.name,
-    shortName: layer.code,
-    defaultWeight: 0.1,
-    color: layer.color,
-    opacity: layer.opacity,
-    distanceBandM: {
-      min: radii.innerRadiusM,
-      max: radii.outerRadiusM,
-      label: `${formatDistance(radii.innerRadiusM)}-${formatDistance(radii.outerRadiusM)}`,
-    },
-  };
-}
-
-type LayerWizardDraft = {
-  name: string;
-  code: string;
-  innerRadiusM: number;
-  widthM: number;
-};
-
-type LayerWizardState = {
-  mode: "create" | "edit";
-  layerId?: string;
-  insertPosition?: string;
-  draft: LayerWizardDraft;
-};
-
-type CoordinatePlacementValidationState = Pick<PlacementValidationResult, "level" | "message">;
 
 const defenseAssetDragMimeType = "application/x-fortis-defense-asset";
 
-function formatWizardRange(option: LayerInsertOption) {
-  const max = option.maxOuterRadiusM === null ? "∞" : formatDistance(option.maxOuterRadiusM);
-  return `${formatDistance(option.minInnerRadiusM)}-${max}`;
-}
-
-function layerInsertOptionKey(option: LayerInsertOption) {
-  if (option.kind === "between") return `between:${option.beforeLayerId}:${option.afterLayerId}`;
-  return option.kind;
-}
-
-function parseCoordinatePlacementInput(
-  input: CoordinatePlacementInput,
-): { ok: true; coordinates: Coordinates; notes?: string } | { ok: false; message: string } {
-  const parseNumeric = (value: string) => Number(value.trim().replace(",", "."));
-  const lat = parseNumeric(input.lat);
-  const lng = parseNumeric(input.lng);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return { ok: false, message: "Введите широту и долготу числом." };
-  }
-  if (lat < -90 || lat > 90) {
-    return { ok: false, message: "Широта должна быть в диапазоне от -90 до 90." };
-  }
-  if (lng < -180 || lng > 180) {
-    return { ok: false, message: "Долгота должна быть в диапазоне от -180 до 180." };
-  }
-
-  const altitudeValue = input.altitude.trim();
-  const altitude = altitudeValue ? parseNumeric(altitudeValue) : null;
-  if (altitude !== null && (!Number.isFinite(altitude) || altitude < 0)) {
-    return { ok: false, message: "Высота должна быть положительным числом." };
-  }
-
+function protectedObjectToFacility(object: ProtectedObjectOption) {
   return {
-    ok: true,
-    coordinates: altitude === null ? { lat, lng } : { lat, lng, altitude },
-    notes: input.notes.trim() || undefined,
-  };
-}
-
-function buildWizardLayer(
-  project: DefenseProject,
-  draft: LayerWizardDraft,
-  baseLayer?: EditableDefenseLayer,
-): EditableDefenseLayer {
-  const innerRadiusM = Number.isFinite(draft.innerRadiusM) ? draft.innerRadiusM : 0;
-  const widthM = Number.isFinite(draft.widthM) ? draft.widthM : 0;
-  const outerRadiusM = innerRadiusM + widthM;
-  return {
-    ...(baseLayer ?? {
-      id: "__layer_preview__",
-      order: project.layers.length + 1,
-      description: "Предпросмотр",
-      geometryType: "ring" as const,
-      isActive: false,
-      isVisible: true,
-      isLocked: false,
-    }),
-    name: draft.name.trim() || "Новый эшелон",
-    code: draft.code.trim() || `L${project.layers.length + 1}`,
-    distanceFromObjectMin: innerRadiusM,
-    distanceFromObjectMax: outerRadiusM,
-    geometryType: "ring",
-    geometry: {
-      type: "ring",
-      center: project.baseObject.center,
-      minRadiusM: innerRadiusM,
-      maxRadiusM: outerRadiusM,
+    id: object.id,
+    name: object.name,
+    region: object.address ?? "Объект защиты",
+    center: {
+      lat: object.center.lat,
+      lon: object.center.lng,
     },
-    color: "#0ea5e9",
-    opacity: 0.2,
-  };
+    priorityWeight: 1,
+    status: object.status ?? "active",
+  } as const;
 }
 
 export function DroneDefensePrototype() {
@@ -154,18 +74,18 @@ export function DroneDefensePrototype() {
   const [locateTarget, setLocateTarget] = useState<{ lon: number; lat: number; at: number } | null>(null);
   const [echelonObjectsLayerId, setEchelonObjectsLayerId] = useState<DefenseLayerId | null>(null);
   const [isEchelonObjectsCollapsed, setIsEchelonObjectsCollapsed] = useState(false);
+  const [protectionTypeVisibility, setProtectionTypeVisibility] = useState<ProtectionTypeVisibility>(
+    DEFAULT_PROTECTION_TYPE_VISIBILITY,
+  );
   const {
     init,
     loading,
     error,
     view,
-    facilityId,
     scenarioId,
     configuration: studioConfiguration,
     catalog,
-    facilities,
     layers,
-    setFacilityId,
     setScenarioId,
     upsertLocalPlacement,
     moveLocalPlacement,
@@ -179,15 +99,22 @@ export function DroneDefensePrototype() {
     deleteLayer,
     updateLayerGeometry,
     selectLayer,
-    setBaseObjectCenter,
+    selectBaseObject,
     selectAsset,
     selectedObjectId,
     selectObject,
     placeObject,
-    transferObjectToLayer,
+    updatePlacedObject,
     deletePlacedObject,
     validateObjectPlacement,
     restoreProjectFromLocalStorage,
+    assetLibraryLoading,
+    assetLibraryError,
+    refreshAssetLibrary,
+    protectedObjects,
+    refreshProtectedObjects,
+    upsertAssetInLibrary,
+    removeAssetFromLibrary,
   } = useDefenseProjectStore();
 
   useEffect(() => {
@@ -196,17 +123,26 @@ export function DroneDefensePrototype() {
 
   useEffect(() => {
     restoreProjectFromLocalStorage();
-  }, [restoreProjectFromLocalStorage]);
-
-  const selectedFacility = useMemo(
-    () => facilities.find((item) => item.id === facilityId) ?? null,
-    [facilities, facilityId],
+    void refreshAssetLibrary({ isPublic: true, limit: 100 });
+    void refreshProtectedObjects({ limit: 100 });
+  }, [refreshAssetLibrary, refreshProtectedObjects, restoreProjectFromLocalStorage]);
+  const selectedProtectedObject = useMemo(
+    () =>
+      protectedObjects.find((item) => item.id === project.baseObject.id) ?? {
+        ...project.baseObject,
+        enterpriseId: project.baseObject.id,
+        source: "fallback" as const,
+      },
+    [project.baseObject, protectedObjects],
   );
-
-  useEffect(() => {
-    if (!selectedFacility) return;
-    setBaseObjectCenter({ lat: selectedFacility.center.lat, lng: selectedFacility.center.lon });
-  }, [selectedFacility, setBaseObjectCenter]);
+  const selectedFacility = useMemo(
+    () => protectedObjectToFacility(selectedProtectedObject),
+    [selectedProtectedObject],
+  );
+  const mapFacilities = useMemo(
+    () => protectedObjects.map(protectedObjectToFacility),
+    [protectedObjects],
+  );
   const projectMapLayers = useMemo(
     () =>
       [...project.layers]
@@ -215,6 +151,7 @@ export function DroneDefensePrototype() {
         .map(projectLayerToMapLayer),
     [project.layers],
   );
+  const allProjectMapLayers = useMemo(() => [...project.layers].map(projectLayerToMapLayer), [project.layers]);
   const selectedLayerId = project.activeLayerId ?? project.layers[0]?.id ?? "";
   const selectedLayer = useMemo(
     () => project.layers.find((layer) => layer.id === selectedLayerId) ?? project.layers[0],
@@ -281,17 +218,33 @@ export function DroneDefensePrototype() {
     () =>
       placedObjectsToMapPlacements({
         project,
-        facilityId,
+        facilityId: project.baseObject.id,
         scenarioId,
       }).filter((placement) => project.layers.find((layer) => layer.id === placement.layerId)?.isVisible !== false),
-    [facilityId, project, scenarioId],
+    [project, scenarioId],
+  );
+  const isPlacementVisible = useCallback(
+    (placement: Placement) => {
+      const object = project.placedObjects.find((item) => item.id === placement.id);
+      const objectAsset = object ? project.assetLibrary.find((item) => item.id === object.assetId) : undefined;
+      return isMogVisibleInMap(placement, objectAsset, protectionTypeVisibility);
+    },
+    [project.assetLibrary, project.placedObjects, protectionTypeVisibility],
+  );
+  const visibleProjectCatalogPlacements = useMemo(
+    () => projectCatalogPlacements.filter((placement) => isPlacementVisible(placement)),
+    [projectCatalogPlacements, isPlacementVisible],
+  );
+  const hiddenPlacementIds = useMemo(
+    () => new Set(projectCatalogPlacements.filter((placement) => !isPlacementVisible(placement)).map((placement) => placement.id)),
+    [projectCatalogPlacements, isPlacementVisible],
   );
   const mapConfiguration = useMemo(
     () => ({
       ...studioConfiguration,
-      placements: projectCatalogPlacements,
+      placements: visibleProjectCatalogPlacements,
     }),
-    [projectCatalogPlacements, studioConfiguration],
+    [studioConfiguration, visibleProjectCatalogPlacements],
   );
   const echelonModel = useMemo(
     () =>
@@ -318,7 +271,24 @@ export function DroneDefensePrototype() {
     () => project.placedObjects.find((object) => object.id === selectedObjectId) ?? null,
     [project.placedObjects, selectedObjectId],
   );
+  const selectedPlacedAsset = useMemo(
+    () => project.assetLibrary.find((asset) => asset.id === selectedPlacedObject?.assetId) ?? null,
+    [project.assetLibrary, selectedPlacedObject?.assetId],
+  );
+  const selectedPlacedObjectProfile = useMemo(() => {
+    if (!selectedPlacedObject) return null;
+    if (selectedPlacedObject.compoundProfile) return selectedPlacedObject.compoundProfile;
+    return selectedPlacedAsset ? buildPlacedDefenseCompoundProfile(selectedPlacedAsset) : null;
+  }, [selectedPlacedAsset, selectedPlacedObject]);
   const selectedPlacementId = selectedObjectId ?? null;
+  const selectedMogObject = useMemo(() => {
+    if (!selectedPlacedObject || !selectedPlacedAsset || !selectedPlacedObjectProfile) return null;
+    return {
+      ...selectedPlacedObject,
+      compoundProfile: selectedPlacedObjectProfile,
+      assetId: selectedPlacedObject.assetId,
+    };
+  }, [selectedPlacedObject, selectedPlacedAsset, selectedPlacedObjectProfile]);
   const coordinatePlacementAsset = useMemo(
     () => project.assetLibrary.find((asset) => asset.id === coordinatePlacementAssetId) ?? null,
     [project.assetLibrary, coordinatePlacementAssetId],
@@ -438,19 +408,6 @@ export function DroneDefensePrototype() {
     setLastPlacementMessage(`${asset?.name ?? object.name ?? "Объект"} выбран на карте`);
   };
 
-  const transferPlacedObject = (objectId: string, layerId: string) => {
-    const object = project.placedObjects.find((item) => item.id === objectId);
-    const targetLayer = project.layers.find((layer) => layer.id === layerId);
-    if (!object || !targetLayer) return;
-    const validation = transferObjectToLayer(objectId, layerId);
-    if (!validation.isValid) {
-      setLastPlacementMessage(validation.message ?? "Нельзя перенести объект в выбранный эшелон");
-      return;
-    }
-    setSelectedSlotId(null);
-    setLastPlacementMessage(`${object.name ?? "Объект"} перенесён в ${targetLayer.code}`);
-  };
-
   const handleSelectTool = (asset: ReturnType<typeof getAssetCatalogItems>[number]) => {
     const nextId = activeToolId === asset.assetId ? null : asset.assetId;
     setActiveToolId(nextId);
@@ -484,28 +441,9 @@ export function DroneDefensePrototype() {
       setLastPlacementMessage("Средство защиты не найдено в библиотеке");
       return;
     }
+    const compoundProfile = buildPlacedDefenseCompoundProfile(asset);
     selectAsset(asset.id);
-    const validation = placeObject(asset.id, selectedLayer.id, { lat, lng });
-    setLastPlacementMessage(
-      validation.message ??
-        (validation.isValid
-          ? `${asset.name} размещено в эшелоне ${selectedLayer.code}`
-          : "Не удалось разместить объект"),
-    );
-  };
-
-  const placeDraggedAssetAtCoordinate = (assetId: string, { lng, lat }: { lng: number; lat: number }) => {
-    if (!selectedLayer) return;
-    const asset = project.assetLibrary.find((item) => item.id === assetId);
-    if (!asset) {
-      setLastPlacementMessage("Средство защиты не найдено в библиотеке");
-      setPointerDraggedAssetId(null);
-      return;
-    }
-    setActiveToolId(asset.id);
-    selectAsset(asset.id);
-    const validation = placeObject(asset.id, selectedLayer.id, { lat, lng });
-    setPointerDraggedAssetId(null);
+    const validation = placeObject(asset.id, selectedLayer.id, { lat, lng }, compoundProfile ? { compoundProfile } : undefined);
     setLastPlacementMessage(
       validation.message ??
         (validation.isValid
@@ -527,7 +465,8 @@ export function DroneDefensePrototype() {
       setLastPlacementMessage("Средство защиты не найдено в библиотеке");
       return;
     }
-    const validation = placeObject(asset.id, args.layerId, { lat: args.mapRef.lat, lng: args.mapRef.lon });
+    const compoundProfile = buildPlacedDefenseCompoundProfile(asset);
+    const validation = placeObject(asset.id, args.layerId, { lat: args.mapRef.lat, lng: args.mapRef.lon }, compoundProfile ? { compoundProfile } : undefined);
     if (!validation.isValid) {
       setLastPlacementMessage(validation.message ?? "Не удалось разместить объект");
       return;
@@ -624,7 +563,11 @@ export function DroneDefensePrototype() {
       setLastPlacementMessage(parsed.message);
       return;
     }
-    const validation = placeObject(coordinatePlacementAsset.id, selectedLayer.id, parsed.coordinates, { notes: parsed.notes });
+    const compoundProfile = buildPlacedDefenseCompoundProfile(coordinatePlacementAsset);
+    const validation = placeObject(coordinatePlacementAsset.id, selectedLayer.id, parsed.coordinates, {
+      notes: parsed.notes,
+      ...(compoundProfile ? { compoundProfile } : {}),
+    });
     if (!validation.isValid) {
       const message = validation.message ?? "Точка недопустима для размещения.";
       setCoordinatePlacementValidation({ level: validation.level, message });
@@ -677,8 +620,15 @@ export function DroneDefensePrototype() {
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
-      {isCatalogTrayOpen ? (
-        <section className="z-10 flex max-h-[42vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white shadow-xl shadow-slate-900/5 lg:h-full lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
+      <section
+        data-sidebar-state={isCatalogTrayOpen ? "open" : "closed"}
+        className={`z-10 flex w-full shrink-0 flex-col overflow-hidden border-slate-200 bg-white shadow-xl shadow-slate-900/5 transition-[max-height,width,transform,opacity] duration-300 ease-in-out lg:h-full lg:max-h-none ${
+          isCatalogTrayOpen
+            ? "max-h-[42vh] border-b opacity-100 lg:w-[320px] lg:border-b-0 lg:border-r"
+            : "pointer-events-none max-h-0 border-b-0 -translate-y-2 opacity-0 lg:w-0 lg:translate-y-0 lg:border-r-0"
+        }`}
+        aria-hidden={!isCatalogTrayOpen}
+      >
           <div className="border-b border-slate-100 p-4">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-600 text-white">
@@ -689,6 +639,7 @@ export function DroneDefensePrototype() {
                 <p className="truncate text-xs text-slate-500">Defense Configuration Studio</p>
               </div>
             </div>
+
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
@@ -719,6 +670,30 @@ export function DroneDefensePrototype() {
                 placeholder="Найти средство..."
               />
             </div>
+            <AssetLibraryManager
+              assets={project.assetLibrary}
+              placedObjects={project.placedObjects}
+              selectedAssetId={activeToolId ?? selectedPlacedObject?.assetId}
+              loading={assetLibraryLoading}
+              error={assetLibraryError}
+              onRefresh={() => refreshAssetLibrary({ isPublic: true, limit: 100 })}
+              onSelectAsset={(assetId) => {
+                setActiveToolId(assetId);
+                selectAsset(assetId);
+              }}
+              onAssetSaved={(asset) => {
+                upsertAssetInLibrary(asset);
+                setActiveToolId(asset.id);
+              }}
+              onAssetDeleted={(assetId) => {
+                const result = removeAssetFromLibrary(assetId);
+                if (result.ok) {
+                  setActiveToolId((current) => (current === assetId ? null : current));
+                }
+                return result;
+              }}
+              onMessage={setLastPlacementMessage}
+            />
             <div className="h-full overflow-y-auto p-3 pb-28">
               <DefenseToolsPanel
                 assets={filteredCatalogItems}
@@ -734,8 +709,7 @@ export function DroneDefensePrototype() {
               />
             </div>
           </div>
-        </section>
-      ) : null}
+      </section>
 
       <main className="relative min-w-0 flex-1 overflow-hidden">
         {error ? (
@@ -787,10 +761,25 @@ export function DroneDefensePrototype() {
                     onChange={(event) => setCoverageVisible(event.target.checked)}
                   />
                 </label>
+                <label className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <span>Показать МОГ</span>
+                  <input
+                    type="checkbox"
+                    checked={protectionTypeVisibility.mog}
+                    onChange={() =>
+                      setProtectionTypeVisibility((current) => ({
+                        ...current,
+                        mog: !current.mog,
+                      }))
+                    }
+                  />
+                </label>
                 <EchelonObjectsList
                   layerId={echelonObjectsLayerId}
                   placements={projectCatalogPlacements}
                   catalog={catalog}
+                  layers={allProjectMapLayers}
+                  hiddenPlacementIds={hiddenPlacementIds}
                   selectedPlacementId={selectedPlacementId}
                   onSelect={(id) => selectPlacedObject(id)}
                   onLocate={handleLocatePlacement}
@@ -805,9 +794,14 @@ export function DroneDefensePrototype() {
           <>
             <GisBoard
               className="h-full min-h-0 rounded-none border-0"
-              facilities={facilities}
-              selectedFacilityId={facilityId}
-              onSelectFacility={(nextId) => void setFacilityId(nextId)}
+              facilities={mapFacilities}
+              selectedFacilityId={project.baseObject.id}
+              onSelectFacility={(nextId) => {
+                const nextObject = protectedObjects.find((item) => item.id === nextId);
+                if (!nextObject) return;
+                selectBaseObject(nextObject);
+                setLastPlacementMessage(`${nextObject.name}: выбран объект защиты`);
+              }}
               hexCells={studioPreviewData.hexCells}
               threatRoutes={studioPreviewData.threatRoutes}
               layers={layers}
@@ -853,6 +847,15 @@ export function DroneDefensePrototype() {
                   setCoordinatePlacementAssetId(null);
                   setCoordinatePlacementValidation(null);
                 }}
+              />
+            ) : null}
+
+            {selectedMogObject && selectedPlacedAsset ? (
+              <MogCompositionEditor
+                asset={selectedPlacedAsset}
+                profile={selectedMogObject.compoundProfile}
+                onChange={(patch) => updatePlacedObject(selectedMogObject.id, patch)}
+                onClose={() => selectObject(null)}
               />
             ) : null}
 
@@ -1039,25 +1042,28 @@ export function DroneDefensePrototype() {
               </div>
             ) : null}
 
-            {!isCatalogTrayOpen ? (
-              <button
-                type="button"
-                className="absolute left-4 top-20 z-40 grid h-12 w-12 cursor-pointer place-items-center rounded-xl bg-blue-600 text-lg text-white shadow-xl shadow-blue-950/25 transition hover:bg-blue-700"
-                onClick={() => setIsCatalogTrayOpen(true)}
-                title="Открыть библиотеку средств защиты"
-                aria-label="Открыть библиотеку средств защиты"
-              >
-                <AppstoreOutlined />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              data-sidebar-toggle-state={isCatalogTrayOpen ? "hidden" : "visible"}
+              className={`absolute left-4 top-20 z-40 grid h-12 w-12 cursor-pointer place-items-center rounded-xl bg-blue-600 text-lg text-white shadow-xl shadow-blue-950/25 transition duration-300 ease-in-out hover:bg-blue-700 ${
+                isCatalogTrayOpen ? "pointer-events-none -translate-x-2 opacity-0" : "pointer-events-auto translate-x-0 opacity-100"
+              }`}
+              onClick={() => setIsCatalogTrayOpen(true)}
+              title="Открыть библиотеку средств защиты"
+              aria-label="Открыть библиотеку средств защиты"
+              aria-hidden={isCatalogTrayOpen}
+              tabIndex={isCatalogTrayOpen ? -1 : 0}
+            >
+              <AppstoreOutlined />
+            </button>
           </>
         ) : null}
 
         {view === "drilldown" ? (
           <div className="h-full overflow-auto bg-slate-50 p-4">
             <FacilityDrilldown
-              key={`${facilityId}:${scenarioId}`}
-              facilityName={selectedFacility?.name ?? "Facility"}
+              key={`${project.baseObject.id}:${scenarioId}`}
+              facilityName={project.baseObject.name}
               scenario={scenarioId}
               configuration={studioConfiguration}
               onScenarioChange={(nextScenarioId) => void setScenarioId(nextScenarioId)}
