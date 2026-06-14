@@ -6,6 +6,7 @@ import {
   DeploymentUnitOutlined,
   GatewayOutlined,
 } from "@ant-design/icons";
+import { useMemo } from "react";
 import { DefenseAssetCard, type PlacementMode } from "./defense-asset-card";
 import styles from "./drone-defense-prototype.module.css";
 import { useDefenseStudioStore } from "../domain/use-defense-studio-store";
@@ -49,7 +50,15 @@ export function AssetsPanel({
 }) {
   const catalog = useDefenseStudioStore((state) => state.catalog);
   const scenarioId = useDefenseStudioStore((state) => state.scenarioId);
-  const localPlacements = useDefenseStudioStore((state) => state.localPlacementsByScenario[scenarioId] ?? []);
+  // Select the stable map reference; derive the per-scenario array with useMemo so the
+  // selector never returns a fresh [] each render (which caused a getSnapshot loop).
+  const localPlacementsByScenario = useDefenseStudioStore(
+    (state) => state.localPlacementsByScenario,
+  );
+  const localPlacements = useMemo(
+    () => localPlacementsByScenario[scenarioId] ?? [],
+    [localPlacementsByScenario, scenarioId],
+  );
 
   // Группируем ассеты по kind для подсчета количества размещенных
   const placedCounts = localPlacements.reduce((acc, p) => {

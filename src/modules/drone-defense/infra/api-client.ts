@@ -1,3 +1,4 @@
+import { exportDefenseProjectJson } from "@/shared/lib/defense-project";
 import type {
   Configuration,
   DefenseCatalogResponse,
@@ -8,6 +9,7 @@ import type {
   RecommendRequest,
   Recommendation,
 } from "@/shared/types/drone-defense";
+import type { DefenseProject, VariantListResponse, VariantSummary } from "@/shared/types/defense-project";
 
 type LayersQuery = {
   facilityId: string;
@@ -18,6 +20,21 @@ export async function readJson<T>(input: RequestInfo | URL, init?: RequestInit):
   const response = await fetch(input, init);
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
+async function readVariantJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, init);
+  if (!response.ok) {
+    let message = `Запрос не выполнен (${response.status})`;
+    try {
+      const body = (await response.json()) as { error?: { message?: string } };
+      if (body?.error?.message) message = body.error.message;
+    } catch {
+      // ignore parse failure, keep generic message
+    }
+    throw new Error(message);
   }
   return (await response.json()) as T;
 }
@@ -53,6 +70,36 @@ export function recommendConfigurationRequest(configuration: Configuration, budg
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+export function listVariants(): Promise<VariantListResponse> {
+  return readVariantJson<VariantListResponse>("/api/defense/projects");
+}
+
+export function loadVariant(id: string): Promise<DefenseProject> {
+  return readVariantJson<DefenseProject>(`/api/defense/projects/${encodeURIComponent(id)}`);
+}
+
+export function saveVariantAsNew(args: { name: string; project: DefenseProject }): Promise<VariantSummary> {
+  return readVariantJson<VariantSummary>("/api/defense/projects", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: args.name, projectJson: exportDefenseProjectJson(args.project) }),
+  });
+}
+
+export function overwriteVariant(args: { id: string; name: string; project: DefenseProject }): Promise<VariantSummary> {
+  return readVariantJson<VariantSummary>(`/api/defense/projects/${encodeURIComponent(args.id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: args.name, projectJson: exportDefenseProjectJson(args.project) }),
+  });
+}
+
+export function deleteVariant(id: string): Promise<{ status: string }> {
+  return readVariantJson<{ status: string }>(`/api/defense/projects/${encodeURIComponent(id)}`, {
+    method: "DELETE",
   });
 }
 

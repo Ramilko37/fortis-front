@@ -186,3 +186,16 @@ export type LayerSummary = LayerCost & {
 export type DeleteLayerResult =
   | { ok: true; project: DefenseProject }
   | { ok: false; reason: "layer-not-found" | "layer-has-objects" | "layer-locked" | "last-layer"; message: string };
+
+export type VariantSummary = {
+  projectId: string;
+  name: string;
+  projectName: string;
+  version: number;
+  updatedAt: string;
+};
+
+export type VariantListResponse = {
+  items: VariantSummary[];
+  totalItems: number;
+};
