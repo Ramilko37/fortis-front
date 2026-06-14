@@ -12,6 +12,7 @@ import { defenseLayers, type EchelonCatalogGroup } from "@/modules/drone-defense
 import {
   buildEchelonMapModel,
   buildLayerFocusViewState,
+  buildPlacementFocusViewState,
   type EchelonMapPlacement,
   type EchelonMapSlot,
   type EchelonZone,
@@ -94,9 +95,18 @@ const fallbackViewState: LayerFocusViewState = {
 };
 
 const layerFocusTransitionDurationMs = 1600;
+const placementFocusTransitionDurationMs = 650;
+const mapInteractionMinZoom = 6;
+const mapInteractionMaxZoom = 18;
+const mapControlZoomStep = 0.8;
+const browserZoomWheelStep = 0.7;
 
 function linearEasing(value: number) {
   return value;
+}
+
+function clampZoom(value: number) {
+  return Math.min(mapInteractionMaxZoom, Math.max(mapInteractionMinZoom, value));
 }
 
 function normalizeViewState(viewState: LayerFocusViewState): LayerFocusViewState {
@@ -178,6 +188,7 @@ export function GisBoard({
   const viewStateRef = useRef<LayerFocusViewState>(fallbackViewState);
   const animationFrameRef = useRef<number | null>(null);
   const isAnimatingFocusRef = useRef(false);
+  const skipNextLayerFocusRef = useRef(false);
   const deckRef = useRef<DeckGLRef>(null);
 
   const selectedFacility = facilities.find((item) => item.id === selectedFacilityId);
@@ -221,19 +232,24 @@ export function GisBoard({
     [selectedFacility, selectedLayer],
   );
 
-  useEffect(() => {
+  const stopFocusAnimation = useCallback(() => {
     if (animationFrameRef.current !== null) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
-    isAnimatingFocusRef.current = true;
+    isAnimatingFocusRef.current = false;
+  }, []);
 
+  const animateToViewState = useCallback((targetViewState: LayerFocusViewState, durationMs: number) => {
+    stopFocusAnimation();
+    isAnimatingFocusRef.current = true;
     const from = normalizeViewState(viewStateRef.current);
-    const to = normalizeViewState(focusedViewState);
+    const to = normalizeViewState(targetViewState);
     const startedAt = performance.now();
 
     const animate = (now: number) => {
       const elapsed = now - startedAt;
-      const progress = Math.min(elapsed / layerFocusTransitionDurationMs, 1);
+      const progress = Math.min(elapsed / durationMs, 1);
       const nextViewState = interpolateViewState(from, to, linearEasing(progress));
 
       viewStateRef.current = nextViewState;
@@ -249,15 +265,33 @@ export function GisBoard({
     };
 
     animationFrameRef.current = requestAnimationFrame(animate);
+  }, [stopFocusAnimation]);
 
-    return () => {
-      if (animationFrameRef.current !== null) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      isAnimatingFocusRef.current = false;
-    };
-  }, [focusedViewState]);
+  const setInteractiveViewState = useCallback((targetViewState: LayerFocusViewState) => {
+    stopFocusAnimation();
+    const nextViewState = normalizeViewState(targetViewState);
+    viewStateRef.current = nextViewState;
+    setViewState(nextViewState);
+  }, [stopFocusAnimation]);
+
+  const adjustMapZoom = useCallback((direction: 1 | -1, step = mapControlZoomStep) => {
+    const currentViewState = normalizeViewState(viewStateRef.current);
+    setInteractiveViewState({
+      ...currentViewState,
+      zoom: Number(clampZoom((currentViewState.zoom ?? fallbackViewState.zoom) + direction * step).toFixed(2)),
+    });
+  }, [setInteractiveViewState]);
+
+  useEffect(() => () => stopFocusAnimation(), [stopFocusAnimation]);
+
+  useEffect(() => {
+    if (skipNextLayerFocusRef.current) {
+      skipNextLayerFocusRef.current = false;
+      return;
+    }
+
+    animateToViewState(focusedViewState, layerFocusTransitionDurationMs);
+  }, [animateToViewState, focusedViewState]);
 
   useEffect(() => {
     const boardElement = boardRef.current;
@@ -285,6 +319,30 @@ export function GisBoard({
     setViewState(next);
   }, [locateTarget]);
 
+  useEffect(() => {
+    const boardElement = boardRef.current;
+    if (!boardElement) return;
+
+    const handleMapWheelZoomGuard = (event: WheelEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      adjustMapZoom(event.deltaY < 0 ? 1 : -1, browserZoomWheelStep);
+    };
+    const handleMapGestureZoomGuard = (event: Event) => {
+      event.preventDefault();
+    };
+
+    boardElement.addEventListener("wheel", handleMapWheelZoomGuard, { passive: false });
+    boardElement.addEventListener("gesturestart", handleMapGestureZoomGuard, { passive: false });
+    boardElement.addEventListener("gesturechange", handleMapGestureZoomGuard, { passive: false });
+    return () => {
+      boardElement.removeEventListener("wheel", handleMapWheelZoomGuard);
+      boardElement.removeEventListener("gesturestart", handleMapGestureZoomGuard);
+      boardElement.removeEventListener("gesturechange", handleMapGestureZoomGuard);
+    };
+  }, [adjustMapZoom]);
+
   const zoomReadout = viewState.zoom;
   const markerOverlayPlacements = useMemo(() => {
     if (!boardSize.width || !boardSize.height) return [];
@@ -306,6 +364,16 @@ export function GisBoard({
     () => new Map(configuration.placements.map((placement) => [placement.id, placement])),
     [configuration.placements],
   );
+
+  const focusPlacement = useCallback((placement: EchelonMapPlacement) => {
+    const nextViewState = normalizeViewState(
+      buildPlacementFocusViewState({
+        currentViewState: viewStateRef.current,
+        placementPosition: placement.position,
+      }),
+    );
+    animateToViewState(nextViewState, placementFocusTransitionDurationMs);
+  }, [animateToViewState]);
   // A slot is in conflict when more than one object competes for it, regardless
   // of which catalog group they belong to. Keyed on slotId alone so two different
   // assets dropped on the same slot both render as conflict.
@@ -764,6 +832,16 @@ export function GisBoard({
                 onSelectPlacement(nextPlacement.sourcePlacementId);
                 onSelectLayer(nextPlacement.layerId);
               }}
+              onDoubleClick={(nextPlacement) => {
+                skipNextLayerFocusRef.current = true;
+                const slot = nextPlacement.slotId ? echelonModel.slots.find((item) => item.id === nextPlacement.slotId) : null;
+                if (slot) {
+                  onSelectSlot(slot);
+                }
+                onSelectPlacement(nextPlacement.sourcePlacementId);
+                onSelectLayer(nextPlacement.layerId);
+                focusPlacement(nextPlacement);
+              }}
               onHover={(nextPlacement) => {
                 setHoveredPlacementId(nextPlacement?.id ?? null);
                 setHoverLabel(nextPlacement ? nextPlacement.label : null);
@@ -822,27 +900,49 @@ export function GisBoard({
       </div>
 
       <div className="absolute left-4 top-4 z-10 flex max-w-[min(42rem,calc(100%-2rem))] flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="grid h-10 w-10 place-items-center rounded-lg bg-white/95 text-lg text-slate-500 shadow-md shadow-slate-900/10 backdrop-blur hover:text-slate-900"
-          title="Поиск по карте"
-        >
-          ⌕
-        </button>
-        <div className="rounded-lg border border-white/60 bg-white/95 px-3 py-2 text-xs shadow-md shadow-slate-900/10 backdrop-blur">
-          <p className="font-semibold text-slate-950">{selectedFacility?.name ?? "Facility"}</p>
+        <div className="min-w-[min(23rem,calc(100vw-6rem))] rounded-lg border border-white/60 bg-white/95 px-3 py-2 text-xs shadow-md shadow-slate-900/10 backdrop-blur">
+          <select
+            className="h-7 w-full rounded-md border border-transparent bg-transparent pr-6 text-sm font-semibold text-slate-950 outline-none transition hover:border-slate-200 hover:bg-white focus:border-blue-300 focus:bg-white"
+            value={selectedFacility?.id ?? selectedFacilityId}
+            onChange={(event) => onSelectFacility(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            aria-label="Выбрать объект защиты"
+          >
+            {facilities.map((facility) => (
+              <option key={facility.id} value={facility.id}>
+                {facility.name}
+              </option>
+            ))}
+          </select>
           <p className="text-slate-500">
             {placementHint}
           </p>
         </div>
       </div>
 
-      <div className="absolute bottom-5 right-4 z-10 flex flex-col overflow-hidden rounded-lg bg-white/95 text-slate-500 shadow-md shadow-slate-900/10">
-        <button className="grid h-10 w-10 place-items-center border-b border-slate-100 text-lg" type="button">+</button>
-        <button className="grid h-10 w-10 place-items-center border-b border-slate-100 text-xs font-semibold" type="button">
+      <div className="absolute right-4 top-4 z-10 flex flex-col overflow-hidden rounded-lg bg-white/95 text-slate-500 shadow-md shadow-slate-900/10 backdrop-blur">
+        <button
+          className="grid h-10 w-10 cursor-pointer place-items-center border-b border-slate-100 text-lg transition hover:bg-blue-50 hover:text-blue-700"
+          type="button"
+          onClick={() => adjustMapZoom(1)}
+          aria-label="Приблизить карту"
+          title="Приблизить карту"
+        >
+          +
+        </button>
+        <button className="grid h-10 w-10 place-items-center border-b border-slate-100 text-xs font-semibold" type="button" disabled>
           {zoomReadout.toFixed(1)}
         </button>
-        <button className="grid h-10 w-10 place-items-center text-lg" type="button">−</button>
+        <button
+          className="grid h-10 w-10 cursor-pointer place-items-center text-lg transition hover:bg-blue-50 hover:text-blue-700"
+          type="button"
+          onClick={() => adjustMapZoom(-1)}
+          aria-label="Отдалить карту"
+          title="Отдалить карту"
+        >
+          −
+        </button>
       </div>
 
       <div className="absolute bottom-5 left-4 z-10 rounded bg-white/90 px-3 py-1.5 text-[11px] text-slate-600 shadow">

@@ -112,8 +112,6 @@ export function DroneDefensePrototype() {
     assetLibraryError,
     refreshAssetLibrary,
     protectedObjects,
-    protectedObjectsLoading,
-    protectedObjectsError,
     refreshProtectedObjects,
     upsertAssetInLibrary,
     removeAssetFromLibrary,
@@ -622,8 +620,15 @@ export function DroneDefensePrototype() {
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
-      {isCatalogTrayOpen ? (
-        <section className="z-10 flex max-h-[42vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white shadow-xl shadow-slate-900/5 lg:h-full lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
+      <section
+        data-sidebar-state={isCatalogTrayOpen ? "open" : "closed"}
+        className={`z-10 flex w-full shrink-0 flex-col overflow-hidden border-slate-200 bg-white shadow-xl shadow-slate-900/5 transition-[max-height,width,transform,opacity] duration-300 ease-in-out lg:h-full lg:max-h-none ${
+          isCatalogTrayOpen
+            ? "max-h-[42vh] border-b opacity-100 lg:w-[320px] lg:border-b-0 lg:border-r"
+            : "pointer-events-none max-h-0 border-b-0 -translate-y-2 opacity-0 lg:w-0 lg:translate-y-0 lg:border-r-0"
+        }`}
+        aria-hidden={!isCatalogTrayOpen}
+      >
           <div className="border-b border-slate-100 p-4">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-600 text-white">
@@ -635,42 +640,6 @@ export function DroneDefensePrototype() {
               </div>
             </div>
 
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-500">Объект защиты</p>
-                </div>
-                <button
-                  type="button"
-                  className="h-9 shrink-0 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                  onClick={() => refreshProtectedObjects({ limit: 100 })}
-                >
-                  {protectedObjectsLoading ? "Обновление…" : "Обновить"}
-                </button>
-              </div>
-              <select
-                className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-400"
-                value={project.baseObject.id}
-                onChange={(event) => {
-                  const nextObject = protectedObjects.find((item) => item.id === event.target.value);
-                  if (!nextObject) return;
-                  selectBaseObject(nextObject);
-                  setLastPlacementMessage(`${nextObject.name}: выбран объект защиты`);
-                }}
-              >
-                {protectedObjects.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 truncate text-[11px] text-slate-500">
-                {selectedProtectedObject.address ?? "Локальный объект"} · {selectedProtectedObject.status ?? "fallback"}
-              </p>
-              {protectedObjectsError ? (
-                <p className="mt-1.5 text-[11px] text-amber-700">{protectedObjectsError}</p>
-              ) : null}
-            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
@@ -740,8 +709,7 @@ export function DroneDefensePrototype() {
               />
             </div>
           </div>
-        </section>
-      ) : null}
+      </section>
 
       <main className="relative min-w-0 flex-1 overflow-hidden">
         {error ? (
@@ -1074,17 +1042,20 @@ export function DroneDefensePrototype() {
               </div>
             ) : null}
 
-            {!isCatalogTrayOpen ? (
-              <button
-                type="button"
-                className="absolute left-4 top-20 z-40 grid h-12 w-12 cursor-pointer place-items-center rounded-xl bg-blue-600 text-lg text-white shadow-xl shadow-blue-950/25 transition hover:bg-blue-700"
-                onClick={() => setIsCatalogTrayOpen(true)}
-                title="Открыть библиотеку средств защиты"
-                aria-label="Открыть библиотеку средств защиты"
-              >
-                <AppstoreOutlined />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              data-sidebar-toggle-state={isCatalogTrayOpen ? "hidden" : "visible"}
+              className={`absolute left-4 top-20 z-40 grid h-12 w-12 cursor-pointer place-items-center rounded-xl bg-blue-600 text-lg text-white shadow-xl shadow-blue-950/25 transition duration-300 ease-in-out hover:bg-blue-700 ${
+                isCatalogTrayOpen ? "pointer-events-none -translate-x-2 opacity-0" : "pointer-events-auto translate-x-0 opacity-100"
+              }`}
+              onClick={() => setIsCatalogTrayOpen(true)}
+              title="Открыть библиотеку средств защиты"
+              aria-label="Открыть библиотеку средств защиты"
+              aria-hidden={isCatalogTrayOpen}
+              tabIndex={isCatalogTrayOpen ? -1 : 0}
+            >
+              <AppstoreOutlined />
+            </button>
           </>
         ) : null}
 

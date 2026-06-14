@@ -119,6 +119,8 @@ const webMercatorTileSizePx = 512;
 const targetLayerDiameterPx = 640;
 const minLayerFocusZoom = 6;
 const maxLayerFocusZoom = 18;
+const placementFocusMinZoom = 12.8;
+const placementFocusZoomStep = 2.4;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -214,6 +216,28 @@ export function buildLayerFocusViewState({
     transitionEasing: transition.easing,
     transitionInterpolator: transition.interpolator,
     transitionInterruption: transition.interruption,
+  };
+}
+
+export function buildPlacementFocusViewState({
+  currentViewState,
+  placementPosition,
+}: {
+  currentViewState: LayerFocusViewState;
+  placementPosition: [number, number];
+}): LayerFocusViewState {
+  const currentZoom = currentViewState.zoom ?? minLayerFocusZoom;
+  const nextZoom = clamp(
+    Math.max(currentZoom + placementFocusZoomStep, placementFocusMinZoom),
+    minLayerFocusZoom,
+    maxLayerFocusZoom,
+  );
+
+  return {
+    ...currentViewState,
+    longitude: placementPosition[0],
+    latitude: placementPosition[1],
+    zoom: Number(nextZoom.toFixed(2)),
   };
 }
 
