@@ -26,6 +26,7 @@ import {
   validateObjectPlacement,
 } from "@/shared/lib/defense-project";
 import { loadPresetIntoConfiguration } from "@/shared/lib/defense-configuration";
+import { defenseAssetLibrary } from "@/shared/config/defense-asset-library";
 import { fetchAssetLibrary, type FetchAssetLibraryOptions } from "@/modules/drone-defense/infra/asset-library-api";
 import { fetchEnterprises, type FetchEnterprisesOptions } from "@/modules/drone-defense/infra/enterprise-api";
 import { FORTIS_CONFIGURATION_STORAGE_KEY } from "@/shared/lib/use-defense-configuration-store";
@@ -390,13 +391,30 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     refreshAssetLibrary: async (options = {}) => {
       const { loader, ...query } = options;
       set({ assetLibraryLoading: true, assetLibraryError: null });
+      const localCatalogMessage =
+        "Не удалось загрузить библиотеку с сервера, используется локальный каталог.";
       try {
         const assets = loader ? await loader() : await fetchAssetLibrary(query);
+        // Backend may answer 200 with an empty list (offline / unseeded). Don't
+        // blank the UI: keep whatever library is already loaded, and only when
+        // it is empty (first load, nothing to fall back to) seed the bundled
+        // local catalog so the map stays usable.
         if (assets.length === 0) {
-          set({
-            assetLibraryLoading: false,
-            assetLibraryError: "Сервер вернул пустую библиотеку, используется локальный каталог.",
-          });
+          const current = get().project;
+          const shouldSeed = current.assetLibrary.length === 0;
+          if (shouldSeed) {
+            const seeded = { ...current, assetLibrary: defenseAssetLibrary, updatedAt: new Date().toISOString() };
+            persist(seeded);
+            set({
+              project: seeded,
+              budgetApplied: false,
+              assetLibraryLoading: false,
+              assetLibraryError: localCatalogMessage,
+              ...syncSelection(seeded),
+            });
+          } else {
+            set({ assetLibraryLoading: false, assetLibraryError: localCatalogMessage });
+          }
           return;
         }
         const project = {
@@ -413,9 +431,21 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
           ...syncSelection(project),
         });
       } catch {
+        // Backend unreachable: same local-catalog fallback. Only seed when empty,
+        // to avoid clobbering a library the user already loaded or edited.
+        const current = get().project;
+        const shouldSeed = current.assetLibrary.length === 0;
+        const project = shouldSeed
+          ? { ...current, assetLibrary: defenseAssetLibrary, updatedAt: new Date().toISOString() }
+          : current;
+        if (shouldSeed) {
+          persist(project);
+        }
         set({
+          project,
           assetLibraryLoading: false,
-          assetLibraryError: "Не удалось загрузить библиотеку с сервера, используется локальный каталог.",
+          assetLibraryError: localCatalogMessage,
+          ...(shouldSeed ? syncSelection(project) : {}),
         });
       }
     },

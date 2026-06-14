@@ -1,7 +1,9 @@
 import { getLayers } from "@/modules/drone-defense/infra/mock-defense-repository";
 import type { DefenseScenarioId } from "@/shared/types/drone-defense";
 
-export const dynamic = "force-static";
+// Reads facilityId/scenarioId from the request query, so the response cannot be
+// statically generated — force-static would null out searchParams and 400 every call.
+export const dynamic = "force-dynamic";
 
 const scenarioIds: DefenseScenarioId[] = ["baseline", "balanced", "reinforced"];
 

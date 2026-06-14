@@ -1,7 +1,8 @@
 import { evaluateDefense } from "@/modules/drone-defense/infra/mock-defense-repository";
 import type { EvaluateRequest } from "@/shared/types/drone-defense";
 
-export const dynamic = "force-static";
+// POST handler reads the request body — it cannot be statically generated.
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const payload = (await request.json()) as EvaluateRequest;
