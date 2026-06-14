@@ -47,6 +47,7 @@ function getMogLineByObjectId(lines: ReturnType<typeof buildProjectReportObjectL
   assert(line.protectionType === "МОГ", `expected protection type МОГ, got ${line.protectionType}`);
   assert(line.lineTotalMln === 70, `line total must use demo price × quantity (70), got ${line.lineTotalMln}`);
   assert(typeof line.compositionSummary === "string" && line.compositionSummary.includes("Пост: МОГ"), "compound summary must include post type");
+  assert(typeof line.compositionSummary === "string" && line.compositionSummary.includes("Оснащение:"), "compound summary must include equipment label");
   assert(typeof line.weaponSummary === "string" && line.weaponSummary.includes("Оружие:"), "weapon summary must include label");
   assert(typeof line.azimuthSectorSummary === "string" && line.azimuthSectorSummary.includes("Азимут:"), "azimuth summary must include label");
 }
@@ -68,14 +69,19 @@ function getMogLineByObjectId(lines: ReturnType<typeof buildProjectReportObjectL
       azimuth: 180,
       weaponUnits: "6",
       armament: "Дроны-перехватчики",
+      coverageWeaponId: "interceptorDrones",
+      weapons: placed.compoundProfile.weapons?.map((item) =>
+        item.id === "interceptorDrones" ? { ...item, quantity: "6" } : item,
+      ),
     },
   });
 
   const updatedLines = buildProjectReportObjectLines(project);
   const updatedLine = getMogLineByObjectId(updatedLines, placed.id);
   assert(updatedLine.isCompoundPost, "updated object must remain compound");
-  assert((updatedLine.weaponSummary ?? "").includes("6"), "updated weapon units must be reflected in weapon summary");
+  assert((updatedLine.weaponSummary ?? "").includes("Дроны-перехватчики: 6"), "updated weapon units must be reflected in weapon summary");
   assert((updatedLine.azimuthSectorSummary ?? "").includes("180°"), "updated azimuth must be reflected in report line");
+  assert((updatedLine.azimuthSectorSummary ?? "").includes("Дроны-перехватчики"), "coverage weapon must be reflected in report line");
 }
 
 // Non-compound object should not receive compound summaries.

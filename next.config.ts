@@ -50,6 +50,10 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         {
+          source: "/api/v1/enterprises",
+          destination: `${fortisApiBaseUrl}/api/v1/enterprises`,
+        },
+        {
           source: "/api/v1/assets",
           destination: `${fortisApiBaseUrl}/api/v1/assets`,
         },

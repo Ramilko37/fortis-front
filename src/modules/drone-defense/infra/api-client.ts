@@ -1,4 +1,6 @@
 import { exportDefenseProjectJson } from "@/shared/lib/defense-project";
+import { readJson } from "@/shared/lib/api-client";
+import type { DefenseProject, VariantListResponse, VariantSummary } from "@/shared/types/defense-project";
 import type {
   Configuration,
   DefenseCatalogResponse,
@@ -9,30 +11,22 @@ import type {
   RecommendRequest,
   Recommendation,
 } from "@/shared/types/drone-defense";
-import type { DefenseProject, VariantListResponse, VariantSummary } from "@/shared/types/defense-project";
 
 type LayersQuery = {
   facilityId: string;
   scenarioId: string;
 };
 
-export async function readJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init);
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-  return (await response.json()) as T;
-}
-
 async function readVariantJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, init);
   if (!response.ok) {
     let message = `Запрос не выполнен (${response.status})`;
     try {
-      const body = (await response.json()) as { error?: { message?: string } };
+      const body = (await response.json()) as { error?: { message?: string }; message?: string };
       if (body?.error?.message) message = body.error.message;
+      else if (body?.message) message = body.message;
     } catch {
-      // ignore parse failure, keep generic message
+      // Keep the generic message when the response body is not JSON.
     }
     throw new Error(message);
   }

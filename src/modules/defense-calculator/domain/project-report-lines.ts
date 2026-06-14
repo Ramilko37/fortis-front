@@ -24,16 +24,27 @@ function normalizeOptionalText(value: string | undefined) {
 }
 
 function buildCompoundCompositionSummary(profile: PlacedDefenseCompoundProfile) {
-  return `Пост: ${normalizeOptionalText(profile.postType)} · Л/с: ${normalizeOptionalText(profile.personnelCount)} · Подотчётность: ${normalizeOptionalText(profile.accountability)}`;
+  const equipment = profile.equipment
+    ?.filter((item) => Number(item.quantity) > 0)
+    .map((item) => `${item.label}: ${item.quantity}`)
+    .join(", ");
+  return `Пост: ${normalizeOptionalText(profile.postType)} · Л/с: ${normalizeOptionalText(profile.personnelCount)} · Подотчётность: ${normalizeOptionalText(profile.accountability)} · Оснащение: ${equipment || "—"}`;
 }
 
 function buildCompoundWeaponSummary(profile: PlacedDefenseCompoundProfile) {
+  const weapons = profile.weapons
+    ?.filter((item) => Number(item.quantity) > 0)
+    .map((item) => `${item.label}: ${item.quantity}`)
+    .join(", ");
+  if (weapons) return `Оружие: ${weapons}`;
   return `Оружие: ${normalizeOptionalText(profile.armament)} · Ед.: ${normalizeOptionalText(profile.weaponUnits)}`;
 }
 
 function buildCompoundAzimuthSummary(profile: PlacedDefenseCompoundProfile) {
   const azimuth = Number.isFinite(profile.azimuth) ? `${profile.azimuth}°` : "—";
-  return `Азимут: ${azimuth} · Дальность/сектор: ${normalizeOptionalText(profile.sectorOrRange)}`;
+  const coverageWeapon = profile.weapons?.find((item) => item.id === profile.coverageWeaponId);
+  const coverageWeaponLabel = coverageWeapon ? ` · На карте: ${coverageWeapon.label}` : "";
+  return `Азимут: ${azimuth} · Дальность/сектор: ${normalizeOptionalText(profile.sectorOrRange)}${coverageWeaponLabel}`;
 }
 
 export function buildProjectReportObjectLines(project: DefenseProject): ProjectObjectReportLine[] {

@@ -1,4 +1,4 @@
-import { readJson } from "@/modules/drone-defense/infra/api-client";
+import { buildApiV1Url, deleteApiJson, getApiJson, postApiJson, putApiJson } from "@/shared/lib/api-client";
 import type {
   DefenseAsset,
   DefenseAssetCategory,
@@ -27,7 +27,7 @@ type BackendAssetListResponse = {
   totalItems?: number;
 };
 
-const assetLibraryPath = "/api/v1/assets";
+const assetLibraryPath = "/assets";
 
 const frontendCategories = new Set<DefenseAssetCategory>([
   "early-warning",
@@ -248,14 +248,13 @@ function cleanString(value: string | undefined) {
 }
 
 export function buildAssetLibraryUrl(options: FetchAssetLibraryOptions = {}) {
-  const params = new URLSearchParams();
-  if (options.enterpriseId) params.set("enterpriseId", options.enterpriseId);
-  if (options.isPublic !== undefined) params.set("isPublic", String(options.isPublic));
-  if (options.category) params.set("category", options.category);
-  if (options.limit !== undefined) params.set("limit", String(options.limit));
-  if (options.offset !== undefined) params.set("offset", String(options.offset));
-  const query = params.toString();
-  return query ? `${assetLibraryPath}?${query}` : assetLibraryPath;
+  return buildApiV1Url(assetLibraryPath, {
+    enterpriseId: options.enterpriseId,
+    isPublic: options.isPublic,
+    category: options.category,
+    limit: options.limit,
+    offset: options.offset,
+  });
 }
 
 export function normalizeDefenseAssetPayload(payload: BackendAssetPayload): DefenseAsset {
@@ -345,39 +344,43 @@ export function serializeDefenseAssetMutation(input: DefenseAssetMutationInput |
 }
 
 export async function fetchAssetLibrary(options: FetchAssetLibraryOptions = {}) {
-  const response = await readJson<BackendAssetListResponse | BackendAssetPayload[]>(buildAssetLibraryUrl(options));
+  const response = await getApiJson<BackendAssetListResponse | BackendAssetPayload[]>(assetLibraryPath, {
+    query: {
+      enterpriseId: options.enterpriseId,
+      isPublic: options.isPublic,
+      category: options.category,
+      limit: options.limit,
+      offset: options.offset,
+    },
+  });
   const items = Array.isArray(response) ? response : response.items ?? [];
   return items.map(normalizeDefenseAssetPayload);
 }
 
 export async function getDefenseAsset(id: string) {
-  const params = new URLSearchParams({ id });
-  const response = await readJson<BackendAssetPayload>(`${assetLibraryPath}/get?${params.toString()}`);
+  const response = await getApiJson<BackendAssetPayload>(`${assetLibraryPath}/get`, {
+    query: { id },
+  });
   return normalizeDefenseAssetPayload(response);
 }
 
 export async function createDefenseAsset(data: DefenseAssetMutationInput) {
-  const response = await readJson<BackendAssetPayload>(assetLibraryPath, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(serializeDefenseAssetMutation(data)),
+  const response = await postApiJson<BackendAssetPayload>(assetLibraryPath, {
+    body: serializeDefenseAssetMutation(data),
   });
   return normalizeDefenseAssetPayload(response);
 }
 
 export async function updateDefenseAsset(id: string, data: Partial<DefenseAsset>) {
-  const params = new URLSearchParams({ id });
-  const response = await readJson<BackendAssetPayload>(`${assetLibraryPath}/update?${params.toString()}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(serializeDefenseAssetMutation(data)),
+  const response = await putApiJson<BackendAssetPayload>(`${assetLibraryPath}/update`, {
+    query: { id },
+    body: serializeDefenseAssetMutation(data),
   });
   return normalizeDefenseAssetPayload(response);
 }
 
 export async function deleteDefenseAsset(id: string) {
-  const params = new URLSearchParams({ id });
-  await readJson<{ status: string }>(`${assetLibraryPath}/delete?${params.toString()}`, {
-    method: "DELETE",
+  await deleteApiJson<{ status: string }>(`${assetLibraryPath}/delete`, {
+    query: { id },
   });
 }

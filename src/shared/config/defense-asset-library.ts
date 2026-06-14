@@ -142,7 +142,7 @@ const assetIconUrlByItemId: Partial<Record<string, string>> = {
   "l2-rf-passive": "/drone-defense/assets/rf-detection.avif",
   "l4-gps-spoof": "/drone-defense/assets/spoofers.avif",
   "l4-microwave": "/drone-defense/assets/microwave-weapon.avif",
-  "l5-mobile-fire": "/drone-defense/assets/automatic-weapons.avif",
+  "l5-mobile-fire": "/drone-defense/assets/mog-mobile-fire-group.avif",
   "l5-bars": "/drone-defense/assets/bars.avif",
   "l6-pzrk": "/drone-defense/assets/pzrk.avif",
   "l7-camouflage": "/drone-defense/assets/camouflage-nets.avif",
