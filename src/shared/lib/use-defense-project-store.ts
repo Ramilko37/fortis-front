@@ -25,6 +25,7 @@ import {
   validateObjectPlacement,
 } from "@/shared/lib/defense-project";
 import { loadPresetIntoConfiguration } from "@/shared/lib/defense-configuration";
+import { defenseAssetLibrary } from "@/shared/config/defense-asset-library";
 import { fetchAssetLibrary, type FetchAssetLibraryOptions } from "@/modules/drone-defense/infra/asset-library-api";
 import { FORTIS_CONFIGURATION_STORAGE_KEY } from "@/shared/lib/use-defense-configuration-store";
 import type {
@@ -333,11 +334,17 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     refreshAssetLibrary: async (options = {}) => {
       const { loader, ...query } = options;
       set({ assetLibraryLoading: true, assetLibraryError: null });
+      const localCatalogMessage =
+        "Не удалось загрузить библиотеку с сервера, используется локальный каталог.";
       try {
         const assets = loader ? await loader() : await fetchAssetLibrary(query);
+        // Backend may answer 200 with an empty list (offline / unseeded). Treat
+        // that like a failure and fall back to the bundled local catalog, so the
+        // map and library stay usable instead of showing an empty panel.
+        const useLocalFallback = assets.length === 0;
         const project = {
           ...get().project,
-          assetLibrary: assets,
+          assetLibrary: useLocalFallback ? defenseAssetLibrary : assets,
           updatedAt: new Date().toISOString(),
         };
         persist(project);
@@ -345,13 +352,25 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
           project,
           budgetApplied: false,
           assetLibraryLoading: false,
-          assetLibraryError: null,
+          assetLibraryError: useLocalFallback ? localCatalogMessage : null,
           ...syncSelection(project),
         });
       } catch {
+        // Backend unreachable: same local-catalog fallback. Only seed when empty,
+        // to avoid clobbering a library the user already loaded or edited.
+        const current = get().project;
+        const shouldSeed = current.assetLibrary.length === 0;
+        const project = shouldSeed
+          ? { ...current, assetLibrary: defenseAssetLibrary, updatedAt: new Date().toISOString() }
+          : current;
+        if (shouldSeed) {
+          persist(project);
+        }
         set({
+          project,
           assetLibraryLoading: false,
-          assetLibraryError: "Не удалось загрузить библиотеку с сервера, используется локальный каталог.",
+          assetLibraryError: localCatalogMessage,
+          ...(shouldSeed ? syncSelection(project) : {}),
         });
       }
     },
