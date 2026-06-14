@@ -15,6 +15,7 @@ import {
   movePlacedObjectInProject,
   placeObjectInProject,
   recenterProject,
+  setProjectBaseObject,
   setAssetQuantityInProject,
   syncPlacedObjectConflictFlags,
   transferPlacedObjectToLayerInProject,
@@ -26,6 +27,7 @@ import {
 } from "@/shared/lib/defense-project";
 import { loadPresetIntoConfiguration } from "@/shared/lib/defense-configuration";
 import { fetchAssetLibrary, type FetchAssetLibraryOptions } from "@/modules/drone-defense/infra/asset-library-api";
+import { fetchEnterprises, type FetchEnterprisesOptions } from "@/modules/drone-defense/infra/enterprise-api";
 import { FORTIS_CONFIGURATION_STORAGE_KEY } from "@/shared/lib/use-defense-configuration-store";
 import type {
   Coordinates,
@@ -35,6 +37,8 @@ import type {
   EditableDefenseLayer,
   PlacedDefenseObject,
   PlacementValidationResult,
+  ProtectedObject,
+  ProtectedObjectOption,
 } from "@/shared/types/defense-project";
 import type { LayerGeometryValidationResult } from "@/shared/lib/defense-project";
 
@@ -47,6 +51,9 @@ type DefenseProjectState = {
   budgetApplied: boolean;
   assetLibraryLoading: boolean;
   assetLibraryError: string | null;
+  protectedObjects: ProtectedObjectOption[];
+  protectedObjectsLoading: boolean;
+  protectedObjectsError: string | null;
   activeLayerId?: string;
   selectedAssetId?: string;
   selectedObjectId?: string;
@@ -66,6 +73,7 @@ type DefenseProjectState = {
   setLayerLocked: (layerId: string, isLocked: boolean) => void;
   selectLayer: (layerId: string) => void;
   setBaseObjectCenter: (center: Coordinates) => void;
+  selectBaseObject: (baseObject: ProtectedObject) => void;
   selectAsset: (assetId: string) => void;
   selectObject: (objectId: string | null) => void;
   setAssetQuantity: (assetId: string, quantity: number) => void;
@@ -85,6 +93,9 @@ type DefenseProjectState = {
   applyBudgetSelection: (picks: Array<{ assetId: string; included: boolean }>) => void;
   refreshAssetLibrary: (
     options?: FetchAssetLibraryOptions & { loader?: () => Promise<DefenseProject["assetLibrary"]> },
+  ) => Promise<void>;
+  refreshProtectedObjects: (
+    options?: FetchEnterprisesOptions & { loader?: () => Promise<ProtectedObjectOption[]> },
   ) => Promise<void>;
   upsertAssetInLibrary: (asset: DefenseAsset) => void;
   removeAssetFromLibrary: (assetId: string) => { ok: true } | { ok: false; reason: "asset-in-use"; message: string };
@@ -136,6 +147,37 @@ function syncSelection(project: DefenseProject) {
   };
 }
 
+function createFallbackProtectedObjectOption(baseObject: ProtectedObject): ProtectedObjectOption {
+  return {
+    ...baseObject,
+    enterpriseId: baseObject.id,
+    source: "fallback",
+  };
+}
+
+function mergeProtectedObjectOptions(
+  baseObject: ProtectedObject,
+  nextOptions: ProtectedObjectOption[],
+  currentOptions: ProtectedObjectOption[] = [],
+) {
+  const merged = [...nextOptions];
+  if (!merged.some((item) => item.id === baseObject.id)) {
+    merged.push(
+      currentOptions.find((item) => item.id === baseObject.id) ?? createFallbackProtectedObjectOption(baseObject),
+    );
+  }
+
+  const seen = new Set<string>();
+  const deduped: ProtectedObjectOption[] = [];
+  for (const item of merged) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    deduped.push(item);
+  }
+
+  return deduped.length > 0 ? deduped : [createFallbackProtectedObjectOption(baseObject)];
+}
+
 function applyProject(project: DefenseProject, set: (state: Partial<DefenseProjectState>) => void) {
   persist(project);
   set({ project, budgetApplied: false, ...syncSelection(project) });
@@ -149,6 +191,9 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     budgetApplied: false,
     assetLibraryLoading: false,
     assetLibraryError: null,
+    protectedObjects: [createFallbackProtectedObjectOption(initialProject.baseObject)],
+    protectedObjectsLoading: false,
+    protectedObjectsError: null,
     ...syncSelection(initialProject),
     createLayer: (data) => {
       if (get().project.layers.length >= MAX_DEFENSE_PROJECT_LAYERS) return;
@@ -267,7 +312,19 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     setBaseObjectCenter: (center) => {
       const current = get().project.baseObject.center;
       if (current.lat === center.lat && current.lng === center.lng) return;
-      applyProject(recenterProject(get().project, center), set);
+      const project = recenterProject(get().project, center);
+      applyProject(project, set);
+      set({
+        protectedObjects: mergeProtectedObjectOptions(project.baseObject, get().protectedObjects, get().protectedObjects),
+      });
+    },
+    selectBaseObject: (baseObject) => {
+      const project = setProjectBaseObject(get().project, baseObject);
+      applyProject(project, set);
+      set({
+        protectedObjects: mergeProtectedObjectOptions(project.baseObject, get().protectedObjects, get().protectedObjects),
+        protectedObjectsError: null,
+      });
     },
     selectAsset: (assetId) => {
       const project = { ...get().project, selectedAssetId: assetId, mode: "place-object" as const };
@@ -333,6 +390,13 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
       set({ assetLibraryLoading: true, assetLibraryError: null });
       try {
         const assets = loader ? await loader() : await fetchAssetLibrary(query);
+        if (assets.length === 0) {
+          set({
+            assetLibraryLoading: false,
+            assetLibraryError: "Сервер вернул пустую библиотеку, используется локальный каталог.",
+          });
+          return;
+        }
         const project = {
           ...get().project,
           assetLibrary: assets,
@@ -350,6 +414,24 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
         set({
           assetLibraryLoading: false,
           assetLibraryError: "Не удалось загрузить библиотеку с сервера, используется локальный каталог.",
+        });
+      }
+    },
+    refreshProtectedObjects: async (options = {}) => {
+      const { loader, ...query } = options;
+      set({ protectedObjectsLoading: true, protectedObjectsError: null });
+      try {
+        const objects = loader ? await loader() : await fetchEnterprises(query);
+        set({
+          protectedObjects: mergeProtectedObjectOptions(get().project.baseObject, objects, get().protectedObjects),
+          protectedObjectsLoading: false,
+          protectedObjectsError: null,
+        });
+      } catch {
+        set({
+          protectedObjects: mergeProtectedObjectOptions(get().project.baseObject, [], get().protectedObjects),
+          protectedObjectsLoading: false,
+          protectedObjectsError: "Не удалось загрузить объекты защиты с сервера, используется локальный объект.",
         });
       }
     },
@@ -388,12 +470,27 @@ export const useDefenseProjectStore = create<DefenseProjectState>((set, get) => 
     clearProject: () => {
       const project = createDefaultDefenseProject();
       persist(project);
-      set({ project, hydrated: true, budgetApplied: false, assetLibraryError: null, ...syncSelection(project) });
+      set({
+        project,
+        hydrated: true,
+        budgetApplied: false,
+        assetLibraryError: null,
+        protectedObjects: [createFallbackProtectedObjectOption(project.baseObject)],
+        protectedObjectsError: null,
+        ...syncSelection(project),
+      });
     },
     saveProjectToLocalStorage: () => persist(get().project),
     restoreProjectFromLocalStorage: () => {
       const project = readProject() ?? readLegacyConfigurationProject() ?? createDefaultDefenseProject();
-      set({ project, hydrated: true, budgetApplied: false, ...syncSelection(project) });
+      set({
+        project,
+        hydrated: true,
+        budgetApplied: false,
+        protectedObjects: mergeProtectedObjectOptions(project.baseObject, [], get().protectedObjects),
+        protectedObjectsError: null,
+        ...syncSelection(project),
+      });
     },
     exportProjectJson: () => exportDefenseProjectJson(get().project),
     importProjectJson: (raw) => {

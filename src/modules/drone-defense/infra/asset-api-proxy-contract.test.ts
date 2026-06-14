@@ -31,6 +31,11 @@ async function runProxyContract() {
   );
 
   assert(
+    rules.some((rule) => rule.source === "/api/v1/enterprises" && rule.destination === "http://localhost:8090/api/v1/enterprises"),
+    "enterprise list/get route must proxy same-origin /api/v1/enterprises to backend without a trailing slash",
+  );
+
+  assert(
     rules.some((rule) => rule.source === "/api/v1/assets" && rule.destination === "http://localhost:8090/api/v1/assets"),
     "asset list/create route must proxy same-origin /api/v1/assets to backend without a trailing slash",
   );

@@ -40,9 +40,24 @@ import {
 import { MAX_DEFENSE_PROJECT_LAYERS, useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
 import type { LayerInsertOption } from "@/shared/lib/defense-project";
 import type { DefenseLayer, DefenseLayerId, Placement } from "@/shared/types/drone-defense";
+import type { ProtectedObjectOption } from "@/shared/types/defense-project";
 import type { DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
 const defenseAssetDragMimeType = "application/x-fortis-defense-asset";
+
+function protectedObjectToFacility(object: ProtectedObjectOption) {
+  return {
+    id: object.id,
+    name: object.name,
+    region: object.address ?? "Объект защиты",
+    center: {
+      lat: object.center.lat,
+      lon: object.center.lng,
+    },
+    priorityWeight: 1,
+    status: object.status ?? "active",
+  } as const;
+}
 
 export function DroneDefensePrototype() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
@@ -67,13 +82,10 @@ export function DroneDefensePrototype() {
     loading,
     error,
     view,
-    facilityId,
     scenarioId,
     configuration: studioConfiguration,
     catalog,
-    facilities,
     layers,
-    setFacilityId,
     setScenarioId,
     upsertLocalPlacement,
     moveLocalPlacement,
@@ -87,7 +99,7 @@ export function DroneDefensePrototype() {
     deleteLayer,
     updateLayerGeometry,
     selectLayer,
-    setBaseObjectCenter,
+    selectBaseObject,
     selectAsset,
     selectedObjectId,
     selectObject,
@@ -99,6 +111,10 @@ export function DroneDefensePrototype() {
     assetLibraryLoading,
     assetLibraryError,
     refreshAssetLibrary,
+    protectedObjects,
+    protectedObjectsLoading,
+    protectedObjectsError,
+    refreshProtectedObjects,
     upsertAssetInLibrary,
     removeAssetFromLibrary,
   } = useDefenseProjectStore();
@@ -110,17 +126,25 @@ export function DroneDefensePrototype() {
   useEffect(() => {
     restoreProjectFromLocalStorage();
     void refreshAssetLibrary({ isPublic: true, limit: 100 });
-  }, [refreshAssetLibrary, restoreProjectFromLocalStorage]);
-
-  const selectedFacility = useMemo(
-    () => facilities.find((item) => item.id === facilityId) ?? null,
-    [facilities, facilityId],
+    void refreshProtectedObjects({ limit: 100 });
+  }, [refreshAssetLibrary, refreshProtectedObjects, restoreProjectFromLocalStorage]);
+  const selectedProtectedObject = useMemo(
+    () =>
+      protectedObjects.find((item) => item.id === project.baseObject.id) ?? {
+        ...project.baseObject,
+        enterpriseId: project.baseObject.id,
+        source: "fallback" as const,
+      },
+    [project.baseObject, protectedObjects],
   );
-
-  useEffect(() => {
-    if (!selectedFacility) return;
-    setBaseObjectCenter({ lat: selectedFacility.center.lat, lng: selectedFacility.center.lon });
-  }, [selectedFacility, setBaseObjectCenter]);
+  const selectedFacility = useMemo(
+    () => protectedObjectToFacility(selectedProtectedObject),
+    [selectedProtectedObject],
+  );
+  const mapFacilities = useMemo(
+    () => protectedObjects.map(protectedObjectToFacility),
+    [protectedObjects],
+  );
   const projectMapLayers = useMemo(
     () =>
       [...project.layers]
@@ -196,10 +220,10 @@ export function DroneDefensePrototype() {
     () =>
       placedObjectsToMapPlacements({
         project,
-        facilityId,
+        facilityId: project.baseObject.id,
         scenarioId,
       }).filter((placement) => project.layers.find((layer) => layer.id === placement.layerId)?.isVisible !== false),
-    [facilityId, project, scenarioId],
+    [project, scenarioId],
   );
   const isPlacementVisible = useCallback(
     (placement: Placement) => {
@@ -444,12 +468,7 @@ export function DroneDefensePrototype() {
       return;
     }
     const compoundProfile = buildPlacedDefenseCompoundProfile(asset);
-    const validation = placeObject(
-      asset.id,
-      args.layerId,
-      { lat: args.mapRef.lat, lng: args.mapRef.lon },
-      compoundProfile ? { compoundProfile } : undefined,
-    );
+    const validation = placeObject(asset.id, args.layerId, { lat: args.mapRef.lat, lng: args.mapRef.lon }, compoundProfile ? { compoundProfile } : undefined);
     if (!validation.isValid) {
       setLastPlacementMessage(validation.message ?? "Не удалось разместить объект");
       return;
@@ -615,6 +634,43 @@ export function DroneDefensePrototype() {
                 <p className="truncate text-xs text-slate-500">Defense Configuration Studio</p>
               </div>
             </div>
+
+            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-blue-500">Объект защиты</p>
+                </div>
+                <button
+                  type="button"
+                  className="h-9 shrink-0 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  onClick={() => refreshProtectedObjects({ limit: 100 })}
+                >
+                  {protectedObjectsLoading ? "Обновление…" : "Обновить"}
+                </button>
+              </div>
+              <select
+                className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-400"
+                value={project.baseObject.id}
+                onChange={(event) => {
+                  const nextObject = protectedObjects.find((item) => item.id === event.target.value);
+                  if (!nextObject) return;
+                  selectBaseObject(nextObject);
+                  setLastPlacementMessage(`${nextObject.name}: выбран объект защиты`);
+                }}
+              >
+                {protectedObjects.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 truncate text-[11px] text-slate-500">
+                {selectedProtectedObject.address ?? "Локальный объект"} · {selectedProtectedObject.status ?? "fallback"}
+              </p>
+              {protectedObjectsError ? (
+                <p className="mt-1.5 text-[11px] text-amber-700">{protectedObjectsError}</p>
+              ) : null}
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
@@ -770,9 +826,14 @@ export function DroneDefensePrototype() {
           <>
             <GisBoard
               className="h-full min-h-0 rounded-none border-0"
-              facilities={facilities}
-              selectedFacilityId={facilityId}
-              onSelectFacility={(nextId) => void setFacilityId(nextId)}
+              facilities={mapFacilities}
+              selectedFacilityId={project.baseObject.id}
+              onSelectFacility={(nextId) => {
+                const nextObject = protectedObjects.find((item) => item.id === nextId);
+                if (!nextObject) return;
+                selectBaseObject(nextObject);
+                setLastPlacementMessage(`${nextObject.name}: выбран объект защиты`);
+              }}
               hexCells={studioPreviewData.hexCells}
               threatRoutes={studioPreviewData.threatRoutes}
               layers={layers}
@@ -1030,8 +1091,8 @@ export function DroneDefensePrototype() {
         {view === "drilldown" ? (
           <div className="h-full overflow-auto bg-slate-50 p-4">
             <FacilityDrilldown
-              key={`${facilityId}:${scenarioId}`}
-              facilityName={selectedFacility?.name ?? "Facility"}
+              key={`${project.baseObject.id}:${scenarioId}`}
+              facilityName={project.baseObject.name}
               scenario={scenarioId}
               configuration={studioConfiguration}
               onScenarioChange={(nextScenarioId) => void setScenarioId(nextScenarioId)}

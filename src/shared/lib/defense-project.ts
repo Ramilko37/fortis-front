@@ -452,6 +452,16 @@ export function recenterProject(project: DefenseProject, center: Coordinates): D
   });
 }
 
+export function setProjectBaseObject(project: DefenseProject, baseObject: DefenseProject["baseObject"]): DefenseProject {
+  const recenteredProject = recenterProject(project, baseObject.center);
+  return withUpdatedAt({
+    ...recenteredProject,
+    baseObject: {
+      ...baseObject,
+    },
+  });
+}
+
 export function updateLayerGeometryFromRadii(
   layer: EditableDefenseLayer,
   radii: { innerRadiusM?: number; widthM?: number; center?: Coordinates },

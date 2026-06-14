@@ -130,6 +130,15 @@ export type ProtectedObject = {
   center: Coordinates;
 };
 
+export type EnterpriseStatus = "active" | "configuring" | "offline";
+
+export type ProtectedObjectOption = ProtectedObject & {
+  enterpriseId: string;
+  address?: string;
+  status?: EnterpriseStatus;
+  source: "backend" | "fallback";
+};
+
 export type DefenseProjectMode = "view" | "edit-layers" | "place-object" | "move-object" | "measure";
 
 export type DefenseProject = {
