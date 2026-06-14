@@ -41,9 +41,24 @@ import {
 import { MAX_DEFENSE_PROJECT_LAYERS, useDefenseProjectStore } from "@/shared/lib/use-defense-project-store";
 import type { LayerInsertOption } from "@/shared/lib/defense-project";
 import type { DefenseLayer, DefenseLayerId, Placement } from "@/shared/types/drone-defense";
+import type { ProtectedObjectOption } from "@/shared/types/defense-project";
 import type { DragEvent as ReactDragEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
 const defenseAssetDragMimeType = "application/x-fortis-defense-asset";
+
+function protectedObjectToFacility(object: ProtectedObjectOption) {
+  return {
+    id: object.id,
+    name: object.name,
+    region: object.address ?? "Объект защиты",
+    center: {
+      lat: object.center.lat,
+      lon: object.center.lng,
+    },
+    priorityWeight: 1,
+    status: object.status ?? "active",
+  } as const;
+}
 
 export function DroneDefensePrototype() {
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
@@ -68,13 +83,10 @@ export function DroneDefensePrototype() {
     loading,
     error,
     view,
-    facilityId,
     scenarioId,
     configuration: studioConfiguration,
     catalog,
-    facilities,
     layers,
-    setFacilityId,
     setScenarioId,
     upsertLocalPlacement,
     moveLocalPlacement,
@@ -88,7 +100,7 @@ export function DroneDefensePrototype() {
     deleteLayer,
     updateLayerGeometry,
     selectLayer,
-    setBaseObjectCenter,
+    selectBaseObject,
     selectAsset,
     selectedObjectId,
     selectObject,
@@ -100,6 +112,8 @@ export function DroneDefensePrototype() {
     assetLibraryLoading,
     assetLibraryError,
     refreshAssetLibrary,
+    protectedObjects,
+    refreshProtectedObjects,
     upsertAssetInLibrary,
     removeAssetFromLibrary,
   } = useDefenseProjectStore();
@@ -111,17 +125,25 @@ export function DroneDefensePrototype() {
   useEffect(() => {
     restoreProjectFromLocalStorage();
     void refreshAssetLibrary({ isPublic: true, limit: 100 });
-  }, [refreshAssetLibrary, restoreProjectFromLocalStorage]);
-
-  const selectedFacility = useMemo(
-    () => facilities.find((item) => item.id === facilityId) ?? null,
-    [facilities, facilityId],
+    void refreshProtectedObjects({ limit: 100 });
+  }, [refreshAssetLibrary, refreshProtectedObjects, restoreProjectFromLocalStorage]);
+  const selectedProtectedObject = useMemo(
+    () =>
+      protectedObjects.find((item) => item.id === project.baseObject.id) ?? {
+        ...project.baseObject,
+        enterpriseId: project.baseObject.id,
+        source: "fallback" as const,
+      },
+    [project.baseObject, protectedObjects],
   );
-
-  useEffect(() => {
-    if (!selectedFacility) return;
-    setBaseObjectCenter({ lat: selectedFacility.center.lat, lng: selectedFacility.center.lon });
-  }, [selectedFacility, setBaseObjectCenter]);
+  const selectedFacility = useMemo(
+    () => protectedObjectToFacility(selectedProtectedObject),
+    [selectedProtectedObject],
+  );
+  const mapFacilities = useMemo(
+    () => protectedObjects.map(protectedObjectToFacility),
+    [protectedObjects],
+  );
   const projectMapLayers = useMemo(
     () =>
       [...project.layers]
@@ -197,10 +219,10 @@ export function DroneDefensePrototype() {
     () =>
       placedObjectsToMapPlacements({
         project,
-        facilityId,
+        facilityId: project.baseObject.id,
         scenarioId,
       }).filter((placement) => project.layers.find((layer) => layer.id === placement.layerId)?.isVisible !== false),
-    [facilityId, project, scenarioId],
+    [project, scenarioId],
   );
   const isPlacementVisible = useCallback(
     (placement: Placement) => {
@@ -445,12 +467,7 @@ export function DroneDefensePrototype() {
       return;
     }
     const compoundProfile = buildPlacedDefenseCompoundProfile(asset);
-    const validation = placeObject(
-      asset.id,
-      args.layerId,
-      { lat: args.mapRef.lat, lng: args.mapRef.lon },
-      compoundProfile ? { compoundProfile } : undefined,
-    );
+    const validation = placeObject(asset.id, args.layerId, { lat: args.mapRef.lat, lng: args.mapRef.lon }, compoundProfile ? { compoundProfile } : undefined);
     if (!validation.isValid) {
       setLastPlacementMessage(validation.message ?? "Не удалось разместить объект");
       return;
@@ -604,8 +621,15 @@ export function DroneDefensePrototype() {
 
   return (
     <div className="flex h-full min-h-0 flex-col lg:flex-row">
-      {isCatalogTrayOpen ? (
-        <section className="z-10 flex max-h-[42vh] w-full shrink-0 flex-col border-b border-slate-200 bg-white shadow-xl shadow-slate-900/5 lg:h-full lg:max-h-none lg:w-[320px] lg:border-b-0 lg:border-r">
+      <section
+        data-sidebar-state={isCatalogTrayOpen ? "open" : "closed"}
+        className={`z-10 flex w-full shrink-0 flex-col overflow-hidden border-slate-200 bg-white shadow-xl shadow-slate-900/5 transition-[max-height,width,transform,opacity] duration-300 ease-in-out lg:h-full lg:max-h-none ${
+          isCatalogTrayOpen
+            ? "max-h-[42vh] border-b opacity-100 lg:w-[320px] lg:border-b-0 lg:border-r"
+            : "pointer-events-none max-h-0 border-b-0 -translate-y-2 opacity-0 lg:w-0 lg:translate-y-0 lg:border-r-0"
+        }`}
+        aria-hidden={!isCatalogTrayOpen}
+      >
           <div className="border-b border-slate-100 p-4">
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-600 text-white">
@@ -616,6 +640,7 @@ export function DroneDefensePrototype() {
                 <p className="truncate text-xs text-slate-500">Defense Configuration Studio</p>
               </div>
             </div>
+
           </div>
 
           <div className="min-h-0 flex-1 overflow-hidden">
@@ -685,8 +710,7 @@ export function DroneDefensePrototype() {
               />
             </div>
           </div>
-        </section>
-      ) : null}
+      </section>
 
       <main className="relative min-w-0 flex-1 overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 top-4 z-30 flex justify-center">
@@ -776,9 +800,14 @@ export function DroneDefensePrototype() {
           <>
             <GisBoard
               className="h-full min-h-0 rounded-none border-0"
-              facilities={facilities}
-              selectedFacilityId={facilityId}
-              onSelectFacility={(nextId) => void setFacilityId(nextId)}
+              facilities={mapFacilities}
+              selectedFacilityId={project.baseObject.id}
+              onSelectFacility={(nextId) => {
+                const nextObject = protectedObjects.find((item) => item.id === nextId);
+                if (!nextObject) return;
+                selectBaseObject(nextObject);
+                setLastPlacementMessage(`${nextObject.name}: выбран объект защиты`);
+              }}
               hexCells={studioPreviewData.hexCells}
               threatRoutes={studioPreviewData.threatRoutes}
               layers={layers}
@@ -1019,25 +1048,28 @@ export function DroneDefensePrototype() {
               </div>
             ) : null}
 
-            {!isCatalogTrayOpen ? (
-              <button
-                type="button"
-                className="absolute left-4 top-20 z-40 grid h-12 w-12 cursor-pointer place-items-center rounded-xl bg-blue-600 text-lg text-white shadow-xl shadow-blue-950/25 transition hover:bg-blue-700"
-                onClick={() => setIsCatalogTrayOpen(true)}
-                title="Открыть библиотеку средств защиты"
-                aria-label="Открыть библиотеку средств защиты"
-              >
-                <AppstoreOutlined />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              data-sidebar-toggle-state={isCatalogTrayOpen ? "hidden" : "visible"}
+              className={`absolute left-4 top-20 z-40 grid h-12 w-12 cursor-pointer place-items-center rounded-xl bg-blue-600 text-lg text-white shadow-xl shadow-blue-950/25 transition duration-300 ease-in-out hover:bg-blue-700 ${
+                isCatalogTrayOpen ? "pointer-events-none -translate-x-2 opacity-0" : "pointer-events-auto translate-x-0 opacity-100"
+              }`}
+              onClick={() => setIsCatalogTrayOpen(true)}
+              title="Открыть библиотеку средств защиты"
+              aria-label="Открыть библиотеку средств защиты"
+              aria-hidden={isCatalogTrayOpen}
+              tabIndex={isCatalogTrayOpen ? -1 : 0}
+            >
+              <AppstoreOutlined />
+            </button>
           </>
         ) : null}
 
         {view === "drilldown" ? (
           <div className="h-full overflow-auto bg-slate-50 p-4">
             <FacilityDrilldown
-              key={`${facilityId}:${scenarioId}`}
-              facilityName={selectedFacility?.name ?? "Facility"}
+              key={`${project.baseObject.id}:${scenarioId}`}
+              facilityName={project.baseObject.name}
               scenario={scenarioId}
               configuration={studioConfiguration}
               onScenarioChange={(nextScenarioId) => void setScenarioId(nextScenarioId)}

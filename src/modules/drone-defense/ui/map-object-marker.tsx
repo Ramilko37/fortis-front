@@ -12,7 +12,7 @@ import {
   SafetyCertificateOutlined,
   VideoCameraOutlined,
 } from "@ant-design/icons";
-import type { CSSProperties, ReactNode } from "react";
+import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import type { EchelonMapPlacement } from "@/modules/drone-defense/domain/echelon-map-model";
 
 export type MapMarkerState = "default" | "hover" | "selected" | "disabled" | "warning" | "conflict" | "inactive";
@@ -113,6 +113,7 @@ type MapObjectMarkerProps = {
   layerLabel?: string;
   isHovered: boolean;
   onSelect: (placement: EchelonMapPlacement) => void;
+  onDoubleClick: (placement: EchelonMapPlacement) => void;
   onHover: (placement: EchelonMapPlacement | null) => void;
 };
 
@@ -124,8 +125,10 @@ export function MapObjectMarker({
   layerLabel,
   isHovered,
   onSelect,
+  onDoubleClick,
   onHover,
 }: MapObjectMarkerProps) {
+  const pendingClickRef = useRef<number | null>(null);
   const state = getMarkerState(placement, isHovered);
   const categoryColor = getAssetCategoryColor(placement);
   const showLabel = shouldShowLabel({ zoom, isSelected: Boolean(placement.isSelected), isHovered });
@@ -139,6 +142,13 @@ export function MapObjectMarker({
     height: markerSize,
     transform: "translate(-50%, -50%)",
   } as CSSProperties;
+  const clearPendingClick = useCallback(() => {
+    if (pendingClickRef.current === null) return;
+    window.clearTimeout(pendingClickRef.current);
+    pendingClickRef.current = null;
+  }, []);
+
+  useEffect(() => clearPendingClick, [clearPendingClick]);
 
   return (
     <button
@@ -152,9 +162,24 @@ export function MapObjectMarker({
       data-testid={`map-object-marker-${placement.sourcePlacementId}`}
       data-marker-state={state}
       data-marker-category={placement.markerCategory ?? layerCategoryFallback[placement.layerId] ?? "infrastructure"}
+      onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => {
         event.stopPropagation();
-        onSelect(placement);
+        if (event.detail > 1) {
+          clearPendingClick();
+          return;
+        }
+        clearPendingClick();
+        pendingClickRef.current = window.setTimeout(() => {
+          pendingClickRef.current = null;
+          onSelect(placement);
+        }, 180);
+      }}
+      onDoubleClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        clearPendingClick();
+        onDoubleClick(placement);
       }}
       onMouseEnter={() => onHover(placement)}
       onMouseLeave={() => onHover(null)}

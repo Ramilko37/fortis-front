@@ -314,25 +314,6 @@ export function AssetLibraryManager({
       {error ? <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-700">{error}</p> : null}
       {localError ? <p className="mt-2 rounded-md bg-rose-50 px-2 py-1.5 text-xs text-rose-700">{localError}</p> : null}
 
-      <label className="mt-3 block text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-        Выбранная карточка
-        <select
-          className="mt-1 h-9 w-full rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium normal-case tracking-normal text-slate-700 outline-none focus:border-blue-400"
-          value={selectedAsset?.id ?? ""}
-          onChange={(event) => {
-            onSelectAsset(event.target.value);
-            const next = assets.find((asset) => asset.id === event.target.value);
-            if (next && mode === "edit") setForm(formFromAsset(next));
-          }}
-        >
-          {assets.map((asset) => (
-            <option key={asset.id} value={asset.id}>
-              {asset.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
       {mode !== "closed" ? (
         <div className="mt-3 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2">
           <div className="flex items-center justify-between gap-2">
