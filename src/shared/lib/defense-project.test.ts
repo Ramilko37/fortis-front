@@ -190,15 +190,21 @@ assert(l5, "default project must include L5");
 const withMog = placeObjectInProject(project, "l5-mobile-fire", l5.id, inside);
 assert(withMog.placedObjects[0].compoundProfile?.kind === "compound-post", "placement must include compound profile for МОГ");
 assert(withMog.placedObjects[0].compoundProfile?.postType === "МОГ", "МОГ profile must have default post type");
+assert(withMog.placedObjects[0].compoundProfile?.equipment?.some((item) => item.id === "binoculars"), "МОГ profile must include equipment rows");
+assert(withMog.placedObjects[0].compoundProfile?.weapons?.some((item) => item.id === "firearms"), "МОГ profile must include weapon rows");
 const updatedMog = updatePlacedObjectInProject(withMog, withMog.placedObjects[0].id, {
   compoundProfile: {
     ...withMog.placedObjects[0].compoundProfile,
     azimuth: 180,
     weaponUnits: "6",
+    weapons: withMog.placedObjects[0].compoundProfile?.weapons?.map((item) =>
+      item.id === "firearms" ? { ...item, quantity: "6" } : item,
+    ),
   },
 });
 assert(updatedMog.placedObjects[0].compoundProfile?.azimuth === 180, "editor update must persist MOГ azimuth");
-assert(updatedMog.placedObjects[0].compoundProfile?.weaponUnits === "6 единиц", "editor update must persist weapons count");
+assert(updatedMog.placedObjects[0].compoundProfile?.weaponUnits === "6", "editor update must persist legacy weapons count");
+assert(updatedMog.placedObjects[0].compoundProfile?.weapons?.find((item) => item.id === "firearms")?.quantity === "6", "editor update must persist МОГ weapon rows");
 
 const coordinatePlaced = placeObjectInProject(project, "mobile-radar", l2.id, { ...inside, altitude: 120 }, { notes: "координатный ввод" });
 assert(coordinatePlaced.placedObjects[0].coordinates.altitude === 120, "coordinate placement must persist altitude");

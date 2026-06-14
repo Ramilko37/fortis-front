@@ -7,6 +7,7 @@ import {
   facilities,
 } from "@/modules/drone-defense/infra/mock-defense-data";
 import { buildEchelonMapModel } from "@/modules/drone-defense/domain/echelon-map-model";
+import type { Placement } from "@/shared/types/drone-defense";
 
 const catalog = buildCatalogResponse();
 const facility = facilities[0];
@@ -112,7 +113,7 @@ if (radarShape.kind !== "sector") {
   throw new Error(`detection/optical assets should default to a sector coverage; got ${radarShape.kind}`);
 }
 
-const mogPlacement = {
+const mogPlacement: Placement = {
   ...readyPlacement,
   compoundProfile: {
     kind: "compound-post",
@@ -122,18 +123,25 @@ const mogPlacement = {
     armament: "Автомат/пулемёт/ПБС",
     weaponUnits: "2",
     sectorOrRange: "до 4–8 км, сектор 90–360°",
+    weapons: [
+      { id: "firearms", label: "Огнестрел", quantity: "2", rangeM: 8000 },
+      { id: "antiDroneRifles", label: "Антидроновые ружья", quantity: "1", rangeM: 2000 },
+      { id: "interceptorDrones", label: "Дроны-перехватчики", quantity: "0", rangeM: 5000 },
+    ],
+    coverageWeaponId: "antiDroneRifles",
+    sectorWidthDeg: 180,
     azimuth: 180,
   },
-} as const;
+};
 const mogShape = getCoverageShape(mogPlacement);
 if (mogShape.kind !== "sector") {
   throw new Error(`МOГ placement should be rendered as sector coverage; got ${mogShape.kind}`);
 }
-if (mogShape.radiusM !== 8000) {
-  throw new Error(`МОГ range should be parsed from profile as 8000m; got ${mogShape.radiusM}`);
+if (mogShape.radiusM !== 2000) {
+  throw new Error(`МОГ range should come from selected weapon as 2000m; got ${mogShape.radiusM}`);
 }
-if (mogShape.halfAngleDeg !== 45) {
-  throw new Error(`МОГ coverage should use demo half-angle 45°, got ${mogShape.halfAngleDeg}`);
+if (mogShape.halfAngleDeg !== 90) {
+  throw new Error(`МОГ coverage should use configured half-angle 90°, got ${mogShape.halfAngleDeg}`);
 }
 if (mogShape.azimuthDeg !== 180) {
   throw new Error(`МОГ azimuth must be preserved from profile; got ${mogShape.azimuthDeg}`);

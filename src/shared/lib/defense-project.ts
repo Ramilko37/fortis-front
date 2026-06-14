@@ -13,10 +13,38 @@ import type {
   PlacementValidationResult,
   ProjectCalculatorConfiguration,
 } from "@/shared/types/defense-project";
-import type { PlacedDefenseCompoundProfile } from "@/shared/types/defense-configuration";
+import type {
+  MogEquipmentItem,
+  MogWeaponId,
+  MogWeaponItem,
+  PlacedDefenseCompoundProfile,
+} from "@/shared/types/defense-configuration";
 import type { SelectedConfiguration } from "@/shared/types/defense-configuration";
 
 const PROJECT_SCHEMA_VERSION = 1;
+
+const defaultMogEquipment: MogEquipmentItem[] = [
+  { id: "binoculars", label: "Бинокль", quantity: "2" },
+  { id: "nightVision", label: "Прибор ночного видения", quantity: "1" },
+  { id: "vehicle", label: "Автомобиль", quantity: "1" },
+  { id: "searchlight", label: "Прожектор", quantity: "1" },
+  { id: "droneDetectors", label: "Детекторы дронов", quantity: "1" },
+];
+
+const defaultMogWeapons: MogWeaponItem[] = [
+  { id: "firearms", label: "Огнестрел", quantity: "2", rangeM: 8000 },
+  { id: "antiDroneRifles", label: "Антидроновые ружья", quantity: "1", rangeM: 2000 },
+  { id: "interceptorDrones", label: "Дроны-перехватчики", quantity: "0", rangeM: 5000 },
+];
+
+function mergeProfileRows<T extends { id: string }>(defaults: T[], rows: T[] | undefined): T[] {
+  const rowsById = new Map((rows ?? []).map((row) => [row.id, row]));
+  return defaults.map((row) => ({ ...row, ...rowsById.get(row.id) }));
+}
+
+function isMogWeaponId(value: string | undefined): value is MogWeaponId {
+  return defaultMogWeapons.some((weapon) => weapon.id === value);
+}
 
 export type LayerRadii = {
   innerRadiusM: number;
@@ -657,14 +685,17 @@ export function updatePlacedObjectInProject(
   objectId: string,
   patch: Partial<PlacedDefenseObject>,
 ): DefenseProject {
+  const normalizedPatch = patch.compoundProfile
+    ? { ...patch, compoundProfile: normalizePlacedDefenseCompoundProfile(patch.compoundProfile) }
+    : patch;
   return withUpdatedAt(syncPlacedObjectConflictFlags({
     ...project,
     placedObjects: project.placedObjects.map((item) =>
       item.id === objectId
         ? {
             ...item,
-            ...patch,
-            quantity: patch.quantity === undefined ? item.quantity : Math.max(1, Math.floor(patch.quantity)),
+            ...normalizedPatch,
+            quantity: normalizedPatch.quantity === undefined ? item.quantity : Math.max(1, Math.floor(normalizedPatch.quantity)),
             updatedAt: nowIso(),
           }
         : item,
@@ -940,9 +971,23 @@ export function buildPlacedDefenseCompoundProfile(
   asset: DefenseProject["assetLibrary"][number] | undefined,
 ): PlacedDefenseCompoundProfile | undefined {
   if (!asset?.compoundProfile) return undefined;
-  return {
+  return normalizePlacedDefenseCompoundProfile({
     ...asset.compoundProfile,
     azimuth: 0,
+  });
+}
+
+export function normalizePlacedDefenseCompoundProfile(
+  profile: PlacedDefenseCompoundProfile,
+): PlacedDefenseCompoundProfile {
+  const weapons = mergeProfileRows(defaultMogWeapons, profile.weapons);
+  const fallbackCoverageWeaponId = weapons.find((weapon) => Number(weapon.quantity) > 0)?.id ?? defaultMogWeapons[0].id;
+  return {
+    ...profile,
+    equipment: mergeProfileRows(defaultMogEquipment, profile.equipment),
+    weapons,
+    coverageWeaponId: isMogWeaponId(profile.coverageWeaponId) ? profile.coverageWeaponId : fallbackCoverageWeaponId,
+    sectorWidthDeg: Number.isFinite(profile.sectorWidthDeg) ? profile.sectorWidthDeg : 90,
   };
 }
 

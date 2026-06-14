@@ -116,11 +116,27 @@ function parseSectorHalfAngle(profile: string): number | null {
   return null;
 }
 
-export function getCompoundPostCoverageShape(profile: { azimuth: number; sectorOrRange: string }): CoverageShape {
+function getCoverageWeaponRangeM(profile: {
+  coverageWeaponId?: string;
+  weapons?: Array<{ id: string; quantity: string; rangeM: number }>;
+}): number | null {
+  const weapons = profile.weapons ?? [];
+  const selectedWeapon = weapons.find((weapon) => weapon.id === profile.coverageWeaponId);
+  const fallbackWeapon = weapons.find((weapon) => Number(weapon.quantity) > 0);
+  return selectedWeapon?.rangeM ?? fallbackWeapon?.rangeM ?? null;
+}
+
+export function getCompoundPostCoverageShape(profile: {
+  azimuth: number;
+  sectorOrRange: string;
+  sectorWidthDeg?: number;
+  coverageWeaponId?: string;
+  weapons?: Array<{ id: string; quantity: string; rangeM: number }>;
+}): CoverageShape {
   const radiusFromProfile = parseMaxDistanceMFromProfile(profile.sectorOrRange);
   const azimuthDeg = normalizeAzimuth(profile.azimuth);
-  const halfAngleDeg = parseSectorHalfAngle(profile.sectorOrRange) ?? COMPOUND_POST_HALF_ANGLE_DEG;
-  const radiusM = radiusFromProfile ?? COMPOUND_POST_DEFAULT_RADIUS_M;
+  const halfAngleDeg = profile.sectorWidthDeg ? profile.sectorWidthDeg / 2 : parseSectorHalfAngle(profile.sectorOrRange) ?? COMPOUND_POST_HALF_ANGLE_DEG;
+  const radiusM = getCoverageWeaponRangeM(profile) ?? radiusFromProfile ?? COMPOUND_POST_DEFAULT_RADIUS_M;
   return { kind: "sector", azimuthDeg, halfAngleDeg, radiusM };
 }
 

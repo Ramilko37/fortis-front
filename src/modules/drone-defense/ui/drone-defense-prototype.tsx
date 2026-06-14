@@ -276,6 +276,10 @@ export function DroneDefensePrototype() {
     () => project.assetLibrary.find((asset) => asset.id === selectedPlacedObject?.assetId) ?? null,
     [project.assetLibrary, selectedPlacedObject?.assetId],
   );
+  const selectedPlacedLayer = useMemo(
+    () => project.layers.find((layer) => layer.id === selectedPlacedObject?.layerId) ?? null,
+    [project.layers, selectedPlacedObject?.layerId],
+  );
   const selectedPlacedObjectProfile = useMemo(() => {
     if (!selectedPlacedObject) return null;
     if (selectedPlacedObject.compoundProfile) return selectedPlacedObject.compoundProfile;
@@ -859,6 +863,9 @@ export function DroneDefensePrototype() {
             {selectedMogObject && selectedPlacedAsset ? (
               <MogCompositionEditor
                 asset={selectedPlacedAsset}
+                layerLabel={
+                  selectedPlacedLayer ? `${selectedPlacedLayer.code} · ${selectedPlacedLayer.name}` : "—"
+                }
                 profile={selectedMogObject.compoundProfile}
                 onChange={(patch) => updatePlacedObject(selectedMogObject.id, patch)}
                 onClose={() => selectObject(null)}

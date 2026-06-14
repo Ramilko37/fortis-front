@@ -23,6 +23,10 @@ type DefenseCompoundProfile = {
   armament: string;
   weaponUnits: string;
   sectorOrRange: string;
+  equipment?: Array<{ id: string; label: string; quantity: string }>;
+  weapons?: Array<{ id: string; label: string; quantity: string; rangeM: number }>;
+  coverageWeaponId?: string;
+  sectorWidthDeg?: number;
 };
 
 export type DefenseToolIconProps = {
@@ -87,6 +91,10 @@ export function DefenseToolIcon({
   const placementBadge = isZoneObject ? "Зона" : "Карта";
   const protectionBadge = protectionType;
   const actionText = isZoneObject ? "Нарисовать" : "Перетащите";
+  const compoundWeaponSummary = compoundProfile?.weapons
+    ?.filter((item) => Number(item.quantity) > 0)
+    .map((item) => `${item.label}: ${item.quantity}`)
+    .join(", ");
 
   const rootRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
@@ -272,10 +280,7 @@ export function DefenseToolIcon({
             </p>
             <p className="mt-1 flex flex-wrap gap-x-1 text-[10px] leading-tight text-slate-600">
               <span className="font-semibold text-slate-700">Оружие:</span>
-              <span className="truncate">{compoundProfile.armament}</span>
-              <span aria-hidden="true">·</span>
-              <span className="font-semibold text-slate-700">Ед.:</span>
-              <span className="truncate">{compoundProfile.weaponUnits}</span>
+              <span className="truncate">{compoundWeaponSummary || `${compoundProfile.armament}: ${compoundProfile.weaponUnits}`}</span>
               <span aria-hidden="true">·</span>
               <span className="font-semibold text-slate-700">Сектор:</span>
               <span className="truncate">{compoundProfile.sectorOrRange}</span>
